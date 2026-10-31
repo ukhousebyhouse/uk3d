@@ -1,0 +1,35 @@
+# segredos e dados baixados: nunca vão para o repositório
+config/instagram.json
+config/hostinger.json
+config/github.json
+privato/config.php
+privato/dati/
+dati-grezzi/
+.tools/
+pubblicare/
+privato/ig-token.json
+privato/config-gioco/
+
+# repositório público: documentos internos (estratégia, preços, passo a passo) e material do PC ficam fora
+BRIEFING.md
+PLANO.md
+PASSO-A-PASSO.md
+GUIA-INSTAGRAM.md
+modelli-it/
+hotmart/
+video/
+*.bak
+
+# gerados a cada atualização
+sito/data/snapshot.json
+sito/data/versao.txt
+# escrito no servidor pelo webhook da Hotmart (casas decoradas)
+sito/data/decori.json
+
+# vídeos gerados e áudios de narração
+video/output/
+video/audio/
+
+# dados de demonstração (só testes locais, nunca no site)
+sito/data/demo/
+sito/data/loghi/

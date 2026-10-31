@@ -1,0 +1,74 @@
+{
+ "proj": {
+  "tipo": "sinusoidale",
+  "LON0": -3.2,
+  "LAT0": 55,
+  "KM": 111.32,
+  "KZ": 110.57
+ },
+ "bbox": {
+  "x0": -470,
+  "x1": 340,
+  "z0": -665,
+  "z1": 577
+ },
+ "vista": {
+  "x0": -330,
+  "x1": 340,
+  "z0": -650,
+  "z1": 565
+ },
+ "terreno": {
+  "arquivo": "terreno.png",
+  "w": 1620,
+  "h": 2484
+ },
+ "rilievo": {
+  "arquivo": "rilievo.bin",
+  "w": 325,
+  "h": 498
+ },
+ "regioni": [
+  {
+   "cod": "ENG",
+   "nome": "England",
+   "sigla": "ENGLAND",
+   "pop": 57690300,
+   "cor": "#CE1124",
+   "lx": 84,
+   "lz": 105,
+   "comuni": 23641
+  },
+  {
+   "cod": "SCT",
+   "nome": "Scotland",
+   "sigla": "SCOTLAND",
+   "pop": 5490100,
+   "cor": "#005EB8",
+   "lx": -30,
+   "lz": -233,
+   "comuni": 4635
+  },
+  {
+   "cod": "WLS",
+   "nome": "Wales",
+   "sigla": "WALES",
+   "nome_cy": "Cymru",
+   "pop": 3164400,
+   "cor": "#00B140",
+   "lx": -28,
+   "lz": 341,
+   "comuni": 2913
+  },
+  {
+   "cod": "NIR",
+   "nome": "Northern Ireland",
+   "sigla": "N. IRELAND",
+   "pop": 1920400,
+   "cor": "#3A7D7C",
+   "lx": -224,
+   "lz": 37,
+   "comuni": 651
+  }
+ ]
+}

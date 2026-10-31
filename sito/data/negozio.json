@@ -1,0 +1,16 @@
+{
+  "aperto": false,
+  "durata_giorni": 30,
+  "decora": { "attivo": false, "prezzo": 499, "giorni": 10, "checkout": "" },
+  "su_misura": { "attivo": false, "prezzo": 999, "posti_per_citta": 3, "checkout": "" },
+  "piani": [
+    { "id": "city", "nome": "City", "da": 250000, "posti": { "negozio": 6, "cartellone": 2 }, "prezzo": { "negozio": { "pieno": 3999, "lancio": 1999 }, "cartellone": { "pieno": 5999, "lancio": 2999 } } },
+    { "id": "town", "nome": "Town", "da": 30000, "posti": { "negozio": 4, "cartellone": 2 }, "prezzo": { "negozio": { "pieno": 2999, "lancio": 1499 }, "cartellone": { "pieno": 3999, "lancio": 1999 } } },
+    { "id": "village", "nome": "Village", "da": 0, "posti": { "negozio": 3, "cartellone": 1 }, "prezzo": { "negozio": { "pieno": 1999, "lancio": 999 }, "cartellone": { "pieno": 2999, "lancio": 1499 } } }
+  ],
+  "checkout": {
+    "city": { "negozio": "", "cartellone": "" },
+    "town": { "negozio": "", "cartellone": "" },
+    "village": { "negozio": "", "cartellone": "" }
+  }
+}

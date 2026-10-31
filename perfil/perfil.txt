@@ -1,0 +1,32 @@
+PERFIL INSTAGRAM - UK HOUSE BY HOUSE
+
+=== NOME DO PERFIL ===
+EN: UK House by House | 3D Map
+PT: Reino Unido Casa por Casa | Mapa 3D
+
+=== @ (usuário) ===
+@ukhousebyhouse
+(alternativas: @uk.housebyhouse, @ukhousebyhouse3d)
+
+=== BIO (~145 caracteres, limite 150) ===
+EN (inglês britânico):
+Every comment builds a house on the UK map 🏠🇬🇧
+Comment your town + country & get yours with your @ 👇
+Climb the table, beat your neighbours 👑
+
+PT:
+Cada comentário constrói uma casa no mapa do Reino Unido 🏠🇬🇧
+Comente sua cidade + país e ganhe a sua com seu @ 👇
+Suba na tabela, vença seus vizinhos 👑
+
+Por que é britânico: "town" = cidade (EUA: city); "country" = England/Scotland/Wales/Northern Ireland;
+"neighbours" com -our (EUA: neighbors); "climb the table" = tabela do futebol inglês (EUA: standings).
+
+
+=== CATEGORIA ===
+EN: Video Game / Entertainment Website
+PT: Videogame / Site de entretenimento
+
+=== LOGO ===
+logo-1080.png (1080x1080, usar no Instagram). logo-500.png (500x500). Fonte editável: logo.html
+Render: Chrome headless --screenshot (1080 = --window-size=500,500 --force-device-scale-factor=2.16).

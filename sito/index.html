@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="versione" content="dev-0001">
+<title>UK House by House</title>
+<meta name="description" content="A 3D map of the UK built from comments: comment your town and country and get a house with your @. Whoever scores most runs the country. Find your house and your role.">
+<meta name="theme-color" content="#86AFC4">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+<!-- import maps só existem no Safari 16.4+: em iPhone mais antigo o polyfill carrega os módulos (nos outros não faz nada) -->
+<script async src="vendor/es-module-shims.js"></script>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
+<script>
+  // se a mapa não carrega: avisa a pessoa (em vez de girar para sempre) e manda o erro para api/errore.php
+  (function () {
+    window.__t0 = Date.now(); window.__fase = 'html';
+    var enviados = 0;
+    function relata(msg) {
+      if (enviados++ > 3 || !navigator.sendBeacon) return;
+      try { navigator.sendBeacon('api/errore.php', JSON.stringify({ msg: String(msg).slice(0, 300), ua: navigator.userAgent, url: location.href })); } catch (e) {}
+    }
+    window.__relata = relata;
+    // contador anônimo (sem cookies): uma visita por carregamento; main.js manda 'ok' quando a mapa abre
+    window.__conta = function (t) { try { navigator.sendBeacon && navigator.sendBeacon('api/visita.php', JSON.stringify({ t: t, p: 'mappa', ref: document.referrer })); } catch (e) {} };
+    window.__conta('v');
+    window.addEventListener('error', function (e) {
+      // ruído do navegador do app do Instagram (scripts dele, iabjs://) e erros opacos: não são nossos
+      if (/^iabjs:/.test(e.filename || '') || e.message === 'Script error.') return;
+      relata((e.message || 'erro') + ' @ ' + (e.filename || '') + ':' + (e.lineno || '')); });
+    window.addEventListener('unhandledrejection', function (e) { relata('promise: ' + (e.reason && (e.reason.message || e.reason))); });
+    setTimeout(function () {
+      var c = document.getElementById('caricamento');
+      if (!c || c.classList.contains('fora')) return;
+      // fase em que parou + o que já baixou + tipo de rede: separa "lento" de "travado"
+      var net = navigator.connection ? ' rete=' + navigator.connection.effectiveType : '';
+      window.__lento = true;
+      relata('timeout 25 s · fase=' + window.__fase + ' · scaricati=' + Object.keys(window.__fasi || {}).join(',') + net);
+      var p = c.querySelector('p');
+      if (p) p.innerHTML = 'Taking longer than usual… 🐢<br><small>If you're inside Instagram, tap ⋯ at the top and choose “Open in browser”.</small>';
+    }, 25000);
+  })();
+</script>
+</head>
+<body>
+<canvas id="mappa"></canvas>
+<div id="etichette"></div>
+
+<div id="avviso-demo" hidden>DEMO · made-up test data</div>
+
+<header id="testa">
+  <div class="marchio">UK <b>House by House</b></div>
+  <h1 class="titolo">Find <b>your house</b></h1>
+  <button id="aiuto" type="button" aria-label="How does it work?">?</button>
+  <form id="cerca" autocomplete="off">
+    <span class="chiocciola" aria-hidden="true">@</span>
+    <input id="q" type="search" placeholder="your_account, town or nation" aria-label="Search" enterkeyhint="search">
+    <button type="submit">search</button>
+  </form>
+  <div id="risultati" hidden></div>
+  <div id="chips"><button id="chip-fiamme" type="button" class="chip" hidden></button></div>
+</header>
+
+<div id="controlli">
+  <button id="zoom-piu" type="button" aria-label="Zoom in">+</button>
+  <button id="zoom-meno" type="button" aria-label="Zoom out">−</button>
+  <button id="vedi-paese" type="button" aria-label="See the whole UK">⤢</button>
+  <button id="vai-casa" type="button" aria-label="Go to my house" hidden>🏠</button>
+</div>
+
+<section id="pannello" hidden>
+  <button class="maniglia" type="button" aria-label="Minimise"></button>
+  <button class="chiudi" type="button" aria-label="Close">×</button>
+  <div id="pannello-contenuto"></div>
+</section>
+
+<div id="pillole">
+  <button id="fai-video" type="button">🎬 Make videos like this</button>
+  <button id="decora" type="button" hidden><span class="novita">NEW</span><span class="testo">✨ Decorate your house</span></button>
+  <a id="tuo-negozio" href="negozio.html">＋ your shop on the map</a>
+</div>
+
+<nav id="schede">
+  <button data-aba="mappa" class="attiva" type="button">map</button>
+  <button data-aba="palazzo" type="button"><i>🚪 </i>No. 10</button>
+  <button data-aba="classifica" type="button"><i>🏆 </i>League Table</button>
+  <button data-aba="negozi" type="button"><i>🏪 </i>High Street</button>
+  <button data-aba="tabellone" type="button"><i>📊 </i>Scoreboard</button>
+  <button data-aba="senzapadrone" type="button">up for grabs</button>
+</nav>
+
+<footer id="piede"><span id="versione">loading…</span> · <a href="privacy.html">privacy</a></footer>
+
+<div id="caricamento"><div class="palla"></div><p>Laying the bricks…</p></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

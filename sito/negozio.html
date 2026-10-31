@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your shop on the map · UK House by House</title>
+<meta name="description" content="Put your business on the 3D map of the UK: a shop on the high street with your name, logo and WhatsApp. Coming soon.">
+<meta name="theme-color" content="#86AFC4">
+<link rel="icon" type="image/png" href="favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<!-- página provisória: a loja de verdade (modelli-it/negozio.html, a traduzir) entra na fase de vendas -->
+<style>
+  body { margin: 0; background: #86AFC4; font-family: 'Nunito', system-ui, sans-serif; color: #152033; }
+  main { max-width: 560px; margin: 24px auto; background: #fff; border: 4px solid #152033; border-radius: 24px; padding: 24px 22px; box-sizing: border-box; width: calc(100% - 24px); }
+  h1 { font-size: 28px; font-weight: 900; margin: 8px 0 6px; }
+  p, li { font-weight: 700; font-size: 15px; line-height: 1.55; }
+  .sub { color: #5B6475; }
+  .sign { display: inline-block; background: #1F3A6B; color: #fff; border: 3px solid #152033; border-radius: 6px; padding: 4px 12px; font-weight: 900; letter-spacing: .5px; }
+  label { display: block; font-weight: 800; margin: 12px 0 4px; }
+  input { width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; padding: 10px 12px; border: 3px solid #152033; border-radius: 12px; }
+  button { margin-top: 14px; width: 100%; font: inherit; font-size: 17px; font-weight: 900; padding: 12px; border: 3px solid #152033; border-radius: 14px; background: #C8102E; color: #fff; cursor: pointer; }
+  button:disabled { opacity: .6; }
+  .ok { background: #F7F2E8; border: 3px solid #152033; border-radius: 14px; padding: 12px 14px; }
+  a { color: #152033; }
+</style>
+</head>
+<body>
+<main>
+  <p><a href="./">← back to the map</a></p>
+  <span class="sign">THE HIGH STREET · OPENING SOON</span>
+  <h1>Your shop on the map 🏪</h1>
+  <p class="sub">A 3D shop on the high street of your town, with your name, your colours, your logo and a WhatsApp button. Everyone looking for their house in your town will see it.</p>
+  <ul>
+    <li>Chippy, pub, café, barber, gym, florist, trades… any local business.</li>
+    <li>Pick the awning, the sign and a giant object for the roof (a pint, a fish supper, a cuppa…).</li>
+    <li>Or a giant billboard with your message.</li>
+  </ul>
+  <form id="lista">
+    <p><b>Want to be first on the high street?</b> Leave your email and we'll let you know the day it opens, with a launch price.</p>
+    <label for="email">Your email</label>
+    <input id="email" name="email" type="email" required placeholder="name@yourbusiness.co.uk">
+    <label for="conta">Your business Instagram (optional)</label>
+    <input id="conta" name="conta" placeholder="@yourbusiness">
+    <button type="submit">Let me know first</button>
+  </form>
+  <p class="sub" style="font-size:13px">We'll only use your email to tell you when the high street opens. <a href="privacy.html#lista">Privacy</a></p>
+</main>
+<script>
+  document.getElementById('lista').addEventListener('submit', async e => {
+    e.preventDefault();
+    const f = new FormData(e.target), b = e.target.querySelector('button');
+    b.disabled = true;
+    try {
+      const r = await fetch('api/lista.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: f.get('email'), conta: String(f.get('conta') || '').replace(/^@/, ''), origem: 'negozio' }) });
+      const j = await r.json().catch(() => ({}));
+      if (!j.ok) throw new Error(j.erro || "We couldn't save that. Please try again.");
+      e.target.outerHTML = '<p class="ok">Sorted! 🎉 You\'ll be the first to know when the high street opens.</p>';
+    } catch (err) {
+      b.disabled = false;
+      alert(err.message);
+    }
+  });
+</script>
+</body>
+</html>

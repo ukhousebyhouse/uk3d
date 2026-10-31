@@ -1,0 +1,71 @@
+# Atualiza o mapa ukhousebyhouse.com sem depender do PC (repositório e Secrets próprios, nunca os do italia3d).
+# O GitHub pode atrasar execuções agendadas em alguns minutos quando está sobrecarregado.
+name: Update map
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # a cada 10 minutos
+    - cron: '15 2 * * *'     # conferência completa de madrugada (02:15 UTC = 02:15/03:15 em Londres)
+    - cron: '0 6 1 * *'      # dia 1 de cada mês: commit automático (repositório público sem commits por 60 dias tem o agendamento pausado)
+  workflow_dispatch:
+    inputs:
+      completo:
+        description: 'Rebaixar os comentários de todos os posts'
+        type: boolean
+        default: false
+
+concurrency:
+  group: aggiorna
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  mantieni-attivo:
+    if: github.event.schedule == '0 6 1 * *'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          date -u +%Y-%m-%dT%H:%M:%SZ > .github/attivo.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/attivo.txt
+          git commit -m "chore: monthly keepalive"
+          git push
+
+  aggiorna:
+    if: github.event.schedule != '0 6 1 * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # comentários já baixados: só acelera (se o cache sumir, tudo é rebaixado do Instagram)
+      - uses: actions/cache/restore@v4
+        with:
+          path: dati-grezzi/instagram
+          key: stato-${{ github.run_id }}
+          restore-keys: stato-
+
+      - name: Atualizar e publicar
+        run: node strumenti/ci.mjs ${{ (github.event.schedule == '15 2 * * *' || inputs.completo) && '--completo' || '' }}
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          STORIE_URL: ${{ secrets.STORIE_URL }}
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: dati-grezzi/instagram
+          key: stato-${{ github.run_id }}

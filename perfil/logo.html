@@ -1,0 +1,176 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;padding:0;width:500px;height:500px;overflow:hidden;background:#BFE3F5}</style>
+</head><body>
+<svg id="logo" xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500"></svg>
+<script>
+// Projecao isometrica: x vai pra direita-baixo, y pra esquerda-baixo, z pra cima
+// (base copiada de Italia3D/perfil/logo.html)
+const S = 54, CX = 250, CY = 186;
+const P = (x, y, z) => [CX + (x - y) * 0.866 * S, CY + (x + y) * 0.5 * S - z * S];
+const pts = a => a.map(p => P(...p).map(v => v.toFixed(1)).join(',')).join(' ');
+const out = [];
+const poly = (a, fill, extra = '') => out.push(`<polygon points="${pts(a)}" fill="${fill}" ${extra}/>`);
+const line = (a, b, stroke, w) => { const [x1, y1] = P(...a), [x2, y2] = P(...b); out.push(`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${stroke}" stroke-width="${w}" stroke-linecap="round"/>`); };
+// faces: Y = parede da frente-esquerda, X = parede da direita, T = topo
+const fY = (y, x0, x1, z0, z1) => [[x0, y, z1], [x1, y, z1], [x1, y, z0], [x0, y, z0]];
+const fX = (x, y0, y1, z0, z1) => [[x, y0, z1], [x, y1, z1], [x, y1, z0], [x, y0, z0]];
+const fT = (z, x0, x1, y0, y1) => [[x0, y0, z], [x1, y0, z], [x1, y1, z], [x0, y1, z]];
+
+out.push(`<defs>
+<radialGradient id="bg" cx="50%" cy="45%" r="70%"><stop offset="0" stop-color="#E6F5FC"/><stop offset="1" stop-color="#9ACFE8"/></radialGradient>
+<filter id="blur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"/></filter>
+<filter id="sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#2B5F78" flood-opacity=".28"/></filter>
+<clipPath id="ujS"><path d="M0,0 v30 h60 v-30 z"/></clipPath>
+<clipPath id="ujT"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath>
+</defs>`);
+out.push(`<rect width="500" height="500" fill="url(#bg)"/>`);
+
+// sombra do terreno
+const g = P(2, 2, -0.6);
+out.push(`<ellipse cx="${g[0]}" cy="${g[1] + 22}" rx="190" ry="102" fill="#3E7F9C" opacity=".35" filter="url(#blur)"/>`);
+
+// terreno com laterais nas cores da Union Jack (azul na esquerda, vermelho na direita, filete branco)
+const B = -0.6, LIP = -0.14, WB = -0.22;
+poly(fY(4, 0, 4, B, WB), '#1F3A6B');
+poly(fX(4, 4, 0, B, WB), '#C8102E');
+poly(fY(4, 0, 4, WB, LIP), '#E9E6DE');
+poly(fX(4, 4, 0, WB, LIP), '#FAF8F2');
+poly(fY(4, 0, 4, LIP, 0), '#7DBA5C');
+poly(fX(4, 4, 0, LIP, 0), '#97CE70');
+poly(fT(0, 0, 4, 0, 4), '#A9DA84');
+// caminho de pedra ate a porta
+poly(fT(0, 1.8, 2.2, 3, 4), '#D9D5CB');
+for (let y = 3.25; y < 4; y += 0.25) line([1.8, y, 0], [2.2, y, 0], '#BDB8AC', 1.2);
+
+// mastro com a Union Jack (atras, a esquerda)
+const [mx, my] = P(0.5, 0.6, 0), MH = 3.25 * S;
+out.push(`<rect x="${mx - 2}" y="${my - MH}" width="4" height="${MH}" fill="#E8E6E0"/>`);
+out.push(`<rect x="${mx}" y="${my - MH}" width="2" height="${MH}" fill="#C9C6BE"/>`);
+out.push(`<circle cx="${mx}" cy="${my - MH - 3}" r="4" fill="#F6D23C"/>`);
+out.push(`<g transform="translate(${mx + 2},${my - MH + 2}) scale(1.1)" filter="url(#sh)"><g clip-path="url(#ujS)">
+<path d="M0,0 v30 h60 v-30 z" fill="#012169"/>
+<path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/>
+<path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#ujT)" stroke="#C8102E" stroke-width="4"/>
+<path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/>
+<path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/>
+</g></g>`);
+
+// arvore redonda (carvalho)
+function arvore(x, y, r, tronco) {
+  const [bx, by] = P(x, y, 0);
+  out.push(`<ellipse cx="${bx}" cy="${by + 2}" rx="${r * 0.8}" ry="${r * 0.36}" fill="#6FA650" opacity=".7"/>`);
+  out.push(`<rect x="${bx - 4}" y="${by - tronco}" width="8" height="${tronco + 1}" rx="2" fill="#7A4E2D"/>`);
+  out.push(`<circle cx="${bx}" cy="${by - tronco - r * 0.7}" r="${r}" fill="#2F7A3A"/>`);
+  out.push(`<circle cx="${bx - r * 0.45}" cy="${by - tronco - r * 0.35}" r="${r * 0.62}" fill="#3A8A44"/>`);
+  out.push(`<circle cx="${bx + r * 0.3}" cy="${by - tronco - r * 1.05}" r="${r * 0.6}" fill="#4E9F50"/>`);
+}
+arvore(3.5, 0.5, 30, 30);
+// arbusto (sebe)
+function arbusto(x, y, r) {
+  const [bx, by] = P(x, y, 0);
+  out.push(`<ellipse cx="${bx}" cy="${by - r * 0.6}" rx="${r * 1.25}" ry="${r}" fill="#2F7A3A"/>`);
+  out.push(`<ellipse cx="${bx + r * 0.25}" cy="${by - r * 0.85}" rx="${r * 0.8}" ry="${r * 0.62}" fill="#45944A"/>`);
+}
+arbusto(0.35, 2.9, 17);
+
+// casa de tijolo vermelho
+const X0 = 1, X1 = 3, Y0 = 1, Y1 = 3, SL = 0.95 / 1.15, ZT = 1.4 + 0.15 * SL, ZR = 2.35;
+poly(fY(Y1, X0, X1, 0, ZT), '#A94A34');
+poly(fX(X1, Y1, Y0, 0, ZT), '#C45E40');
+poly([[X1, Y0, ZT], [X1, Y1, ZT], [X1, 2, ZR]], '#C45E40');
+// juntas dos tijolos
+for (let z = 0.13; z < ZT; z += 0.13) {
+  line([X0, Y1, z], [X1, Y1, z], '#93402D', 0.8);
+  line([X1, Y0, z], [X1, Y1, z], '#AE5238', 0.8);
+}
+for (let z = ZT + 0.13; z < ZR - 0.1; z += 0.13) {
+  const h = (ZR - z) / (ZR - ZT);
+  line([X1, 2 - h, z], [X1, 2 + h, z], '#AE5238', 0.8);
+}
+
+// janela de guilhotina branca
+function janelaY(x0, x1, z0, z1) {
+  poly(fY(Y1 + 0.001, x0 - 0.06, x1 + 0.06, z0 - 0.05, z1 + 0.06), '#F4F1EA');
+  poly(fY(Y1 + 0.001, x0, x1, z0, z1), '#7FA9C2');
+  poly(fY(Y1 + 0.002, x0, x0 + (x1 - x0) * 0.35, (z0 + z1) / 2, z1), '#9CC3D8');
+  const xm = (x0 + x1) / 2, zm = (z0 + z1) / 2;
+  line([x0, Y1, zm], [x1, Y1, zm], '#F4F1EA', 2.6);
+  line([xm, Y1, z0], [xm, Y1, z1], '#F4F1EA', 1.4);
+  poly(fY(Y1 + 0.003, x0 - 0.09, x1 + 0.09, z0 - 0.11, z0 - 0.05), '#DCD7CB');
+}
+function janelaX(y0, y1, z0, z1) {
+  poly(fX(X1 + 0.001, y0 + 0.06, y1 - 0.06, z0 - 0.05, z1 + 0.06), '#FAF8F2');
+  poly(fX(X1 + 0.001, y0, y1, z0, z1), '#94BDD3');
+  poly(fX(X1 + 0.002, y0, y0 - (y0 - y1) * 0.35, (z0 + z1) / 2, z1), '#B3D5E6');
+  const ym = (y0 + y1) / 2, zm = (z0 + z1) / 2;
+  line([X1, y0, zm], [X1, y1, zm], '#FAF8F2', 2.6);
+  line([X1, ym, z0], [X1, ym, z1], '#FAF8F2', 1.4);
+  poly(fX(X1 + 0.003, y0 + 0.09, y1 - 0.09, z0 - 0.11, z0 - 0.05), '#E6E1D6');
+}
+// porta azul-marinho com bandeira (fanlight) e moldura branca
+poly(fY(Y1 + 0.001, 1.73, 2.27, 0, 0.9), '#F4F1EA');
+poly(fY(Y1 + 0.002, 1.8, 2.2, 0, 0.66), '#1F3A6B');
+poly(fY(Y1 + 0.002, 1.8, 2.2, 0.7, 0.84), '#F2D27A');
+line([2, Y1, 0.7], [2, Y1, 0.84], '#F4F1EA', 1.4);
+line([1.8, Y1, 0.33], [2.2, Y1, 0.33], '#17305A', 1.2);
+line([2.12, Y1, 0.3], [2.12, Y1, 0.34], '#F6D23C', 2.5);
+poly(fT(0.001, 1.73, 2.27, 3, 3.12), '#BDB8AC');
+janelaY(1.2, 1.58, 0.22, 0.6);
+janelaY(2.42, 2.8, 0.22, 0.6);
+janelaY(1.2, 1.58, 0.9, 1.28);
+janelaY(1.82, 2.18, 0.98, 1.28);
+janelaY(2.42, 2.8, 0.9, 1.28);
+janelaX(2.75, 2.3, 0.22, 0.6);
+janelaX(1.7, 1.25, 0.22, 0.6);
+janelaX(2.75, 2.3, 0.9, 1.28);
+janelaX(1.7, 1.25, 0.9, 1.28);
+
+// chamines de tijolo com potes de barro
+function chamine(x0, x1, y0, y1) {
+  poly(fY(y1, x0, x1, 1.9, 2.75), '#A94A34');
+  poly(fX(x1, y1, y0, 1.9, 2.75), '#C45E40');
+  poly(fY(y1 + 0.001, x0 - 0.03, x1 + 0.03, 2.62, 2.7), '#8E3D2B');
+  poly(fT(2.75, x0, x1, y0, y1), '#7E3626');
+  for (const [px, py] of [[x0 + (x1 - x0) * 0.3, (y0 + y1) / 2], [x0 + (x1 - x0) * 0.72, (y0 + y1) / 2]]) {
+    const [cx, cy] = P(px, py, 2.75);
+    out.push(`<rect x="${(cx - 3.5).toFixed(1)}" y="${(cy - 12).toFixed(1)}" width="7" height="12" fill="#D9793F"/>`);
+    out.push(`<ellipse cx="${cx.toFixed(1)}" cy="${(cy - 12).toFixed(1)}" rx="3.5" ry="1.6" fill="#7A3F1E"/>`);
+  }
+}
+chamine(1.2, 1.55, 1.3, 1.6);
+chamine(2.45, 2.8, 1.3, 1.6);
+
+// telhado de ardosia
+const RX0 = 0.85, RX1 = 3.15, RY0 = 0.85, RY1 = 3.15, ZE = 1.4, TH = 0.12;
+poly([[RX0, 2, ZR], [RX1, 2, ZR], [RX1, RY0, ZE], [RX0, RY0, ZE]], '#46505E');
+poly([[RX0, 2, ZR], [RX1, 2, ZR], [RX1, RY1, ZE], [RX0, RY1, ZE]], '#5C6878');
+for (let t = 0.16; t < 1; t += 0.16) {
+  const y = 2 + (RY1 - 2) * t, z = ZR + (ZE - ZR) * t;
+  line([RX0, y, z], [RX1, y, z], '#4A5564', 1.4);
+}
+poly([[RX0, RY1, ZE], [RX1, RY1, ZE], [RX1, RY1, ZE - TH], [RX0, RY1, ZE - TH]], '#3B4450');
+poly([[RX1, RY0, ZE], [RX1, 2, ZR], [RX1, RY1, ZE], [RX1, RY1, ZE - TH], [RX1, 2, ZR - TH], [RX1, RY0, ZE - TH]], '#424C59');
+line([RX0, 2, ZR], [RX1, 2, ZR], '#343C47', 3);
+
+// caixa de correio vermelha (pillar box)
+const [pbx, pby] = P(3.55, 3.45, 0), PH = 42, PW = 9;
+out.push(`<ellipse cx="${pbx}" cy="${pby + 1}" rx="14" ry="6" fill="#6FA650" opacity=".7"/>`);
+out.push(`<rect x="${pbx - PW}" y="${pby - 6}" width="${PW * 2}" height="7" fill="#1E1E22"/>`);
+out.push(`<rect x="${pbx - PW}" y="${pby - PH}" width="${PW * 2}" height="${PH - 6}" fill="#C8102E"/>`);
+out.push(`<rect x="${pbx + 2}" y="${pby - PH}" width="${PW - 2}" height="${PH - 6}" fill="#E0283F"/>`);
+out.push(`<ellipse cx="${pbx}" cy="${pby - PH}" rx="${PW + 1.5}" ry="4" fill="#A50D26"/>`);
+out.push(`<path d="M${pbx - PW},${pby - PH - 1} Q${pbx},${pby - PH - 15} ${pbx + PW},${pby - PH - 1} Z" fill="#C8102E"/>`);
+out.push(`<rect x="${pbx - 6}" y="${pby - PH + 9}" width="12" height="2.4" rx="1" fill="#1E1E22"/>`);
+out.push(`<rect x="${pbx - 4.5}" y="${pby - PH + 15}" width="9" height="6" fill="#F4F1EA"/>`);
+
+// balao de comentario com @
+out.push(`<g filter="url(#sh)">
+<path d="M356,128 L342,160 L380,138 Z" fill="#fff"/>
+<circle cx="384" cy="100" r="40" fill="#fff"/>
+</g>
+<text x="384" y="102" text-anchor="middle" dominant-baseline="central" font-family="'Arial Black','Segoe UI Black',Arial,sans-serif" font-weight="900" font-size="54" fill="#C8102E">@</text>`);
+
+document.getElementById('logo').innerHTML = out.join('\n');
+</script>
+</body></html>

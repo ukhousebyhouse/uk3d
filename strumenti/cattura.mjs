@@ -18,8 +18,10 @@ const espera = ms => new Promise(ok => setTimeout(ok, ms));
 
 const perfil = fs.mkdtempSync(path.join(os.tmpdir(), 'cattura-'));
 const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'quadri-'));
-const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${PORTA}`, `--user-data-dir=${perfil}`, `--window-size=${W},${H}`,
-  '--hide-scrollbars', '--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--force-device-scale-factor=1', 'about:blank'], { stdio: 'ignore' });
+let chrome;
+const lancar = () => { chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${PORTA}`, `--user-data-dir=${perfil}`, `--window-size=${W},${H}`,
+  '--hide-scrollbars', '--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--force-device-scale-factor=1', 'about:blank'], { stdio: 'ignore' }); };
+lancar();
 
 let ws, id = 0;
 const pend = new Map();
@@ -36,18 +38,35 @@ async function conectar() {
     if (m.method === 'Runtime.consoleAPICalled') console.log('página:', m.params.args.map(a => a.value ?? a.description).join(' '));
   });
 }
-const cdp = (method, params = {}) => new Promise(ok => { const i = ++id; pend.set(i, ok); ws.send(JSON.stringify({ id: i, method, params })); });
+// chamada CDP com prazo: o Chrome headless às vezes congela no meio de uma gravação longa
+const cdp = (method, params = {}, prazo = 90000) => new Promise((ok, erro) => {
+  const i = ++id, timer = setTimeout(() => { pend.delete(i); erro(Object.assign(new Error(`${method}: sem resposta em ${prazo / 1000} s`), { travou: true })); }, prazo);
+  pend.set(i, m => { clearTimeout(timer); ok(m); });
+  ws.send(JSON.stringify({ id: i, method, params }));
+});
 const avaliar = async expr => { const r = await cdp('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true }); if (r.result?.exceptionDetails) throw new Error(r.result.exceptionDetails.exception?.description ?? 'erro'); return r.result?.result?.value; };
 
-try {
+const roteiro = fs.readFileSync(roteiroArq, 'utf8');
+async function abrir() {
   await conectar();
   await cdp('Runtime.enable'); await cdp('Page.enable');
   await cdp('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
   // --pagina video/presidente.html: outro gravador (padrão: o do reel 1)
   await cdp('Page.navigate', { url: `http://localhost:5273/${opt('--pagina', 'video/registra.html')}` });
   for (let t = 0; t < 120 && !(await avaliar('!!window.quadro').catch(() => false)); t++) await espera(250);
-  const roteiro = fs.readFileSync(roteiroArq, 'utf8');
-  const info = await avaliar(`window.preparar(${roteiro})`);
+  return avaliar(`window.preparar(${roteiro})`);
+}
+// Chrome travado: fecha, abre de novo e prepara a página (a gravação continua do mesmo quadro)
+async function reabrir() {
+  ws?.close(); ws = null; pend.clear();
+  chrome.kill();
+  await espera(1500);
+  lancar();
+  await abrir();
+}
+
+try {
+  const info = await abrir();
   // --suoni efeitos.json: salva a lista de efeitos sonoros da página (window.suoni) para o strumenti/suoni.mjs
   if (opt('--suoni')) fs.writeFileSync(opt('--suoni'), JSON.stringify(await avaliar('window.suoni ? window.suoni() : []')));
   // --quadri 0,1.5,6: só salva esses instantes como JPG na pasta <saida> (pré-visualização)
@@ -67,10 +86,19 @@ try {
   const durata = ate ?? info.durata, total = Math.ceil(durata * fps);
   console.log(`${durata.toFixed(1)} s · ${total} quadros a ${fps} fps`);
   const t0 = Date.now();
+  let reinicios = 0;
   for (let f = 0; f < total; f++) {
-    await avaliar(`window.quadro(${(f / fps).toFixed(4)})`);
-    const r = await cdp('Page.captureScreenshot', { format: 'jpeg', quality: 92, clip: { x: 0, y: 0, width: W, height: H, scale: 1 } });
-    fs.writeFileSync(path.join(pasta, `q${String(f).padStart(5, '0')}.jpg`), Buffer.from(r.result.data, 'base64'));
+    try {
+      await avaliar(`window.quadro(${(f / fps).toFixed(4)})`);
+      const r = await cdp('Page.captureScreenshot', { format: 'jpeg', quality: 92, clip: { x: 0, y: 0, width: W, height: H, scale: 1 } });
+      fs.writeFileSync(path.join(pasta, `q${String(f).padStart(5, '0')}.jpg`), Buffer.from(r.result.data, 'base64'));
+    } catch (e) {
+      if (!e.travou || ++reinicios > 5) throw e;
+      console.log(`  quadro ${f}: ${e.message}; reiniciando o Chrome (${reinicios}/5)`);
+      await reabrir();
+      f--;
+      continue;
+    }
     if (f % 60 === 0) console.log(`  quadro ${f}/${total} · ${((Date.now() - t0) / 1000).toFixed(0)} s`);
   }
   const ff = ['-y', '-framerate', String(fps), '-i', path.join(pasta, 'q%05d.jpg')];

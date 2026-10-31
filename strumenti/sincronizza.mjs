@@ -47,13 +47,20 @@ for (let i = nFrasi - 2, k = fim; i >= 0; k = de[i][k], i--) internos.unshift(ca
 const trechos = [];
 for (let i = 0; i < nFrasi; i++) trechos.push([i === 0 ? inicioFala : internos[i - 1][1], i === nFrasi - 1 ? fimFala : internos[i][0]]);
 
-// palavras de cada frase: tempo proporcional às sílabas (grupos de vogais)
+// palavras de cada frase: tempo proporcional às sílabas (grupos de vogais);
+// "ancore": { "frase.palavra": s } fixa o início de palavras (ex.: listas de nomes medidas nas micro-pausas)
 const tempos = R.parlato.map((frase, i) => {
   const palavras = frase.replace(/[.,!?]/g, '').split(/\s+/).filter(Boolean);
-  const pesos = palavras.map(w => silabas(w) + 0.35), total = pesos.reduce((a, b) => a + b, 0);
+  const pesos = palavras.map(w => silabas(w) + 0.35), acc = [0];
+  for (const p of pesos) acc.push(acc.at(-1) + p);
   const [a, b] = trechos[i];
-  let acc = 0;
-  return palavras.map((w, j) => { const t = a + (b - a) * acc / total; acc += pesos[j]; return +t.toFixed(3); });
+  const ancore = [[0, a], ...Object.entries(R.ancore ?? {}).filter(([k]) => +k.split('.')[0] === i).map(([k, t]) => [+k.split('.')[1], t]).sort((x, y) => x[0] - y[0]), [palavras.length, b]];
+  return palavras.map((w, j) => {
+    let k = 0;
+    while (k < ancore.length - 2 && j >= ancore[k + 1][0]) k++;
+    const [wa, ta] = ancore[k], [wb, tb] = ancore[k + 1];
+    return +(ta + (tb - ta) * (acc[j] - acc[wa]) / (acc[wb] - acc[wa])).toFixed(3);
+  });
 });
 
 // legendas: cada palavra da legenda segue, em ordem, a palavra falada da mesma frase

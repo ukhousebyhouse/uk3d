@@ -117,6 +117,13 @@ const SINT = {
     sino(t0, 165 * tono, 3.2, 0.42 * vol, 1.1, [[1, 1], [2.0, 0.55], [2.4, 0.3], [3.0, 0.22], [4.15, 0.12], [5.4, 0.06]]);
     somar(t0, 0.02 * SR, t => ruido() * 0.25 * vol * Math.exp(-t / 0.004));
   },
+  // "errado": duas notas graves e ásperas descendo (✖ em quem não conta)
+  errore: ({ vol = 1 }) => (t0) => {
+    for (const [dt, f] of [[0, 233], [0.13, 185]]) {
+      let fase = 0;
+      somar(t0 + dt, 0.2 * SR, t => { fase += 2 * Math.PI * f / SR; const x = Math.sin(fase) + 0.45 * Math.sin(3 * fase) + 0.25 * Math.sin(5 * fase); return x * 0.17 * vol * Math.min(1, t / 0.004) * Math.exp(-t / 0.11); });
+    }
+  },
   // rufar de tambor que acelera e cresce (suspense)
   rullo: ({ dur = 3, vol = 1 }) => (t0) => {
     for (let t = 0, k = 0; t < dur; k++) {

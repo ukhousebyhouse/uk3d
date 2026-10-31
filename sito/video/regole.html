@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<base href="../">
+<title>Record reel "The rules" · UK House by House</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=block" rel="stylesheet">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
+<style>
+  :root { --ink: #152033; --giallo: #FFC93C; --rosso: #E0473C; --verde: #2FB36A; }
+  html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #86AFC4; font-family: 'Nunito', 'Segoe UI Emoji', sans-serif; }
+  #mappa { position: absolute; inset: 0; width: 1080px; height: 1920px; display: block; transform-origin: 50% 45%; }
+  #vinheta { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(21, 32, 51, 0.28) 100%); }
+  #scuro { position: absolute; inset: 0; background: #152033; opacity: 0; }
+  #flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+  .forte { color: #fff; font-weight: 900; -webkit-text-stroke: 16px var(--ink); paint-order: stroke fill; text-transform: uppercase; letter-spacing: 1px; }
+  .forte .g, .g { color: var(--giallo); }
+  .pop { position: absolute; opacity: 0; }
+  #testa { left: 0; right: 0; top: 120px; text-align: center; }
+  #giorno { font-size: 128px; line-height: 1; }
+  #contatore { margin-top: 14px; font-size: 58px; line-height: 1; -webkit-text-stroke-width: 12px; }
+  #sott { position: absolute; left: 40px; right: 40px; top: 1250px; text-align: center; font-size: 84px; line-height: 1.12; }
+  #sott .w { display: inline-block; transform-origin: 50% 80%; margin: 0 0.06em; }
+  /* regra numerada no topo */
+  #regola { left: 0; right: 0; top: 130px; display: flex; justify-content: center; align-items: center; gap: 22px; transform-origin: 50% 50%; }
+  #regola .num { width: 150px; height: 150px; border-radius: 50%; background: var(--giallo); border: 9px solid var(--ink); box-shadow: 0 10px 0 rgba(21,32,51,.3); display: flex; align-items: center; justify-content: center; font-size: 104px; font-weight: 900; color: var(--ink); box-sizing: border-box; }
+  #regola .tit { background: #fff; border: 8px solid var(--ink); border-radius: 30px; padding: 14px 30px 16px; font-size: 62px; font-weight: 900; color: var(--ink); text-transform: uppercase; box-shadow: 0 10px 0 rgba(21,32,51,.3); white-space: nowrap; }
+  #titolo { left: 0; right: 0; top: 640px; text-align: center; }
+  #titolo .carta { display: inline-block; background: var(--giallo); border: 10px solid var(--ink); border-radius: 36px; padding: 26px 60px 34px; box-shadow: 0 14px 0 rgba(21,32,51,.35); }
+  #titolo .carta div { font-size: 150px; line-height: 1; -webkit-text-stroke-width: 22px; }
+  #titolo .carta small { display: block; margin-top: 12px; font-size: 44px; color: var(--ink); font-weight: 900; -webkit-text-stroke: 0; letter-spacing: 3px; }
+  .bolla { position: absolute; left: 0; top: 0; background: #fff; border: 5px solid var(--ink); border-radius: 28px; padding: 16px 24px; display: flex; align-items: center; gap: 16px; box-shadow: 0 8px 0 rgba(21,32,51,.25); opacity: 0; white-space: nowrap; }
+  .bolla i { width: 56px; height: 56px; border-radius: 50%; background: #C9D1DC; border: 4px solid var(--ink); flex: none; }
+  .bolla b { font-size: 40px; font-weight: 800; color: var(--ink); }
+  #commento { left: 140px; width: 800px; top: 560px; background: #fff; border: 5px solid var(--ink); border-radius: 30px; padding: 22px 26px; display: flex; align-items: center; gap: 22px; box-shadow: 0 8px 0 rgba(21,32,51,.25); box-sizing: border-box; transform-origin: 50% 0; }
+  #commento img { width: 78px; height: 78px; border-radius: 50%; border: 4px solid var(--ink); }
+  #commento .corpo { flex: 1; min-width: 0; }
+  #commento .chi { font-size: 30px; font-weight: 900; color: var(--ink); }
+  #commento .chi span { color: #8A93A3; font-weight: 700; }
+  #commento .testo { font-size: 48px; font-weight: 800; color: var(--ink); white-space: nowrap; }
+  #commento .cursore { display: inline-block; width: 4px; height: 46px; background: var(--rosso); vertical-align: -7px; margin-left: 3px; }
+  #commento .ok { position: absolute; right: -34px; top: -40px; width: 104px; height: 104px; border-radius: 50%; background: var(--verde); border: 7px solid var(--ink); color: #fff; font-size: 64px; font-weight: 900; display: flex; align-items: center; justify-content: center; transform: scale(0); box-sizing: border-box; }
+  .etichetta { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: 0; transform-origin: 50% 100%; }
+  .card { position: relative; background: #fff; border: 5px solid var(--ink); border-radius: 24px; padding: 10px 28px 12px; text-align: center; box-shadow: 0 6px 0 rgba(21,32,51,.25); }
+  .card b { display: block; font-size: 44px; font-weight: 900; color: var(--ink); line-height: 1.1; white-space: nowrap; }
+  .card small { display: block; font-size: 27px; font-weight: 800; color: #5B6475; line-height: 1.25; white-space: nowrap; }
+  .card.oro { background: var(--giallo); }
+  .card.oro small { color: #4B3A10; }
+  .card.mini { padding: 6px 18px 8px; border-radius: 18px; }
+  .card.mini b { font-size: 30px; }
+  .badge { position: absolute; right: -46px; top: -50px; background: var(--rosso); color: #fff; font-size: 32px; font-weight: 900; padding: 4px 16px; border-radius: 12px; border: 4px solid #fff; box-shadow: 0 0 0 4px var(--ink); white-space: nowrap; transform: scale(0); }
+  .freccia { width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-top: 16px solid var(--ink); }
+  .ponto { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: var(--giallo); border: 5px solid var(--ink); box-sizing: border-box; transform: scale(0); }
+  .nazione { position: absolute; left: 0; top: 0; padding: 8px 22px 10px; border-radius: 22px; border: 6px solid var(--ink); color: #fff; font-size: 40px; font-weight: 900; white-space: nowrap; box-shadow: 0 6px 0 rgba(21,32,51,.3); transform: scale(0); text-transform: uppercase; }
+  .fuori { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 12px; background: #4A5568; padding: 8px 22px 10px 10px; border-radius: 22px; border: 6px solid var(--ink); color: #fff; font-size: 40px; font-weight: 900; white-space: nowrap; transform: scale(0); text-transform: uppercase; }
+  .fuori i { font-style: normal; width: 54px; height: 54px; border-radius: 50%; background: var(--rosso); border: 4px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 34px; }
+  .timbro { left: 0; right: 0; text-align: center; }
+  .timbro span { display: inline-block; padding: 10px 36px 14px; border: 12px solid currentColor; border-radius: 26px; font-size: 104px; font-weight: 900; text-transform: uppercase; background: rgba(255,255,255,.92); box-shadow: 0 10px 0 rgba(21,32,51,.3); }
+  #nocount { top: 1010px; color: var(--rosso); }
+  #sempre { top: 330px; color: #1E5AA8; }
+  #ora { left: 0; right: 0; top: 520px; text-align: center; }
+  #ora .carta { display: inline-flex; align-items: center; gap: 26px; background: #fff; border: 9px solid var(--ink); border-radius: 36px; padding: 20px 40px 20px 26px; box-shadow: 0 12px 0 rgba(21,32,51,.3); }
+  #ora svg { width: 150px; height: 150px; }
+  #ora .txt { text-align: left; color: var(--ink); font-weight: 900; text-transform: uppercase; }
+  #ora .txt small { display: block; font-size: 38px; color: #5B6475; }
+  #ora .txt b { display: block; font-size: 84px; line-height: 1; }
+  #bio { left: 0; right: 0; top: 820px; text-align: center; }
+  #bio .carta { display: inline-block; background: var(--giallo); border: 8px solid var(--ink); border-radius: 34px; padding: 14px 40px 18px; box-shadow: 0 10px 0 rgba(21,32,51,.3); color: var(--ink); font-weight: 900; }
+  #bio .carta b { display: block; font-size: 64px; text-transform: uppercase; }
+  #bio .carta small { display: block; font-size: 40px; }
+  #livello { left: 0; right: 0; top: 400px; text-align: center; }
+  #livello .carta { display: inline-block; background: #fff; border: 7px solid var(--ink); border-radius: 30px; padding: 12px 34px 16px; box-shadow: 0 10px 0 rgba(21,32,51,.3); color: var(--ink); font-weight: 900; }
+  #livello .carta small { display: block; font-size: 32px; color: #5B6475; }
+  #livello .carta b { display: block; font-size: 62px; white-space: nowrap; }
+  .piu { position: absolute; font-size: 64px; -webkit-text-stroke-width: 12px; opacity: 0; white-space: nowrap; }
+  #vuota { left: 0; right: 0; top: 300px; text-align: center; }
+  #vuota .carta { display: inline-block; background: #3A7D7C; border: 9px solid var(--ink); border-radius: 36px; padding: 16px 44px 22px; box-shadow: 0 12px 0 rgba(21,32,51,.3); }
+  #vuota .carta small { display: block; font-size: 46px; -webkit-text-stroke-width: 10px; }
+  #vuota .carta b { display: block; font-size: 120px; line-height: 1; -webkit-text-stroke-width: 20px; }
+  #domanda { position: absolute; left: 0; top: 0; font-size: 190px; -webkit-text-stroke-width: 26px; opacity: 0; transform-origin: 50% 100%; }
+  #banner { left: 30px; right: 30px; top: 150px; text-align: center; font-size: 76px; line-height: 1.1; -webkit-text-stroke-width: 15px; }
+</style>
+</head>
+<body>
+<canvas id="mappa"></canvas>
+<div id="vinheta"></div>
+<div id="scuro"></div>
+<div id="punti"></div>
+<div id="etichette"></div>
+<div id="testa" class="pop forte"><div id="giorno"></div><div id="contatore"></div></div>
+<div id="regola" class="pop"><div class="num"></div><div class="tit"></div></div>
+<div id="bolle"></div>
+<div id="titolo" class="pop forte"><div class="carta"><div>THE RULES</div><small>READ BEFORE YOU COMMENT 👇</small></div></div>
+<div id="commento" class="pop">
+  <img src="img/logo.png" alt="">
+  <div class="corpo"><div class="chi"></div><div class="testo"></div></div>
+  <div class="ok">✓</div>
+</div>
+<div id="nocount" class="pop timbro"><span>DON'T COUNT</span></div>
+<div id="sempre" class="pop timbro"><span>FOREVER ★</span></div>
+<div id="ora" class="pop"><div class="carta">
+  <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="#fff" stroke="#152033" stroke-width="8"/><path id="spicchio" fill="#FFC93C"/><circle cx="50" cy="50" r="42" fill="none" stroke="#152033" stroke-width="8"/><line id="lancetta" x1="50" y1="50" x2="50" y2="16" stroke="#152033" stroke-width="7" stroke-linecap="round"/><circle cx="50" cy="50" r="6" fill="#152033"/></svg>
+  <div class="txt"><small>On the map</small><b>Within<br>1 hour</b></div>
+</div></div>
+<div id="bio" class="pop"><div class="carta"><b>🔗 Link in bio</b><small>ukhousebyhouse.com</small></div></div>
+<div id="livello" class="pop"><div class="carta"><small>@your.name</small><b></b></div></div>
+<div id="piu"></div>
+<div id="vuota" class="pop forte"><div class="carta"><small>Northern Ireland</small><b>0 HOUSES</b></div></div>
+<div id="domanda" class="forte g">?</div>
+<div id="banner" class="pop forte"></div>
+<div id="sott" class="forte"></div>
+<div id="flash"></div>
+<script type="module" src="video/regole.js"></script>
+</body>
+</html>

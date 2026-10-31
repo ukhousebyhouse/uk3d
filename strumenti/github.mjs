@@ -2,6 +2,7 @@
 // Uso: node strumenti/github.mjs push       envia os commits para o GitHub
 //      node strumenti/github.mjs segreti    cadastra/atualiza os Secrets do robô (criptografados)
 //      node strumenti/github.mjs stato      mostra as últimas execuções do robô
+//      node strumenti/github.mjs rodar      roda o robô agora (atualiza e publica o mapa)
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -55,8 +56,12 @@ if (comando === 'push') {
   const r = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=5`, { headers: { 'User-Agent': 'uk3d', Authorization: `Bearer ${gh.token}` } }).then(x => x.json());
   for (const x of r.workflow_runs ?? []) console.log(`${x.created_at} · ${x.event} · ${x.status} · ${x.conclusion ?? '…'} · ${x.html_url}`);
   if (!r.workflow_runs?.length) console.log('nenhuma execução ainda', r.message ?? '');
+} else if (comando === 'rodar') {
+  // roda o robô agora, sem esperar o agendamento
+  await api('POST', '/actions/workflows/aggiorna.yml/dispatches', { ref: 'main' });
+  console.log('robô disparado: veja com "stato" em 1 minuto');
 } else {
-  console.log('uso: node strumenti/github.mjs push | segreti | stato');
+  console.log('uso: node strumenti/github.mjs push | segreti | stato | rodar');
 }
 
 function pathToUrl(p) { return 'file:///' + p.replace(/\\/g, '/'); }

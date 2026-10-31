@@ -1,6 +1,6 @@
 // Sintetiza os efeitos sonoros de um reel (lista salva por cattura.mjs --suoni) e mistura com a narração.
 // Sem arquivos de som externos: cada efeito é gerado aqui (tique, pop, clique, whoosh, bandeira, carimbo, ding).
-// Uso: node strumenti/suoni.mjs <efeitos.json> <voz.mp3> <saida.wav> [--durata 25] [--volume 0.5]
+// Uso: node strumenti/suoni.mjs <efeitos.json> <voz.mp3> <saida.wav> [--durata 25] [--volume 0.5] [--musica 112] [--vol-musica 0.16] [--stile soft]
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -67,6 +67,26 @@ const SINT = {
   tap: ({ vol = 1 }) => (t0) => { somar(t0, 0.012 * SR, t => ruido() * 0.5 * vol * Math.exp(-t / 0.003)); sino(t0, 1900, 0.04, 0.18 * vol, 0.01); },
   // moeda (+pontos): duas notas rápidas
   coin: ({ vol = 1 }) => (t0) => { sino(t0, 988, 0.08, 0.28 * vol, 0.05, [[1, 1], [3, 0.3]]); sino(t0 + 0.075, 1319, 0.5, 0.3 * vol, 0.16, [[1, 1], [3, 0.25]]); },
+  // notificação de celular: duas notas limpas subindo
+  notifica: ({ tono = 1, vol = 1 }) => (t0) => { sino(t0, 1175 * tono, 0.25, 0.26 * vol, 0.07, [[1, 1], [2, 0.15]]); sino(t0 + 0.1, 1760 * tono, 0.6, 0.28 * vol, 0.16, [[1, 1], [2, 0.12]]); },
+  // apito de trem: dois tons juntos, com vibrato leve
+  fischio: ({ vol = 1, dur = 0.9 }) => (t0) => {
+    let f1 = 0, f2 = 0;
+    somar(t0, dur * SR, t => { const v = 1 + 0.006 * Math.sin(t * 38), env = Math.min(1, t / 0.05) * Math.min(1, (dur - t) / 0.15);
+      f1 += 2 * Math.PI * 740 * v / SR; f2 += 2 * Math.PI * 932 * v / SR; return (Math.sin(f1) + Math.sin(f2) + 0.3 * Math.sin(2 * f1)) * 0.13 * vol * env; });
+  },
+  // subida de tensão: ruído que sobe de tom e volume até o impacto (termina em t0 + dur)
+  riser: ({ dur = 1.2, vol = 1 }) => (t0) => {
+    const bp = passaBanda();
+    let fase = 0;
+    somar(t0, dur * SR, t => { const s = t / dur; fase += 2 * Math.PI * (180 + 900 * s * s) / SR; return (bp(ruido(), 400 + 5000 * s * s, 2) * 0.6 + Math.sin(fase) * 0.12) * s * s * 0.6 * vol; });
+  },
+  // tecla de celular (digitar um comentário)
+  tasto: ({ tono = 1, vol = 1 }) => (t0) => { somar(t0, 0.006 * SR, t => ruido() * 0.25 * vol * Math.exp(-t / 0.002)); sino(t0, 3200 * tono, 0.025, 0.08 * vol, 0.006); },
+  // bolha suave (corações e balões subindo)
+  bolla: ({ tono = 1, vol = 1 }) => (t0) => { let fase = 0; somar(t0, 0.12 * SR, t => { fase += 2 * Math.PI * (500 + 900 * t / 0.12) * tono / SR; return Math.sin(fase) * 0.3 * vol * Math.sin(Math.PI * t / 0.12); }); },
+  // "silenzio": não soa nada; só abaixa a música (ver musica())
+  silenzio: () => () => {},
   // estrondo grave (a noite cai)
   boom: ({ vol = 1 }) => (t0) => {
     let fase = 0;
@@ -79,6 +99,24 @@ const SINT = {
     const bp = passaBanda();
     somar(t0, dur * SR, t => { const s = t / dur; return bp(ruido(), 420 + 260 * Math.sin(t * 2.3) + 180 * Math.sin(t * 5.1), 3) * Math.sin(Math.PI * s) ** 1.5 * 0.55 * vol; });
   },
+  // brilho: cascata de notas agudas curtas (decoração, ouro, coroa)
+  scintilla: ({ tono = 1, vol = 1 }) => (t0) => {
+    const notas = [2093, 2637, 3136, 3520, 4186, 3136, 4699];
+    notas.forEach((f, k) => sino(t0 + k * 0.045, f * tono, 0.35, 0.11 * vol * (1 - k * 0.08), 0.09, [[1, 1], [2.01, 0.3]]));
+  },
+  // fogo de artifício: assobio subindo, estouro grave e estalinhos espalhados
+  fuoco: ({ tono = 1, vol = 1 }) => (t0) => {
+    let fase = 0;
+    somar(t0, 0.32 * SR, t => { fase += 2 * Math.PI * (900 + 2200 * t / 0.32) * tono / SR; return Math.sin(fase) * 0.06 * vol * Math.min(1, t / 0.05) * (1 - t / 0.32); });
+    const t1 = t0 + 0.32, bp = passaBanda();
+    somar(t1, 0.5 * SR, t => (bp(ruido(), 250 * tono, 0.8) * 0.9 + ruido() * 0.15 * Math.exp(-t / 0.01)) * vol * Math.exp(-t / 0.09));
+    for (let k = 0; k < 14; k++) { const tk = t1 + 0.08 + ((k * 0.137) % 1) * 0.7; somar(tk, 0.006 * SR, t => ruido() * 0.28 * vol * (1 - k / 16) * Math.exp(-t / 0.0015)); }
+  },
+  // badalada de relógio-torre (abertura do UK): nota grave com parciais de sino e batida curta do martelo
+  campana: ({ tono = 1, vol = 1 }) => (t0) => {
+    sino(t0, 165 * tono, 3.2, 0.42 * vol, 1.1, [[1, 1], [2.0, 0.55], [2.4, 0.3], [3.0, 0.22], [4.15, 0.12], [5.4, 0.06]]);
+    somar(t0, 0.02 * SR, t => ruido() * 0.25 * vol * Math.exp(-t / 0.004));
+  },
   // rufar de tambor que acelera e cresce (suspense)
   rullo: ({ dur = 3, vol = 1 }) => (t0) => {
     for (let t = 0, k = 0; t < dur; k++) {
@@ -88,18 +126,72 @@ const SINT = {
     }
   },
 };
+// variação automática: o mesmo som repetido em menos de 2 s muda um pouco de tom e volume (nunca soa idêntico)
+const ultimo = {};
+for (const e of efeitos) {
+  const k = ultimo[e.tipo];
+  if (k && e.t - k.t < 2 && e.tono == null && !['whoosh', 'riser', 'rullo', 'vento', 'silenzio', 'fischio'].includes(e.tipo)) {
+    k.n++; e.tono = 1 + ((k.n * 37) % 9 - 4) * 0.025; e.vol = (e.vol ?? 1) * (0.92 + ((k.n * 53) % 7) * 0.02);
+  } else ultimo[e.tipo] = { t: e.t, n: 0 };
+  if (ultimo[e.tipo]) ultimo[e.tipo].t = e.t;
+}
 for (const e of efeitos) SINT[e.tipo](e)(e.t);
 
+// --musica [bpm]: trilha pop sintetizada (Am–F–C–G): pad, arpejo, baixo e bateria leve; entra baixa e abaixa sob a voz
+// --stile soft: instrumental suave (C–G–Am–F, maior e quente): sem palma, bumbo e chimbal bem baixos
+function musica(bpm) {
+  const soft = opt('--stile') === 'soft';
+  const m = new Float32Array(buf.length), batida = 60 / bpm, compasso = batida * 4;
+  const hz = n => 440 * Math.pow(2, (n - 69) / 12);
+  const ACORDES = soft ? [[48, 52, 55], [55, 59, 62], [57, 60, 64], [53, 57, 60]] : [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]];   // C G Am F | Am F C G
+  const nota = (t0, f, dur, amp, tau, forma = 'sin') => {
+    const i0 = Math.round(t0 * SR), n = Math.round(dur * SR); let fase = 0;
+    for (let i = 0; i < n && i0 + i < m.length; i++) {
+      const t = i / SR; fase += 2 * Math.PI * f / SR;
+      const o = forma === 'tri' ? (2 / Math.PI) * Math.asin(Math.sin(fase)) : Math.sin(fase) + 0.25 * Math.sin(2 * fase);
+      m[i0 + i] += o * amp * Math.min(1, t / 0.008) * Math.exp(-t / tau);
+    }
+  };
+  const ruidoM = (t0, dur, amp, fc) => { const bp = passaBanda(), i0 = Math.round(t0 * SR); for (let i = 0; i < dur * SR && i0 + i < m.length; i++) m[i0 + i] += bp(ruido(), fc, 1.2) * amp * Math.exp(-i / SR / (dur / 3)); };
+  for (let c = 0; c * compasso < durata; c++) {
+    const t0 = c * compasso, ac = ACORDES[c % 4];
+    for (const n of ac) nota(t0, hz(n), compasso, soft ? 0.08 : 0.05, compasso * 0.9, 'tri');         // pad
+    nota(t0, hz(ac[0] - 24), batida * 1.6, 0.22, 0.5); nota(t0 + batida * 2, hz(ac[0] - 24), batida * 1.6, 0.2, 0.5);   // baixo
+    nota(t0 + batida * 1.5, hz(ac[0] - 12), batida * 0.4, 0.1, 0.12);
+    for (let k = 0; k < 8; k++) nota(t0 + k * batida / 2, hz(ac[k % 3] + 12 + (k >= 6 ? 12 : 0)), batida / 2, soft ? 0.05 : 0.06, soft ? 0.16 : 0.09);   // arpejo
+    for (let b = 0; b < 4; b++) {
+      const tb = t0 + b * batida; let fase = 0, i0 = Math.round(tb * SR);
+      for (let i = 0; i < 0.16 * SR && i0 + i < m.length; i++) { const t = i / SR; fase += 2 * Math.PI * (48 + 90 * Math.exp(-t / 0.03)) / SR; m[i0 + i] += Math.sin(fase) * (soft ? 0.16 : 0.35) * Math.exp(-t / 0.07); }   // bumbo
+      if (b % 2 && !soft) ruidoM(tb, 0.14, 0.22, 1600);                                                 // palma
+      ruidoM(tb + batida / 2, 0.04, soft ? 0.035 : 0.08, 7000);                                         // chimbal
+    }
+  }
+  // silêncios estratégicos: a música some (com fade curto) nos trechos marcados como "silenzio"
+  const pause = efeitos.filter(e => e.tipo === 'silenzio').map(e => [e.t, e.t + (e.dur ?? 0.6)]);
+  const gPausa = t => pause.reduce((g, [a, b]) => Math.min(g, t < a - 0.12 || t > b + 0.25 ? 1 : t < a ? (a - t) / 0.12 : t > b ? (t - b) / 0.25 : 0), 1);
+  const pico = m.reduce((a, v) => Math.max(a, Math.abs(v)), 0) || 1, fim = durata;
+  for (let i = 0; i < m.length; i++) { const t = i / SR; m[i] = m[i] / pico * Math.min(1, t / 1.2) * Math.min(1, (fim - t) / 1.8) * gPausa(t); }
+  return m;
+}
+
+const raw = (dados, ganho) => {
+  const pcm = Buffer.alloc(dados.length * 2);
+  dados.forEach((v, i) => pcm.writeInt16LE(Math.max(-32767, Math.min(32767, Math.round(v * ganho * 32767))), i * 2));
+  const arq = path.join(os.tmpdir(), `suoni-${process.pid}-${Math.random().toString(36).slice(2)}.raw`);
+  fs.writeFileSync(arq, pcm);
+  return arq;
+};
 // pico dos efeitos em -9 dB; a narração fica por cima
-const pico = buf.reduce((m, v) => Math.max(m, Math.abs(v)), 0) || 1, ganho = 0.35 * +opt('--volume', 1) / pico;
-const pcm = Buffer.alloc(buf.length * 2);
-buf.forEach((v, i) => pcm.writeInt16LE(Math.max(-32767, Math.min(32767, Math.round(v * ganho * 32767))), i * 2));
-const tmp = path.join(os.tmpdir(), `suoni-${process.pid}.raw`);
-fs.writeFileSync(tmp, pcm);
-const r = spawnSync(FFMPEG, ['-y', '-loglevel', 'error', '-i', voz, '-f', 's16le', '-ar', String(SR), '-ac', '1', '-i', tmp,
-  // tudo em mono e só no fim duplicado nos 2 canais (o upmix automático do ffmpeg baixa 3 dB)
-  '-filter_complex', '[0:a]aresample=48000,aformat=channel_layouts=mono,apad[v];[1:a]aresample=48000[s];[v][s]amix=inputs=2:normalize=0:duration=longest,alimiter=limit=0.95:level=false,pan=stereo|c0=c0|c1=c0',
-  '-t', durata.toFixed(3), '-ar', '48000', saida], { encoding: 'utf8' });
-fs.rmSync(tmp, { force: true });
+const pico = buf.reduce((m, v) => Math.max(m, Math.abs(v)), 0) || 1;
+const tmp = raw(buf, 0.35 * +opt('--volume', 1) / pico);
+const iMus = args.indexOf('--musica'), bpm = iMus >= 0 ? (+args[iMus + 1] || 112) : 0;
+const tmpM = bpm ? raw(musica(bpm), +opt('--vol-musica', 0.16)) : null;
+const ent = ['-i', voz, '-f', 's16le', '-ar', String(SR), '-ac', '1', '-i', tmp, ...(tmpM ? ['-f', 's16le', '-ar', String(SR), '-ac', '1', '-i', tmpM] : [])];
+// tudo em mono e só no fim duplicado nos 2 canais (o upmix automático do ffmpeg baixa 3 dB); a música abaixa quando a voz fala
+const filtro = tmpM
+  ? '[0:a]aresample=48000,aformat=channel_layouts=mono,apad,asplit=3[v][vc][vc2];[1:a]aresample=48000[s0];[s0][vc2]sidechaincompress=threshold=0.05:ratio=2.2:attack=10:release=250:makeup=1[s];[2:a]aresample=48000[m];[m][vc]sidechaincompress=threshold=0.03:ratio=5:attack=15:release=350:makeup=1[md];[v][s][md]amix=inputs=3:normalize=0:duration=longest,alimiter=limit=0.95:level=false,pan=stereo|c0=c0|c1=c0'
+  : '[0:a]aresample=48000,aformat=channel_layouts=mono,apad[v];[1:a]aresample=48000[s];[v][s]amix=inputs=2:normalize=0:duration=longest,alimiter=limit=0.95:level=false,pan=stereo|c0=c0|c1=c0';
+const r = spawnSync(FFMPEG, ['-y', '-loglevel', 'error', ...ent, '-filter_complex', filtro, '-t', durata.toFixed(3), '-ar', '48000', saida], { encoding: 'utf8' });
+for (const f of [tmp, tmpM]) if (f) fs.rmSync(f, { force: true });
 if (r.status !== 0) throw new Error(r.stderr);
-console.log(`${efeitos.length} efeitos · ${durata.toFixed(2)} s → ${saida}`);
+console.log(`${efeitos.length} efeitos${bpm ? ` · música ${bpm} bpm` : ''} · ${durata.toFixed(2)} s → ${saida}`);

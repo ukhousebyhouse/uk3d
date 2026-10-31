@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<base href="../">
+<title>Record reel "How to win" · UK House by House</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=block" rel="stylesheet">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
+<style>
+  :root { --ink: #152033; --giallo: #FFC93C; --rosso: #E0473C; --verde: #2FB36A; --blu: #1E5AA8; }
+  html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #86AFC4; font-family: 'Nunito', 'Segoe UI Emoji', sans-serif; }
+  #mappa { position: absolute; inset: 0; width: 1080px; height: 1920px; display: block; transform-origin: 50% 45%; }
+  #vinheta { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(21, 32, 51, 0.28) 100%); }
+  #scuro { position: absolute; inset: 0; background: #152033; opacity: 0; }
+  #flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+  .forte { color: #fff; font-weight: 900; -webkit-text-stroke: 16px var(--ink); paint-order: stroke fill; text-transform: uppercase; letter-spacing: 1px; }
+  .forte .g, .g { color: var(--giallo); }
+  .pop { position: absolute; opacity: 0; }
+  #testa { left: 0; right: 0; top: 130px; text-align: center; }
+  #contatore { font-size: 62px; line-height: 1; -webkit-text-stroke-width: 12px; }
+  #sott { position: absolute; left: 40px; right: 40px; top: 1300px; text-align: center; font-size: 84px; line-height: 1.12; }
+  #sott .w { display: inline-block; transform-origin: 50% 80%; margin: 0 0.06em; }
+  .carta { display: inline-block; background: #fff; border: 8px solid var(--ink); border-radius: 34px; box-shadow: 0 12px 0 rgba(21,32,51,.3); color: var(--ink); font-weight: 900; }
+  #titolo { left: 0; right: 0; top: 620px; text-align: center; }
+  #titolo .carta { background: var(--giallo); border-width: 10px; padding: 26px 60px 34px; }
+  #titolo .carta div { font-size: 150px; line-height: 1; -webkit-text-stroke-width: 22px; }
+  #titolo .carta small { display: block; margin-top: 10px; font-size: 46px; letter-spacing: 3px; }
+  #livello { left: 0; right: 0; top: 300px; text-align: center; }
+  #livello .carta { padding: 12px 40px 16px; min-width: 520px; }
+  #livello small { display: block; font-size: 34px; color: #5B6475; }
+  #livello b { display: block; font-size: 66px; line-height: 1.05; white-space: nowrap; text-transform: uppercase; }
+  #livello i { display: inline-block; margin-top: 8px; font-style: normal; font-size: 40px; background: var(--giallo); border: 5px solid var(--ink); border-radius: 18px; padding: 2px 20px; }
+  #scala { left: 40px; top: 520px; display: flex; flex-direction: column-reverse; gap: 4px; }
+  #scala div { font-size: 31px; font-weight: 900; color: var(--ink); background: rgba(255,255,255,.88); border: 4px solid var(--ink); border-radius: 14px; padding: 2px 14px; white-space: nowrap; transform-origin: 0 50%; }
+  #scala div.on { background: var(--giallo); }
+  #scala div.ora { background: var(--rosso); color: #fff; }
+  .piu { position: absolute; left: 0; top: 0; font-size: 150px; -webkit-text-stroke-width: 22px; opacity: 0; white-space: nowrap; transform-origin: 50% 50%; }
+  .piu small { display: block; font-size: 52px; -webkit-text-stroke-width: 12px; text-align: center; }
+  #commento { left: 120px; width: 840px; top: 1040px; background: #fff; border: 5px solid var(--ink); border-radius: 30px; padding: 22px 26px; display: flex; align-items: center; gap: 22px; box-shadow: 0 8px 0 rgba(21,32,51,.25); box-sizing: border-box; transform-origin: 50% 0; }
+  #commento img { width: 78px; height: 78px; border-radius: 50%; border: 4px solid var(--ink); }
+  #commento .corpo { flex: 1; min-width: 0; }
+  #commento .chi { font-size: 30px; font-weight: 900; color: var(--ink); }
+  #commento .chi span { color: #8A93A3; font-weight: 700; }
+  #commento .testo { font-size: 48px; font-weight: 800; color: var(--ink); white-space: nowrap; }
+  #commento .testo .tag { color: #2E6FD0; }
+  #commento .cursore { display: inline-block; width: 4px; height: 46px; background: var(--rosso); vertical-align: -7px; margin-left: 3px; }
+  #commento .ok { position: absolute; right: -34px; top: -40px; width: 104px; height: 104px; border-radius: 50%; background: var(--verde); border: 7px solid var(--ink); color: #fff; font-size: 64px; font-weight: 900; display: flex; align-items: center; justify-content: center; transform: scale(0); box-sizing: border-box; }
+  .etichetta { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: 0; transform-origin: 50% 100%; }
+  .card { position: relative; background: #fff; border: 5px solid var(--ink); border-radius: 24px; padding: 10px 28px 12px; text-align: center; box-shadow: 0 6px 0 rgba(21,32,51,.25); }
+  .card b { display: block; font-size: 44px; font-weight: 900; color: var(--ink); line-height: 1.1; white-space: nowrap; }
+  .card small { display: block; font-size: 27px; font-weight: 800; color: #5B6475; line-height: 1.25; white-space: nowrap; }
+  .card.oro { background: var(--giallo); }
+  .card.oro small { color: #4B3A10; }
+  .freccia { width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-top: 16px solid var(--ink); }
+  #nocasa { left: 0; right: 0; top: 520px; text-align: center; font-size: 120px; line-height: 1; -webkit-text-stroke-width: 22px; }
+  .timbro { left: 0; right: 0; text-align: center; }
+  .timbro span { display: inline-block; padding: 10px 36px 14px; border: 12px solid currentColor; border-radius: 26px; font-size: 100px; font-weight: 900; text-transform: uppercase; background: rgba(255,255,255,.93); box-shadow: 0 10px 0 rgba(21,32,51,.3); white-space: nowrap; }
+  #veloce { top: 600px; color: var(--rosso); }
+  #veloce span { font-size: 78px; }
+  #casette { left: 0; right: 0; top: 140px; text-align: center; }
+  #casette .carta { padding: 14px 40px 20px; min-width: 560px; }
+  #casette b { display: block; font-size: 84px; line-height: 1; }
+  #casette .barra { height: 26px; margin-top: 14px; background: #EEF1F5; border: 5px solid var(--ink); border-radius: 16px; overflow: hidden; }
+  #casette .barra i { display: block; height: 100%; background: var(--verde); }
+  #casette small { display: block; margin-top: 8px; font-size: 34px; color: #5B6475; }
+  #sblocco { left: 0; right: 0; top: 470px; text-align: center; }
+  #sblocco .carta { background: var(--giallo); padding: 12px 40px 16px; }
+  #sblocco small { display: block; font-size: 34px; letter-spacing: 3px; }
+  #sblocco b { display: block; font-size: 70px; line-height: 1.05; white-space: nowrap; text-transform: uppercase; }
+  .voto { position: absolute; left: 0; top: 0; background: #fff; border: 5px solid var(--ink); border-radius: 28px; padding: 12px 24px; display: flex; align-items: center; gap: 14px; box-shadow: 0 8px 0 rgba(21,32,51,.25); opacity: 0; white-space: nowrap; }
+  .voto i { width: 50px; height: 50px; border-radius: 50%; background: #C9D1DC; border: 4px solid var(--ink); flex: none; }
+  .voto b { font-size: 42px; font-weight: 800; color: var(--ink); }
+  #grande { left: 0; right: 0; top: 700px; text-align: center; font-size: 150px; line-height: 1; -webkit-text-stroke-width: 24px; }
+  #calendario { left: 0; right: 0; top: 380px; text-align: center; }
+  #calendario .carta { width: 520px; padding: 0 0 26px; overflow: hidden; }
+  #calendario .testa { background: var(--rosso); color: #fff; font-size: 64px; padding: 12px 0 14px; border-bottom: 8px solid var(--ink); letter-spacing: 3px; }
+  #calendario .giorno { font-size: 250px; line-height: 1; margin-top: 10px; }
+  #calendario .mese { font-size: 64px; letter-spacing: 4px; }
+  #calendario .ora { display: inline-block; margin-top: 14px; font-size: 72px; background: var(--giallo); border: 6px solid var(--ink); border-radius: 22px; padding: 4px 30px; }
+  #fm { top: 240px; color: var(--blu); }
+  #fm span { font-size: 92px; }
+  #fm small { display: block; font-size: 44px; letter-spacing: 4px; color: var(--ink); }
+  #vincitori { top: 1560px; color: var(--verde); }
+  #vincitori span { font-size: 84px; }
+  .nazione { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; opacity: 0; transform-origin: 50% 100%; }
+  .nazione .nome { padding: 6px 20px 8px; border-radius: 20px; border: 6px solid var(--ink); color: #fff; font-size: 38px; font-weight: 900; white-space: nowrap; box-shadow: 0 6px 0 rgba(21,32,51,.3); text-transform: uppercase; }
+  .nazione .capo { background: #fff; border: 5px solid var(--ink); border-radius: 20px; padding: 4px 18px 8px; text-align: center; box-shadow: 0 6px 0 rgba(21,32,51,.25); }
+  .nazione .capo small { display: block; font-size: 22px; font-weight: 900; color: #5B6475; letter-spacing: 2px; }
+  .nazione .capo b { display: block; font-size: 34px; font-weight: 900; color: var(--ink); white-space: nowrap; }
+  .nazione .capo i { display: block; font-style: normal; font-size: 28px; font-weight: 900; color: var(--blu); }
+  .ponto { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: var(--giallo); border: 5px solid var(--ink); box-sizing: border-box; transform: scale(0); }
+  #banner { left: 30px; right: 30px; top: 170px; text-align: center; font-size: 92px; line-height: 1.12; -webkit-text-stroke-width: 17px; }
+  #banner div { opacity: 0; }
+</style>
+</head>
+<body>
+<canvas id="mappa"></canvas>
+<div id="vinheta"></div>
+<div id="scuro"></div>
+<div id="punti"></div>
+<div id="etichette"></div>
+<div id="testa" class="pop forte"><div id="contatore"></div></div>
+<div id="titolo" class="pop forte"><div class="carta"><div>HOW TO WIN</div><small>🏆 THE WHOLE GAME</small></div></div>
+<div id="scala" class="pop"></div>
+<div id="livello" class="pop"><div class="carta"><small>@your.name</small><b></b><i></i></div></div>
+<div id="piu"></div>
+<div id="commento" class="pop">
+  <img src="img/logo.png" alt="">
+  <div class="corpo"><div class="chi">your.name <span>· now</span></div><div class="testo"></div></div>
+  <div class="ok">✓</div>
+</div>
+<div id="veloce" class="pop timbro"><span>🚀 Fastest way up</span></div>
+<div id="nocasa" class="pop forte">No house<br><span class="g">yet? 🤔</span></div>
+<div id="casette" class="pop"><div class="carta"><b></b><div class="barra"><i></i></div><small></small></div></div>
+<div id="sblocco" class="pop"><div class="carta"><small>🔓 UNLOCKED</small><b></b></div></div>
+<div id="voti"></div>
+<div id="grande" class="pop forte">The <span class="g">big</span><br>one</div>
+<div id="calendario" class="pop"><div class="carta"><div class="testa">SUNDAY</div><div class="giorno">29</div><div class="mese">NOVEMBER</div><div class="ora">9 PM 🕘</div></div></div>
+<div id="fm" class="pop timbro"><span>🏛️ First Minister<small>1ST EVER · MOST POINTS WINS</small></span></div>
+<div id="vincitori" class="pop timbro"><span>4 nations · 4 winners</span></div>
+<div id="banner" class="pop forte"></div>
+<div id="sott" class="forte"></div>
+<div id="flash"></div>
+<script type="module" src="video/vincere.js"></script>
+</body>
+</html>

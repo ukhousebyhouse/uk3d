@@ -41,8 +41,9 @@ export function curl(cfg, args, inseguro = false) {
     const r = spawnSync(CURL, [...base, ...args], { input: `user = ${aspas(`${cfg.utente}:${cfg.password}`)}\n`, encoding: 'utf8', maxBuffer: 1 << 24 });
     const linhas = (r.stderr ?? '').split(/\r?\n/).filter(l => l.trim() && !/insecure option/i.test(l));
     res = { ok: r.status === 0, codigo: r.status, saida: r.stdout ?? '', erro: linhas.join(' | ').trim() };
-    // não insiste em erro de certificado (tratado por quem chama) nem em senha errada (67)
-    if (res.ok || [35, 51, 60, 67].includes(r.status)) break;
+    // não insiste em erro de certificado (tratado por quem chama), senha errada (67) nem arquivo/pasta inexistente
+    // (78, 9, 19: o robô baixa arquivos que ainda não existem no servidor, e cada nova tentativa custava 30 s)
+    if (res.ok || [35, 51, 60, 67, 78, 9, 19].includes(r.status)) break;
     espera(5000 * (t + 1));
   }
   return res;

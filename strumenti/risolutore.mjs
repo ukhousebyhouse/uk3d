@@ -83,6 +83,14 @@ const ESTERI = ['ireland', 'republic of ireland', 'roi', 'eire', 'dublin', 'cork
   'isle of man', 'iom', 'jersey', 'guernsey', 'st helier', 'st peter port', 'alderney', 'sark', 'gibraltar',
   'usa', 'america', 'united states', 'alabama', 'texas', 'california', 'florida', 'new york', 'ohio', 'michigan', 'georgia', 'virginia', 'carolina',
   'massachusetts', 'pennsylvania', 'illinois', 'canada', 'ontario', 'australia', 'nsw', 'new zealand', 'nz', 'india', 'nigeria', 'south africa', 'spain', 'france', 'italy', 'germany', 'poland'];
+// outros países: não recusam ("Manchester, from Romania" vale), mas desligam a aproximação ("Jordan Amman" não é Jordans)
+const PAESI = new Set(['jordan', 'syria', 'iraq', 'iran', 'kuwait', 'uae', 'dubai', 'abu dhabi', 'saudi', 'saudi arabia', 'qatar', 'oman', 'yemen', 'lebanon', 'israel', 'palestine',
+  'egypt', 'algeria', 'morocco', 'tunisia', 'libya', 'kenya', 'ghana', 'ethiopia', 'somalia', 'turkey', 'turkiye', 'kurdistan', 'pakistan', 'bangladesh', 'nepal', 'sri lanka',
+  'afghanistan', 'uzbekistan', 'kazakhstan', 'tajikistan', 'kyrgyzstan', 'russia', 'ukraine', 'belarus', 'romania', 'hungary', 'bulgaria', 'serbia', 'croatia', 'bosnia',
+  'albania', 'kosovo', 'greece', 'cyprus', 'lithuania', 'latvia', 'estonia', 'finland', 'sweden', 'norway', 'norwey', 'denmark', 'netherlands', 'nederland', 'nederlands',
+  'belgium', 'switzerland', 'austria', 'czech', 'czechia', 'slovakia', 'slovenia', 'portugal', 'brazil', 'brasil', 'mexico', 'argentina', 'colombia', 'chile', 'peru',
+  'china', 'japan', 'korea', 'vietnam', 'thailand', 'malaysia', 'singapore', 'indonesia', 'philippines', 'phillipines', 'philipines',
+  'moscow', 'jakarta', 'mumbai', 'delhi', 'kolkata', 'karachi', 'lahore', 'tehran', 'baghdad', 'amman', 'cairo', 'istanbul', 'riyadh', 'manila']);
 
 const distancia = (a, b, max) => {
   if (Math.abs(a.length - b.length) > max) return max + 1;
@@ -196,6 +204,8 @@ export class Risolutore {
     }
     // fora do Reino Unido (sem nação britânica citada): recusa
     if (estero && !regs.size) return { istat: null, motivo: 'estero' };
+    const paese = !regs.size && toks.some((t, i) => PAESI.has(t) || PAESI.has(`${t} ${toks[i + 1]}`));
+    const aprox = (...a) => paese ? null : this.aproximar(...a);
     // para aproximar: só counties de verdade (não a palavra que é a própria cidade, como "reading")
     const conteeCit = new Set(citazioni.filter(z => usadoRegiao.has(z.ini)).flatMap(z => [...z.nomi]));
     const confirmaEm = a => c => regs.has(c.reg) || pcIds.includes(c.istat) || citazioni.some(z => (z.fim <= a.ini || z.ini >= a.fim) && z.nomi.has(c.sigla));
@@ -216,7 +226,7 @@ export class Risolutore {
     if (cand.some(a => a.tipo !== 'quartiere')) cand = cand.filter(a => a.tipo !== 'quartiere' || toks.includes('london'));
 
     if (!cand.length) {
-      const f = this.aproximar(toks, regs, conteeCit, maiuscula, significativos, 1, usadoRegiao);
+      const f = aprox(toks, regs, conteeCit, maiuscula, significativos, 1, usadoRegiao);
       if (f) return f;
       // só o postcode: vale o district
       if (pcIds.length === 1 || (pcIds.length && pcIds.every(id => id === pcIds[0]))) return { istat: pcIds[0], nome: this.comuni.get(pcIds[0]).nome, motivo: 'postcode' };
@@ -234,13 +244,13 @@ export class Risolutore {
     const top = cand[0];
     // a cidade exata não bate com a nação citada ("Livepool, England" achou outra coisa): tenta aproximar dentro dela
     if (!top.consistente) {
-      const f = this.aproximar(toks, regs, conteeCit, maiuscula, significativos, 1, usadoRegiao);
+      const f = aprox(toks, regs, conteeCit, maiuscula, significativos, 1, usadoRegiao);
       if (f) return f;
     }
     // sobrou palavra ao lado do nome achado ("Kirkby Lonsdle" achou só "Kirkby"): tenta um nome mais longo por aproximação
     const sobra = toks.filter((t, j) => !STOP.has(t) && !COMUNS.has(t) && !usadoRegiao.has(j) && !(j >= top.ini && j < top.fim) && !/\d/.test(t)).length;
     if (sobra > 0 && top.tipo !== 'alias') {
-      const f = this.aproximar(toks, regs, conteeCit, maiuscula, significativos, top.peso + 1, usadoRegiao);
+      const f = aprox(toks, regs, conteeCit, maiuscula, significativos, top.peso + 1, usadoRegiao);
       if (f && !top.ids.includes(f.istat)) return f;
     }
     const distintos = new Set(cand.filter(a => a.consistente === top.consistente && a.peso === top.peso).flatMap(a => a.ids));

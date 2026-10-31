@@ -180,8 +180,10 @@ export class Risolutore {
         if (ct) {
           citazioni.push({ nomi: ct, ini: i, fim: i + n });
           // Cardiff, Newport, Reading, Bristol...: o county tem o nome de uma cidade dele -> a palavra é a cidade
+          // (Nottingham, Derby, Leicester: unitary authority com o nome da cidade, que nos dados está no shire)
           const mesmas = this.idx.get(k1) ?? this.idx.get(k2);
-          if (!mesmas || ![...mesmas].some(id => ct.has(this.comuni.get(id).sigla))) for (let j = i; j < i + n; j++) usadoRegiao.add(j);
+          const ehCidade = id => { const c = this.comuni.get(id); return ct.has(c.sigla) || (c.rango >= 2 && [...ct].some(nm => norm(nm) === norm(c.nome))); };
+          if (!mesmas || ![...mesmas].some(ehCidade)) for (let j = i; j < i + n; j++) usadoRegiao.add(j);
         }
         // "ireland" sozinho (sem "northern" antes) e os outros países: fora do mapa
         if (this.esteri.has(k1) && !(k1 === 'ireland' && ['northern', 'n'].includes(toks[i - 1]))) estero = true;

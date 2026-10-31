@@ -100,7 +100,7 @@ export class UI {
   }
 
   rota(r) {
-    const mapa = { palazzo: () => this.palazzo(), classifica: () => this.classifica(), tabellone: () => this.tabellone(), negozi: () => this.negozi(), senzapadrone: () => this.senzaPadrone(), fiamme: () => this.fiamme(), 'come-funziona': () => this.comeFunziona(), video: () => this.video(), decora: () => this.decori?.aperto && this.decori.home(), derby: () => this.derby(), meta: () => this.meta() };
+    const mapa = { palazzo: () => this.palazzo(), classifica: () => this.classifica(), tabellone: () => this.tabellone(), negozi: () => this.negozi(), senzapadrone: () => this.senzaPadrone(), fiamme: () => this.fiamme(), 'come-funziona': () => this.comeFunziona(), video: () => this.video(), decora: () => this.decori?.aperto && this.decori.home(), derby: () => this.derby(), meta: () => this.meta(), gran: () => this.granElezione() };
     if (mapa[r]) mapa[r]();
   }
 
@@ -141,6 +141,8 @@ export class UI {
     if (dz) add('chip-derby', `⚔️ ${esc(D.comunePorIstat.get(dz.a).nome)} <b>${num(dz.pts_a)}</b> – <b>${num(dz.pts_b)}</b> ${esc(D.comunePorIstat.get(dz.b).nome)}`, () => this.derby());
     const g = D.snap.cariche.guerra?.[0];
     if (g?.pts) add('chip-nazioni', `${NAZIONI[g.cod]?.emoji ?? ''} <b>${esc(D.regPorCod.get(g.cod).nome)}</b> top the Battle of the Nations`, () => this.palazzo());
+    const ge = D.snap.gran_elezione;
+    if (ge) add('chip-gran', ge.conclusa ? '🏛️ <b>The first First Ministers</b> are in' : `🏛️ <b>Grand Election</b> · ${dataBreve(Date.parse(ge.data))}, ${ora(Date.parse(ge.data))}`, () => this.granElezione());
     const meta = this.metaCase();
     add('chip-meta', `🎯 <b>${num(D.casas.length)}</b> / ${num(meta)} houses`, () => this.meta());
     // celular: um chip por vez, em rodízio; tela larga: até 3 juntos (rodando os seguintes)
@@ -259,6 +261,7 @@ export class UI {
       <h2 class="conta">@${esc(c.conta)}</h2>
       <div class="sub">${esc(saluto(r.cod, l.comune.sigla))} House no. ${num(c.lote + 1)} in ${esc(l.nome)} · since ${dataBreve(c.ts)}</div>
       <div class="badges">
+        ${this.eletto(c.conta) ? `<span class="badge fond">🏛️ 1st ${esc(REGOLE.gran_elezione.titolo)} of ${esc(D.regPorCod.get(this.eletto(c.conta)).nome)} · forever</span>` : ''}
         ${fondatore ? `<span class="badge fond">🔵 Blue plaque · founded ${esc(l.nome)}</span>` : ''}
         ${c.fonti[8] > 0 ? '<span class="badge mec">🏅 Patron · has a business on the map</span>' : ''}
         ${c.carica ? `<span class="badge car c-${c.carica.tipo}">🏛 ${esc(this.cargoTexto(c))}</span>` : ''}
@@ -556,10 +559,33 @@ export class UI {
       citta_fondata: () => `🔵 ${quem(e.fondatore)} founded <b>${nomeCom(e.luogo)}</b>`,
       disputa: () => `⚔️ Photo finish in <b>${nomeCom(e.luogo)}</b>: ${quem(e.fondatore)} beat ${quem(e.secondo)} by ${e.differenza_s} seconds`,
       traguardo: () => { const t = REGOLE.traguardi.find(x => x.id === e.id); return t ? `🔓 <b>${nomeCom(e.luogo)}</b> unlocked: ${t.emoji} ${esc(t.nome)} (${num(t.case)} houses)` : ''; },
+      gran_eletto: () => `🏛️ ${quem(e.conta)} is the first ever ${esc(REGOLE.gran_elezione?.titolo ?? 'First Minister')} of <b>${esc(D.regPorCod.get(e.regione)?.nome ?? '')}</b>, with ${punti(e.pts)}`,
       livello: () => `🏗️ ${quem(e.conta)}'s house is now a <b>${esc(REGOLE.livelli[e.livello].nome)}</b>`,
       presidente_eletto: () => `🚪 ${quem(e.conta)} was elected ${NOMI_CARICHE.presidente} with ${punti(e.pts)}`,
     }[e.tipo]?.() ?? '');
     return (D.snap.eventi ?? []).slice(0, 20).map(e => `<div class="notizia"><span>${txt(e)}</span><small>${fa(e.ts)}</small></div>`).join('') || '<p class="nota">No news yet.</p>';
+  }
+
+  // grande eleição: em cada nação, quem tem mais pontos no jogo inteiro vira o 1º First Minister, para sempre
+  eletto(conta) {
+    const ge = this.D.snap.gran_elezione;
+    if (!ge?.conclusa) return null;
+    return Object.entries(ge.nazioni).find(([, l]) => l[0]?.conta === conta)?.[0] ?? null;
+  }
+  granElezione() {
+    const D = this.D, ge = D.snap.gran_elezione;
+    if (!ge) return;
+    const t = Date.parse(ge.data), quando = `${dataLunga(t)}, ${ora(t)}`;
+    const blocco = cod => {
+      const r = D.regPorCod.get(cod), l = ge.nazioni[cod] ?? [];
+      return `<h3>${nacao(r)}</h3>${l.length ? `<ol class="ranking">${l.map((x, i) => `<li data-casa="${esc(x.conta)}"><span class="pos">${i ? i + 1 : (ge.conclusa ? '🏛️' : '1')}</span><span class="quem"><b>@${esc(x.conta)}</b><small>${esc(D.luoghi[D.porConta.get(x.conta)?.luogo]?.nome ?? '')}</small></span><span class="pts">${num(x.pts)}</span></li>`).join('')}</ol>` : `<p class="nota">Nobody here yet: the first house in ${esc(r.nome)} starts in the lead!</p>`}`;
+    };
+    this.abrir(`
+      <h2>🏛️ The Grand Election</h2>
+      <div class="sub">${ge.conclusa ? `Held on ${quando} (UK time)` : `${quando} (UK time)`}</div>
+      <div class="carta meta"><b>${ge.conclusa ? 'The first ever First Ministers of the four nations. Forever.' : 'Four nations, four winners, and the title is yours forever.'}</b><small>In England, Scotland, Wales and Northern Ireland, whoever has the most points in the whole game ${ge.conclusa ? 'became' : 'on that night becomes'} the nation's first ever ${esc(REGOLE.gran_elezione.titolo)}. All your points count, from day one. Points from a business on the map don't. On a tie, the older house wins.</small></div>
+      ${['ENG', 'SCT', 'WLS', 'NIR'].filter(c => D.regPorCod.has(c)).map(blocco).join('')}
+      ${ge.conclusa ? '' : `<p class="nota">How to climb: comment on every post (+${REGOLE.punti.commento}), tag your mates (+${REGOLE.punti.tag} each) and get them to join (+${REGOLE.punti.recluta}).</p>`}`);
   }
 
   derby() {
@@ -660,6 +686,9 @@ export class UI {
       <h3>2. Unlock your town</h3>
       <p class="intro">Every new house unlocks something for the whole town, from a red phone box to a stadium. Tag mates from your town to get there faster. Locals also vote on the name of the town pub: comment <b>pub Red Lion</b> (or another name from the list in your town's card).</p>
       <div class="sblocchi">${REGOLE.traguardi.map(t => `<div class="sblocco fatto"><span>${t.emoji} ${esc(t.nome)}</span><b>${num(t.case)}</b></div>`).join('')}</div>
+      ${REGOLE.gran_elezione ? `<h3>🏛️ The Grand Election</h3>
+      <p class="intro">On ${dataLunga(Date.parse(REGOLE.gran_elezione.data))} at ${ora(Date.parse(REGOLE.gran_elezione.data))}, whoever has the most points in the whole game in each nation becomes its first ever ${esc(REGOLE.gran_elezione.titolo)}, forever. Four nations, four winners.</p>
+      <div class="bottoni"><button data-ir="gran">🏛️ See who's leading</button></div>` : ''}
       <h3>3. The roles</h3>
       <p class="intro">Roles are won every week with the term's points (Sunday 9pm to Sunday 9pm, UK time). Whoever scores most runs the show, top down, one role each. The Prime Minister and the mayors are elected on Sunday at 9pm and serve all week; the other roles change live.</p>
       <ol class="ranking cariche">${REGOLE.cariche.map(k => `<li><span class="quem"><b>${NOMI_CARICHE[k]}</b><small>${DESCR_CARICHE[k]}</small></span></li>`).join('')}</ol>

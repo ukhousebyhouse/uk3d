@@ -81,7 +81,21 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
   ].filter(e => e.ts <= agora).sort((a, b) => a.ts - b.ts);
   const commerci = [];
 
+  // grande eleição: placar por nação com os pontos do jogo inteiro (sem os de negócio no mapa)
+  const G = R.gran_elezione ? Date.parse(R.gran_elezione.data) : Infinity;
+  const placarNazioni = (ate = Infinity) => {
+    const out = {};
+    for (const r of regioni) {
+      out[r.cod] = [...contas.values()].filter(a => a.casa && !a.bloc && a.casa.ts <= ate && comuni[a.casa.ci][3] === r.cod)
+        .map(a => ({ conta: a.conta, pts: a.tot - a.fonti[F.mecenate], ts: a.casa.ts }))
+        .filter(x => x.pts > 0).sort((x, y) => y.pts - x.pts || x.ts - y.ts).slice(0, 5).map(({ conta, pts }) => ({ conta, pts }));
+    }
+    return out;
+  };
+  let eletti = null;
+
   for (const e of linha) {
+    if (!eletti && e.ts >= G) eletti = placarNazioni(G);   // fotografia na hora da eleição
     if (e.t === 'n') {
       const ci = comIdx.get(e.n.istat), l = ci == null ? null : luoghi.get(ci);
       if (l) commerci.push({ ...e.n, ci, lote: l.lotti++ });   // só cidades que já têm casas
@@ -133,6 +147,9 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
       a.giorni.add(d);
     }
   }
+
+  if (!eletti && agora >= G) eletti = placarNazioni(G);
+  if (eletti) for (const [cod, l] of Object.entries(eletti)) if (l[0]) eventos.push({ tipo: 'gran_eletto', regione: cod, conta: l[0].conta, pts: l[0].pts, ts: G });
 
   // ---------- mecenati: quem comprou um negócio ou outdoor (campo "giocatore" do pedido) ----------
   for (const n of eventi.commerci ?? []) {
@@ -246,6 +263,8 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
     })),
     cariche,
     derby,
+    // antes da data: os 5 primeiros de cada nação agora; depois: o resultado congelado (o 1º de cada nação é o eleito)
+    ...(R.gran_elezione ? { gran_elezione: { data: R.gran_elezione.data, conclusa: !!eletti, nazioni: eletti ?? placarNazioni() } } : {}),
     eventi: eventos.filter(e => e.ts <= agora).sort((a, b) => b.ts - a.ts).slice(0, 40).map(e => ({ ...e, ts: new Date(e.ts).toISOString() })),
   };
 }

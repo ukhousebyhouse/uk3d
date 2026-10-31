@@ -123,7 +123,26 @@ const s5 = calcolare({
 const roma5 = s5.luoghi.find(l => l[0] === 0);
 ok(JSON.stringify(roma5[5]) === '[[2,2],[0,1]]', `pub de Roma: [[2,2],[0,1]] (deu ${JSON.stringify(roma5[5])})`);
 ok(s5.eventi.some(e => e.tipo === 'traguardo' && e.id === 'cabina' && e.conta === 'carla'), 'evento: Roma desbloqueou a cabine com a casa da carla');
-const { estrairPub } = await import('../sito/js/regole.js');
+// grande eleição: pontos do jogo inteiro por nação, congelados na data (pontos depois dela não mudam o resultado)
+const { estrairPub, REGOLE } = await import('../sito/js/regole.js');
+const gAntes = REGOLE.gran_elezione;
+REGOLE.gran_elezione = { data: new Date(qui + 6 * H).toISOString(), titolo: 'First Minister' };
+const s6 = calcolare({
+  eventi: {
+    ...eventi,
+    commenti: [
+      c('anna', qui + 1e3, { luogo: '058091' }), c('bruno', qui + 2e3, { luogo: '058091' }), c('carla', qui + 3e3, { luogo: '015146' }),
+      c('bruno', qui + H, { tags: ['x1', 'x2'] }),                                   // bruno passa a anna antes da data
+      c('anna', qui + 7 * H, { post: 'p2', tags: ['y1', 'y2', 'y3'] }),             // depois da data: não muda o eleito
+    ],
+    storie: [], bloccati: [], doppi: [], commerci: [], post: [],
+  },
+  comuni, regioni, agora: qui + 10 * H,
+});
+REGOLE.gran_elezione = gAntes;
+const ge = s6.gran_elezione;
+ok(ge?.conclusa && ge.nazioni['12'][0].conta === 'bruno' && ge.nazioni['03'][0].conta === 'carla', `grande eleição: Lazio bruno, Lombardia carla (deu ${JSON.stringify(ge?.nazioni)})`);
+ok(s6.eventi.filter(e => e.tipo === 'gran_eletto').length === 2, 'eventos gran_eletto: um por nação com casas');
 ok(estrairPub('Pub: the rose and crown!') === 4 && estrairPub('pub Crown') === 2 && estrairPub("pub kings head") === 5 && estrairPub('the pub is great') === null && estrairPub('Leeds, England') === null,
   'estrairPub: "rose and crown", "Crown", "kings head"; frase qualquer com "pub" não vale');
 console.log(falhas ? `\n${falhas} falha(s)` : '\ntodos os testes passaram');

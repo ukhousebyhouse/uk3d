@@ -62,6 +62,9 @@ export const REGOLE = {
     { id: 'ospedale', case: 1000, nome: 'Hospital', emoji: '🏥' },
     { id: 'stadio', case: 5000, nome: 'Stadium', emoji: '🏟️' },
   ],
+  // grande eleição: na data, quem tem mais pontos no jogo inteiro em cada nação vira o 1º First Minister dela, para sempre
+  // (pontos de negócio no mapa não contam, como nas eleições da semana; empate -> a casa mais antiga)
+  gran_elezione: { data: '2026-11-29T21:00:00Z', titolo: 'First Minister' },
   // nome do pub: os moradores votam comentando "pub Red Lion"; sem votos, um nome fixo da lista
   pub_nomi: ['The Red Lion', 'The Royal Oak', 'The Crown', 'The White Hart', 'The Rose & Crown', "The King's Head", "The Queen's Head",
     'The Swan', 'The Plough', 'The Bell', 'The Black Horse', 'The Fox & Hounds', 'The George', 'The Railway', 'The Ship', 'The Wheatsheaf'],

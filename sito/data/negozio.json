@@ -1,7 +1,7 @@
 {
   "aperto": false,
   "durata_giorni": 30,
-  "decora": { "attivo": false, "prezzo": 499, "giorni": 10, "checkout": "" },
+  "decora": { "attivo": false, "prezzo": 499, "giorni": 10, "checkout": "https://pay.hotmart.com/L108274132O?off=udhvfctl" },
   "su_misura": { "attivo": false, "prezzo": 999, "posti_per_citta": 3, "checkout": "" },
   "piani": [
     { "id": "city", "nome": "City", "da": 250000, "posti": { "negozio": 6, "cartellone": 2 }, "prezzo": { "negozio": { "pieno": 3999, "lancio": 1999 }, "cartellone": { "pieno": 5999, "lancio": 2999 } } },

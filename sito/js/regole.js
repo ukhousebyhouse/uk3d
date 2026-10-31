@@ -47,10 +47,26 @@ export const REGOLE = {
   cariche: ['presidente', 'senatore', 'presidente_regione', 'deputato', 'sindaco', 'consigliere'],
   // regione = nação: 3 Lords por nação, 650 MPs divididos pela população (mínimo 2 por nação)
   posti: { presidente: 1, senatoriPerRegione: 3, deputati: 650, deputatiMinimo: 2, consiglieri: 10 },
-  marchi: { chiesa: 30, palazzinaOgni: 100, ospedale: 1000, stadio: 5000 },
+  marchi: { palazzinaOgni: 100 },
+  // desbloqueios da cidade (número de casas): cada um aparece no mapa e vira notícia ("traguardo")
+  traguardi: [
+    { id: 'cabina', case: 3, nome: 'Red phone box', emoji: '☎️' },
+    { id: 'fermata', case: 5, nome: 'Post box & bus stop', emoji: '📮' },
+    { id: 'stagno', case: 10, nome: 'Duck pond & benches', emoji: '🦆' },
+    { id: 'cartellone', case: 15, nome: 'Billboard', emoji: '📣' },
+    { id: 'negozi', case: 20, nome: 'Chippy & corner shop', emoji: '🐟' },
+    { id: 'chiesa', case: 30, nome: 'Church & the town pub', emoji: '🍺' },
+    { id: 'campo', case: 50, nome: 'Football pitch', emoji: '⚽' },
+    { id: 'stazione', case: 100, nome: 'Railway station & flats', emoji: '🚉' },
+    { id: 'municipio', case: 250, nome: 'Town hall with clock tower', emoji: '🏛️' },
+    { id: 'ospedale', case: 1000, nome: 'Hospital', emoji: '🏥' },
+    { id: 'stadio', case: 5000, nome: 'Stadium', emoji: '🏟️' },
+  ],
+  // nome do pub: os moradores votam comentando "pub Red Lion"; sem votos, um nome fixo da lista
+  pub_nomi: ['The Red Lion', 'The Royal Oak', 'The Crown', 'The White Hart', 'The Rose & Crown', "The King's Head", "The Queen's Head",
+    'The Swan', 'The Plough', 'The Bell', 'The Black Horse', 'The Fox & Hounds', 'The George', 'The Railway', 'The Ship', 'The Wheatsheaf'],
   // lotes livres desenhados depois da última casa (só desenho: convite para marcar amigos)
   lotti_liberi: 3,
-  cartellone_da: 15,           // cidades com pelo menos estas casas mostram um outdoor "YOUR AD HERE"
   // Christmas no village green (mês-dia, hora de Londres): árvore e luzes até a Twelfth Night
   natale: { da: '11-28', a: '01-06' },
   halloween: { da: '10-27', a: '10-31' },
@@ -66,6 +82,29 @@ export const REGOLE = {
     { reg: 'ENG', md: '04-23', nome: "St George's Day" },
   ],
 };
+
+// casas mínimas de um desbloqueio ("chiesa", "stadio"...)
+export const sogliaDi = id => REGOLE.traguardi.find(t => t.id === id).case;
+// próximo desbloqueio da cidade (null quando já tem todos)
+export const prossimoTraguardo = n => REGOLE.traguardi.find(t => t.case > n) ?? null;
+
+// voto no nome do pub: "pub Red Lion", "Pub: the rose and crown" -> índice em pub_nomi (ou null)
+const normPub = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/&/g, ' and ').replace(/['’`]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().replace(/^the /, '');
+const PUB_NORM = REGOLE.pub_nomi.map((n, i) => [normPub(n), i]).sort((a, b) => b[0].length - a[0].length);
+export function estrairPub(testo) {
+  const m = (testo ?? '').match(/\bpub\b\s*[:\-–]?\s*(.+)/i);
+  if (!m) return null;
+  const resto = ` ${normPub(m[1])} `;
+  const hit = PUB_NORM.find(([n]) => resto.startsWith(` ${n} `));
+  return hit ? hit[1] : null;
+}
+// nome do pub de uma cidade: o mais votado ou, sem votos, um nome fixo escolhido pelo id da cidade
+export function nomePub(istat, voti) {
+  if (voti?.length) return REGOLE.pub_nomi[voti[0][0]];
+  let h = 0;
+  for (const ch of String(istat)) h = (h * 31 + ch.charCodeAt(0)) | 0;
+  return REGOLE.pub_nomi[Math.abs(h) % REGOLE.pub_nomi.length];
+}
 
 const mesDia = ts => new Date(ts).toLocaleDateString('en-CA', { timeZone: 'Europe/London' }).slice(5);
 const forcado = nome => (typeof location !== 'undefined' ? new URLSearchParams(location.search).get(nome) : null);

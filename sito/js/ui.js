@@ -1,5 +1,5 @@
 // Interface: busca, abas, painéis (casa, cidade, nação, Number 10, league table, scoreboard, up for grabs, how it works).
-import { REGOLE, NOMI_CARICHE, NOMI_CARICHE_CY, DESCR_CARICHE, FONTI, COME_GUADAGNARE, num, punti, dataBreve, dataLunga, ora } from './regole.js';
+import { REGOLE, NOMI_CARICHE, NOMI_CARICHE_CY, DESCR_CARICHE, FONTI, COME_GUADAGNARE, num, punti, dataBreve, dataLunga, ora, prossimoTraguardo, sogliaDi, nomePub } from './regole.js';
 import { iconaLivello } from './icone.js';
 import { Fotografo } from './foto.js';
 import { immagineCasa, immagineFondazione, immagineCitta, PERFIL } from './storie.js';
@@ -296,14 +296,29 @@ export class UI {
   }
 
   // ---------- cidade ----------
-  proximoEdificio(n) {
-    const M = REGOLE.marchi;
-    if (n < M.chiesa) return ['⛪ Church & 🍺 pub', M.chiesa];
-    const pal = (Math.floor(n / M.palazzinaOgni) + 1) * M.palazzinaOgni;
-    const opz = [['🏢 Block of flats', pal]];
-    if (n < M.ospedale) opz.push(['🏥 Hospital', M.ospedale]);
-    if (n < M.stadio) opz.push(['🏟 Stadium', M.stadio]);
-    return opz.sort((a, b) => a[1] - b[1])[0];
+  // desbloqueios da cidade: os conquistados, o próximo (com a barra) e os 2 seguintes
+  sblocchi(l) {
+    const T = REGOLE.traguardi, prox = prossimoTraguardo(l.case), ip = prox ? T.indexOf(prox) : T.length;
+    const ant = ip > 0 ? T[ip - 1].case : 0;
+    const pal = (Math.floor(l.case / REGOLE.marchi.palazzinaOgni) + 1) * REGOLE.marchi.palazzinaOgni;
+    const falta = prox ? prox.case - l.case : pal - l.case;
+    const pct = prox ? Math.round(100 * (l.case - ant) / (prox.case - ant)) : Math.round(100 * (l.case % 100) / 100);
+    const item = (t, k) => `<div class="sblocco ${k < ip ? 'fatto' : k === ip ? 'attuale' : ''}"><span>${k < ip ? '✅' : '🔒'} ${t.emoji} ${esc(t.nome)}</span><b>${num(t.case)}</b></div>`;
+    return `
+      <h3>🔓 Unlock ${esc(l.nome)}</h3>
+      <div class="carta meta"><b>${prox ? `${prox.emoji} ${esc(prox.nome)}` : '🏢 Another block of flats'}: ${num(falta)} ${falta === 1 ? 'house' : 'houses'} to go</b>
+        <div class="progresso"><i style="width:${pct}%"></i></div>
+        <small>Every new neighbour counts. Tag a mate from ${esc(l.nome)} on our latest post: when they join you get <b>+${REGOLE.punti.recluta} points</b>.</small></div>
+      <div class="sblocchi">${T.slice(0, Math.min(T.length, ip + 3)).map(item).join('')}</div>`;
+  }
+  // nome do pub votado pelos moradores
+  pubCitta(l) {
+    const nome = nomePub(l.comune.istat, l.pub), aperto = l.case >= sogliaDi('chiesa'), v = l.pub ?? [];
+    return `
+      <h3>🍺 ${aperto ? `${esc(nome)}, the town pub` : 'Name the town pub'}</h3>
+      ${v.length ? `<div class="sblocchi">${v.slice(0, 3).map(([i, n], k) => `<div class="sblocco ${k ? '' : 'attuale'}"><span>${k ? '' : '👑 '}${esc(REGOLE.pub_nomi[i])}</span><b>${num(n)} ${n === 1 ? 'vote' : 'votes'}</b></div>`).join('')}</div>` : ''}
+      <p class="nota">${aperto ? '' : `The pub opens at ${num(sogliaDi('chiesa'))} houses. `}Live in ${esc(l.nome)}? Comment <b>pub ${esc(REGOLE.pub_nomi[0].replace(/^The /, ''))}</b> (or another name below) on our latest post: most votes wins, and you can change your vote.${v.length ? '' : ` No votes yet: for now it's ${esc(nome)}.`}</p>
+      <p class="nota">${REGOLE.pub_nomi.map(esc).join(' · ')}</p>`;
   }
   luogo(l, voar = true) {
     if (!l) return;
@@ -311,8 +326,6 @@ export class UI {
     if (voar) this.focar(l.x, l.z, Math.min(5, 0.9 + Math.sqrt(l.case) * 0.075), 0.55);
     const sindaco = k.sindaci[l.comune.istat], cons = k.consiglieri[l.comune.istat] ?? [];
     const casas = l.casas.map(i => D.casas[i]).sort((a, b) => b.sett - a.sett || a.ts - b.ts);
-    const [ed, alvo] = this.proximoEdificio(l.case);
-    const pct = Math.min(100, Math.round(100 * l.case / alvo));
     this.abrir(`
       <h2>${esc(l.nome)}${l.comune.bil ? ` <small class="bil">${esc(l.comune.bil)}</small>` : ''}</h2>
       <div class="sub">${l.comune.sigla ? `${esc(l.comune.sigla)}, ` : ''}<span data-regione="${reg}" class="link">${nacao(l.regione)}</span> · ${num(l.case)} ${l.case === 1 ? 'house' : 'houses'}${l.comune.pop ? ` · pop. ${num(l.comune.pop)}` : ''}</div>
@@ -321,8 +334,8 @@ export class UI {
       <div class="linha"><span>${nomeCarica('sindaco', reg)}</span><span>${sindaco ? `<a data-casa="${esc(sindaco.conta)}">@${esc(sindaco.conta)}</a> · elected on Sunday · ${num(sindaco.pts)} pts` : 'elected on Sunday at 9pm'}</span></div>
       <div class="linha"><span>🏁 Next election</span><span>${casas[0]?.sett ? `leading: <a data-casa="${esc(casas[0].conta)}">@${esc(casas[0].conta)}</a> · ${punti(casas[0].sett)}` : 'nobody has points this week yet'}</span></div>
       <div class="linha col"><span>${reg === 'WLS' ? 'Councillors · Cynghorwyr' : 'Councillors'} (${cons.length}/${REGOLE.posti.consiglieri})</span><span class="chips-mini">${cons.map(x => `<a data-casa="${esc(x.conta)}">@${esc(x.conta)}</a>`).join('') || '—'}</span></div>
-      <h3>🏗️ Next building</h3>
-      <div class="carta"><b>${ed}</b> at ${num(alvo)} houses · <b>${num(alvo - l.case)}</b> to go<div class="progresso"><i style="width:${pct}%"></i></div></div>
+      ${this.sblocchi(l)}
+      ${this.pubCitta(l)}
       <h3>${esc(l.nome)} league table <small>(points this term)</small></h3>
       <ol class="ranking">${casas.slice(0, 10).map((c, i) => this.linhaRank(c, i)).join('')}</ol>
       <div class="bottoni"><button data-condividi="luogo:${l.id}">📸 Share ${esc(l.nome)}</button><button class="sec" data-atto="${l.id}">🔵 Blue plaque</button></div>
@@ -542,6 +555,7 @@ export class UI {
     const txt = e => ({
       citta_fondata: () => `🔵 ${quem(e.fondatore)} founded <b>${nomeCom(e.luogo)}</b>`,
       disputa: () => `⚔️ Photo finish in <b>${nomeCom(e.luogo)}</b>: ${quem(e.fondatore)} beat ${quem(e.secondo)} by ${e.differenza_s} seconds`,
+      traguardo: () => { const t = REGOLE.traguardi.find(x => x.id === e.id); return t ? `🔓 <b>${nomeCom(e.luogo)}</b> unlocked: ${t.emoji} ${esc(t.nome)} (${num(t.case)} houses)` : ''; },
       livello: () => `🏗️ ${quem(e.conta)}'s house is now a <b>${esc(REGOLE.livelli[e.livello].nome)}</b>`,
       presidente_eletto: () => `🚪 ${quem(e.conta)} was elected ${NOMI_CARICHE.presidente} with ${punti(e.pts)}`,
     }[e.tipo]?.() ?? '');
@@ -643,14 +657,17 @@ export class UI {
       <h3>1. Your house grows</h3>
       <p class="intro">Your points grow your house on the map, all the way up the property ladder: from a tiny cottage to a palace. Every point counts forever: your house never shrinks.</p>
       <div class="scala lista">${REGOLE.livelli.map((n, i) => `<div class="gradino">${iconaLivello(i)}<small>${esc(n.nome)}</small><b>${num(n.min)}+</b></div>`).join('')}</div>
-      <h3>2. The roles</h3>
+      <h3>2. Unlock your town</h3>
+      <p class="intro">Every new house unlocks something for the whole town, from a red phone box to a stadium. Tag mates from your town to get there faster. Locals also vote on the name of the town pub: comment <b>pub Red Lion</b> (or another name from the list in your town's card).</p>
+      <div class="sblocchi">${REGOLE.traguardi.map(t => `<div class="sblocco fatto"><span>${t.emoji} ${esc(t.nome)}</span><b>${num(t.case)}</b></div>`).join('')}</div>
+      <h3>3. The roles</h3>
       <p class="intro">Roles are won every week with the term's points (Sunday 9pm to Sunday 9pm, UK time). Whoever scores most runs the show, top down, one role each. The Prime Minister and the mayors are elected on Sunday at 9pm and serve all week; the other roles change live.</p>
       <ol class="ranking cariche">${REGOLE.cariche.map(k => `<li><span class="quem"><b>${NOMI_CARICHE[k]}</b><small>${DESCR_CARICHE[k]}</small></span></li>`).join('')}</ol>
-      <h3>3. How to earn points</h3>
+      <h3>4. How to earn points</h3>
       <div class="azioni">${COME_GUADAGNARE(P).map(([k, nome, txt]) => `<div class="azione"><i style="background:${FONTI.find(f => f[0] === k)[2]}"></i><div><b>${nome}</b><small>${txt}</small></div></div>`).join('')}</div>
-      <h3>4. Your story</h3>
+      <h3>5. Your story</h3>
       <p class="intro">Put your house on your story and tag @${PERFIL}: +${P.storia} points (once a day) and your house on fire for 24 hours. Find your @ on the map and tap "Put your house on your story": we'll give you the image, ready to go.</p>
-      <h3>5. Battle of the Nations</h3>
+      <h3>6. Battle of the Nations</h3>
       <p class="intro">England, Scotland, Wales and Northern Ireland battle it out every week. It's points per million people, so every nation has a real shot. Each nation has its own houses, its own day and its own way of saying hello.</p>
       <div class="bottoni">${this.minha ? `<button data-casa="${esc(this.minha)}">go to my house</button>` : '<button data-ir="cerca">find my house</button>'}</div>
       <a class="botao segui" href="${IG}" target="_blank" rel="noopener">📲 Follow @${PERFIL} so you don't miss elections and news</a>

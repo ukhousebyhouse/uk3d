@@ -106,5 +106,25 @@ const s4 = calcolare({
 });
 const a4 = s4.case.find(x => x[0] === 'anna');
 ok(a4[7][3] === 30 && a4[7][4] === 25, `anna: tag limitado a 10 (+30) e recruta do 12º amigo (+25) (deu tag ${a4[7][3]}, recluta ${a4[7][4]})`);
+
+// desbloqueios (3ª casa = cabine) e votos no nome do pub: vale o último voto de cada morador; empate -> o votado primeiro
+const s5 = calcolare({
+  eventi: {
+    ...eventi,
+    commenti: [
+      c('anna', qui + 1e3, { luogo: '058091', pub: 2 }), c('bruno', qui + 2e3, { luogo: '058091', pub: 0 }), c('carla', qui + 3e3, { luogo: '058091', pub: 0 }),
+      c('dario', qui + 4e3, { luogo: '015146', pub: 2 }),            // mora em Milano: não vota no pub de Roma
+      c('carla', qui + 5e3, { pub: 2 }),                             // carla muda o voto: Crown 2 × Red Lion 1
+    ],
+    storie: [], bloccati: [], doppi: [], commerci: [], post: [],
+  },
+  comuni, regioni, agora: qui + 10 * H,
+});
+const roma5 = s5.luoghi.find(l => l[0] === 0);
+ok(JSON.stringify(roma5[5]) === '[[2,2],[0,1]]', `pub de Roma: [[2,2],[0,1]] (deu ${JSON.stringify(roma5[5])})`);
+ok(s5.eventi.some(e => e.tipo === 'traguardo' && e.id === 'cabina' && e.conta === 'carla'), 'evento: Roma desbloqueou a cabine com a casa da carla');
+const { estrairPub } = await import('../sito/js/regole.js');
+ok(estrairPub('Pub: the rose and crown!') === 4 && estrairPub('pub Crown') === 2 && estrairPub("pub kings head") === 5 && estrairPub('the pub is great') === null && estrairPub('Leeds, England') === null,
+  'estrairPub: "rose and crown", "Crown", "kings head"; frase qualquer com "pub" não vale');
 console.log(falhas ? `\n${falhas} falha(s)` : '\ntodos os testes passaram');
 process.exit(falhas ? 1 : 0);

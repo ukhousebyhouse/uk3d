@@ -193,6 +193,12 @@ ol.cariche li { counter-increment: c; }
 .progresso { height: 12px; background: #fff; border: 2.5px solid var(--inchiostro); border-radius: 9px; overflow: hidden; margin-top: 8px; }
 .progresso i { display: block; height: 100%; background: var(--verde); }
 .prossimo { font-size: 13px; font-weight: 800; margin-top: 6px; }
+/* desbloqueios da cidade e votos do pub */
+.sblocchi { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
+.sblocco { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 700; padding: 5px 10px; border-radius: 10px; background: #fff; opacity: .55; }
+.sblocco b { color: var(--grigio); white-space: nowrap; }
+.sblocco.fatto { opacity: 1; background: var(--crema); }
+.sblocco.attuale { opacity: 1; border: 2px solid var(--inchiostro); }
 .pila { display: flex; height: 18px; border: 2.5px solid var(--inchiostro); border-radius: 9px; overflow: hidden; }
 .pila i { display: block; height: 100%; }
 .legenda { margin: 8px 0 6px; }

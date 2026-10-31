@@ -1,9 +1,9 @@
 // Cidades 3D: quadras em espiral ao redor do village green, casas por nível e prédios especiais.
 // Só as cidades perto da câmera entram nos InstancedMesh (atualizado quando a câmera anda).
 import * as THREE from 'three';
-import { geometriaCasa, geometriaEspecial, ALTURA_NIVEL, Construtor, PLACCA, CARTELLONE, geometriaFaccia, geometriaLuminaria, stileRegione, geometriaFinestre, geometriaLampione, geometriaLuceLampione, geometriaZucca, geometriaZuccaLuce } from './modelli.js';
-import { REGOLE, nataleAttivo, halloweenAttivo } from './regole.js';
-import { texturaVendita, texturaLavori, texturaPubblicita, texturaCartellone, carregarImagem, fontePronta } from './insegne.js';
+import { geometriaCasa, geometriaEspecial, ALTURA_NIVEL, Construtor, PLACCA, CARTELLONE, INSEGNA_PUB, geometriaFaccia, geometriaLuminaria, stileRegione, geometriaFinestre, geometriaLampione, geometriaLuceLampione, geometriaZucca, geometriaZuccaLuce } from './modelli.js';
+import { REGOLE, nataleAttivo, halloweenAttivo, sogliaDi, nomePub } from './regole.js';
+import { texturaVendita, texturaLavori, texturaPubblicita, texturaCartellone, texturaPub, carregarImagem, fontePronta } from './insegne.js';
 import { creaNegozio3D } from './negozio3d.js';
 
 export const LOTE = 0.05, RUA = 0.035;                 // km
@@ -19,13 +19,14 @@ const ORDEM = (() => {
   return a.map(p => [p[0], p[1]]);
 })();
 const M = REGOLE.marchi;
-const RANK_OSPEDALE = 60, RANK_STADIO = 120;
+// quadras dos desbloqueios grandes: cada uma já está desenhada quando a cidade chega ao número de casas dela
+// (e todas ficam além das casas que existiam quando entraram: nenhuma casa muda de lugar)
+const QUADRA = { campo: 9, stazione: 15, municipio: 33, ospedale: 60, stadio: 120 };
 const papel = r => {
   const [i, j] = ORDEM[r];
   if (r === 0) return 'piazza';
   if (i === 0 && j === -1) return 'chiesa';
-  if (r === RANK_OSPEDALE) return 'ospedale';
-  if (r === RANK_STADIO) return 'stadio';
+  for (const [k, q] of Object.entries(QUADRA)) if (r === q) return k;
   if (r >= 7 && (r - 7) % 9 === 0) return 'palazzina';
   return 'case';
 };
@@ -55,7 +56,8 @@ const casuale = seme => () => { seme |= 0; seme = (seme + 0x6D2B79F5) | 0; let t
 
 // lotes desenhados depois da última casa: livres (convite) e, nas cidades maiores, o outdoor
 export const liberiDi = l => REGOLE.lotti_liberi;
-export const temCartellone = l => l.case >= REGOLE.cartellone_da;
+export const temCartellone = l => l.case >= sogliaDi('cartellone');
+const sbloccato = (l, id) => l.case >= sogliaDi(id);
 const extraLotti = l => liberiDi(l) + (temCartellone(l) ? 1 : 0);
 // lote livre n: "lavori in corso" em 1 de cada 3, "in vendita" nos outros (fixo enquanto o lote estiver livre)
 export const tipoLibero = (l, n) => (hash(`${l.comune.istat}:${n}`) % 3 === 0 ? 'lavori' : 'vendita');
@@ -139,7 +141,8 @@ export class Citta {
       borda: add('borda', geometriaBorda()),
       fiamma: add('fiamma', geometriaEspecial('fiamma'), brilho),
     };
-    for (const t of ['piazza', 'bandiera', 'chiesa', 'palazzina', 'ospedale', 'stadio', 'parco', 'liberoV', 'liberoL', 'cartellone']) this.camadas[t] = add(t, geometriaEspecial(t));
+    for (const t of ['piazza', 'bandiera', 'chiesa', 'palazzina', 'ospedale', 'stadio', 'parco', 'liberoV', 'liberoL', 'cartellone',
+      'cabina', 'fermata', 'stagno', 'negozi', 'parco2', 'campo', 'stazione', 'municipio']) this.camadas[t] = add(t, geometriaEspecial(t));
     // noite: janelas acesas, lâmpadas dos postes (grupo à parte, visível só à noite; luz "aditiva" que brilha)
     this.grupoNotte = new THREE.Group();
     this.grupoNotte.visible = false;
@@ -251,12 +254,17 @@ export class Citta {
       const esp = (t) => push(t, matriz(cx, hc + 0.001, cz, 0, LOTE));
       if (p === 'piazza') {
         esp('piazza'); push('bandiera', matriz(cx + 1.45 * LOTE, hc + 0.001, cz + 0.55 * LOTE, 0, LOTE));
+        for (const t of ['cabina', 'fermata', 'stagno']) if (sbloccato(l, t)) esp(t);
         if (this.halloween) { const mz = matriz(cx, hc + 0.001, cz, 0, LOTE); push('zuccaP', mz); push('zuccaPL', mz); }
       }
-      else if (p === 'chiesa') esp(l.case >= M.chiesa ? 'chiesa' : 'parco');
+      else if (p === 'chiesa') {
+        // as lojas ficam no meio da quadra; a igreja e o pub chegam depois, nas pontas
+        const lojas = sbloccato(l, 'negozi');
+        esp(sbloccato(l, 'chiesa') ? 'chiesa' : lojas ? 'parco2' : 'parco');
+        if (lojas) esp('negozi');
+      }
       else if (p === 'palazzina') esp(l.case >= (palazzinaN(r) + 1) * M.palazzinaOgni ? 'palazzina' : 'parco');
-      else if (p === 'ospedale') esp(l.case >= M.ospedale ? 'ospedale' : 'parco');
-      else if (p === 'stadio') esp(l.case >= M.stadio ? 'stadio' : 'parco');
+      else if (QUADRA[p] != null) esp(sbloccato(l, p) ? p : 'parco');
       // Natal: árvore na piazza; luminárias nas ruas da piazza e das quadras em volta
       if (this.natale) {
         if (p === 'piazza') { push('albero', matriz(cx - LOTE, hc + 0.001, cz, 0, LOTE)); push('stella', matriz(cx - LOTE, hc + 0.001, cz, 0, LOTE)); }
@@ -337,9 +345,16 @@ export class Citta {
 
   // malhas próprias dos comércios de uma cidade (letreiro com nome, cor e logo)
   extrasCidade(l) {
-    const c = this.dadosCidade(l);
-    if (c.extras || !l.commerci?.length) return c.extras;
+    const c = this.dadosCidade(l), pub = sbloccato(l, 'chiesa');
+    if (c.extras || (!l.commerci?.length && !pub)) return c.extras;
     const g = c.extras = new THREE.Group(), y = c.hc + 0.0009;
+    // letreiro com o nome do pub (votado pelos moradores), na quadra da igreja
+    if (pub) {
+      const placa = new THREE.Mesh(geometriaFaccia(INSEGNA_PUB, 0.012), new THREE.MeshBasicMaterial());
+      const pintar = () => { placa.material.map?.dispose(); placa.material.map = texturaPub(nomePub(l.comune.istat, l.pub)); placa.material.needsUpdate = true; this.mappa.sujo = true; };
+      pintar(); fontePronta.then(pintar);
+      placa.matrixAutoUpdate = false; placa.matrix.fromArray(matriz(l.x, c.hc + 0.001, l.z - QH, 0, LOTE)); g.add(placa);
+    }
     for (const a of c.alvos) {
       if (a.tipo !== 'commercio') continue;
       const cm = a.commercio, m = new THREE.Matrix4().fromArray(matriz(a.x, y, a.z, a.rot, LOTE));

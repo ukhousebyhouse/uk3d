@@ -393,14 +393,82 @@ function pillarBox(b, x, z, s = 1) {
 export function geometriaEspecial(tipo) {
   const b = new Construtor();
   if (tipo === 'piazza') {
-    // village green: carvalho grande, lago dos patos, bancos, cabine vermelha e pillar box
+    // village green: carvalho grande e duas árvores; o resto vem com os desbloqueios (REGOLE.traguardi)
     b.cilindro(0.05, 0.3, -0.3, 0, -0.2, T.tronco, 6).esfera(0.36, -0.3, 0.52, -0.2, T.foglia).esfera(0.24, -0.1, 0.62, -0.32, '#4E9A43');
+    for (const [x, z] of [[-1.6, 0.6], [1.6, -0.65]]) albero(b, x, z, 0.16);
+  } else if (tipo === 'cabina') {
+    cabina(b, -1.55, -0.55, 1.1);
+  } else if (tipo === 'fermata') {
+    // pillar box e ponto de ônibus: abrigo de vidro com banco e a placa (branca com faixa vermelha)
+    pillarBox(b, -1.3, -0.5, 1.1);
+    const x = 0.85, z = -0.8;
+    b.caixa(0.4, 0.22, 0.012, x, 0, z - 0.07, T.vetro).caixa(0.012, 0.22, 0.14, x - 0.2, 0, z, T.vetro);
+    for (const dx of [-0.2, 0.2]) b.caixa(0.016, 0.24, 0.016, x + dx, 0, z - 0.07, T.scuro);
+    b.caixa(0.44, 0.018, 0.18, x, 0.24, z, '#22252B').caixa(0.3, 0.015, 0.05, x, 0.07, z - 0.04, T.grigio);
+    b.cilindro(0.008, 0.34, x + 0.32, 0, z - 0.02, T.scuro, 5).caixa(0.1, 0.07, 0.01, x + 0.32, 0.27, z - 0.02, T.bianco).caixa(0.1, 0.02, 0.012, x + 0.32, 0.32, z - 0.02, T.rosso);
+  } else if (tipo === 'stagno') {
+    // lago dos patos e dois bancos
     const lago = new THREE.CircleGeometry(0.3, 14); lago.rotateX(-Math.PI / 2); lago.scale(1.4, 1, 1); b.add(lago, T.acqua, 0.75, 0.003, 0.15);
     for (const [x, z] of [[0.55, 0.12], [0.95, 0.2]]) b.caixa(0.04, 0.03, 0.025, x, 0.004, z, '#F2F2EC').caixa(0.012, 0.012, 0.012, x + 0.02, 0.03, z, '#3E7A3E');
     for (const [x, z] of [[-0.8, 0.55], [0.1, 0.55]]) b.caixa(0.3, 0.025, 0.08, x, 0.06, z, T.tronco).caixa(0.3, 0.07, 0.015, x, 0.085, z - 0.035, T.tronco).caixa(0.02, 0.06, 0.06, x - 0.13, 0, z, T.scuro).caixa(0.02, 0.06, 0.06, x + 0.13, 0, z, T.scuro);
-    cabina(b, -1.55, -0.55, 1.1);
-    pillarBox(b, -1.3, -0.5, 1.1);
-    for (const [x, z] of [[-1.6, 0.6], [1.6, -0.65]]) albero(b, x, z, 0.16);
+  } else if (tipo === 'negozi') {
+    // chippy (frente azul, peixe na placa) e corner shop (toldo verde, cavalete de jornal), entre a igreja e o pub
+    for (const [x, frente, faixa] of [[-0.33, '#1F6FB5', '#F2C230'], [0.13, '#A94A34', '#2E5E3A']]) {
+      b.caixa(0.38, 0.44, 0.45, x, 0, 0.185, T.stucco).caixa(0.385, 0.2, 0.455, x, 0, 0.185, frente);
+      b.caixa(0.385, 0.05, 0.02, x, 0.2, 0.41, faixa).telhado(0.4, 0.47, 0.12, x, 0.44, 0.185, T.tetto);
+      b.caixa(0.22, 0.12, 0.02, x - 0.05, 0.04, 0.415, '#FFE7A0').caixa(0.07, 0.16, 0.02, x + 0.12, 0, 0.415, T.scuro);
+      persiana(b, x, 0.27, 0.41);
+    }
+    const peixe = new THREE.SphereGeometry(0.03, 8, 6); peixe.scale(1.8, 0.8, 0.4); b.add(peixe, '#E8751A', -0.35, 0.225, 0.424);
+    b.add(new THREE.ConeGeometry(0.02, 0.03, 4).rotateZ(Math.PI / 2), '#E8751A', -0.29, 0.225, 0.424);
+    b.caixa(0.36, 0.012, 0.1, 0.13, 0.19, 0.46, '#2E5E3A').caixa(0.06, 0.09, 0.03, 0.27, 0, 0.5, T.bianco);
+  } else if (tipo === 'parco2') {
+    // parque com o meio livre (lá ficam as lojas, desbloqueio "negozi")
+    for (const [x, z] of [[-1.2, -0.3], [1.2, -0.2], [-1.6, 0.5], [1.0, 0.55]]) albero(b, x, z, 0.17);
+  } else if (tipo === 'campo') {
+    // campo de futebol do time local: listras, linhas, traves, arquibancada coberta e refletores
+    for (let k = 0; k < 7; k++) b.caixa(0.5, 0.012, 1.6, -1.5 + k * 0.5, 0, 0.1, k % 2 ? '#58B95C' : '#4CAF50');
+    for (const [w, d, x, z] of [[3.3, 0.02, 0, -0.62], [3.3, 0.02, 0, 0.82], [0.02, 1.44, -1.65, 0.1], [0.02, 1.44, 1.65, 0.1], [0.02, 1.44, 0, 0.1],
+      [0.02, 0.7, -1.25, 0.1], [0.02, 0.7, 1.25, 0.1], [0.4, 0.02, -1.45, -0.25], [0.4, 0.02, -1.45, 0.45], [0.4, 0.02, 1.45, -0.25], [0.4, 0.02, 1.45, 0.45]]) b.caixa(w, 0.014, d, x, 0, z, T.bianco);
+    const roda = new THREE.RingGeometry(0.18, 0.2, 24); roda.rotateX(-Math.PI / 2); b.add(roda, T.bianco, 0, 0.0145, 0.1);
+    for (const s of [-1, 1]) {
+      const x = s * 1.67;
+      b.caixa(0.012, 0.09, 0.012, x, 0, -0.06, T.bianco).caixa(0.012, 0.09, 0.012, x, 0, 0.26, T.bianco).caixa(0.012, 0.012, 0.33, x, 0.09, 0.1, T.bianco);
+    }
+    for (let k = 0; k < 3; k++) b.caixa(1.6, 0.06, 0.08, 0, k * 0.06, -0.78 - k * 0.07, '#B8202E');
+    b.caixa(1.7, 0.02, 0.32, 0, 0.32, -0.84, '#3A3F4A');
+    for (const x of [-0.8, 0, 0.8]) b.caixa(0.02, 0.32, 0.02, x, 0, -0.98, T.scuro);
+    for (const [x, z] of [[-1.85, -0.85], [1.85, -0.85], [-1.85, 0.9], [1.85, 0.9]]) b.cilindro(0.012, 0.72, x, 0, z, T.grigio, 5).caixa(0.1, 0.06, 0.03, x, 0.72, z, '#E8EEF2');
+  } else if (tipo === 'stazione') {
+    // estação de trem: linha com dormentes, plataforma coberta, prédio de tijolo com relógio e um trem parado
+    b.caixa(4.0, 0.02, 0.5, 0, 0, -0.55, '#8A8378');
+    for (let x = -1.9; x <= 1.9; x += 0.15) b.caixa(0.04, 0.025, 0.28, x, 0.005, -0.55, '#6E4A2D');
+    for (const dz of [-0.09, 0.09]) b.caixa(4.0, 0.03, 0.02, 0, 0.02, -0.55 + dz, '#5E5A55');
+    b.caixa(3.4, 0.07, 0.34, 0, 0, -0.12, T.pietra).caixa(3.4, 0.006, 0.025, 0, 0.07, -0.27, T.oro);
+    for (let x = -1.2; x <= 1.21; x += 0.6) b.caixa(0.02, 0.3, 0.02, x, 0.07, -0.05, '#2E5E3A');
+    b.caixa(2.8, 0.02, 0.28, 0, 0.37, -0.1, '#2E5E3A').caixa(2.8, 0.04, 0.01, 0, 0.33, -0.24, T.bianco);
+    b.caixa(1.3, 0.42, 0.4, -0.5, 0, 0.4, '#A94A34').telhado(1.36, 0.46, 0.18, -0.5, 0.42, 0.4, T.tetto);
+    for (const x of [-0.95, -0.05]) persiana(b, x, 0.12, 0.6);
+    b.caixa(0.16, 0.24, 0.02, -0.5, 0, 0.605, '#2E5E3A');
+    const quadrante = new THREE.CylinderGeometry(0.06, 0.06, 0.012, 16); quadrante.rotateX(Math.PI / 2); b.add(quadrante, T.bianco, -0.5, 0.33, 0.61);
+    b.caixa(0.008, 0.045, 0.004, -0.5, 0.33, 0.618, T.scuro).caixa(0.035, 0.008, 0.004, -0.5 + 0.017, 0.33, 0.618, T.scuro);
+    for (const x of [-1.1, 0, 1.1]) b.caixa(1.0, 0.2, 0.2, x, 0.04, -0.55, '#1F3A6B').caixa(1.01, 0.05, 0.205, x, 0.15, -0.55, T.vetro).caixa(0.98, 0.02, 0.18, x, 0.24, -0.55, T.grigio);
+    b.caixa(0.02, 0.2, 0.2, -1.61, 0.04, -0.55, T.oro);
+  } else if (tipo === 'municipio') {
+    // town hall de pedra: pórtico com colunas e frontão, torre do relógio no meio (sem bandeiras)
+    const PEDRA = '#D8CFBE', CLARA = '#E8E1D2';
+    b.caixa(1.4, 0.04, 0.22, 0, 0, 0.76, T.pietra);
+    b.caixa(3.0, 0.7, 1.0, 0, 0, -0.05, PEDRA).caixa(3.06, 0.06, 1.06, 0, 0.7, -0.05, '#C9BFAA').telhado(3.0, 1.0, 0.22, 0, 0.76, -0.05, T.tetto);
+    for (let k = 0; k < 6; k++) b.cilindro(0.04, 0.55, -0.45 + k * 0.18, 0.04, 0.6, T.bianco, 8);
+    b.caixa(1.1, 0.08, 0.24, 0, 0.59, 0.58, CLARA).telhado(0.24, 1.1, 0.18, 0, 0.67, 0.58, CLARA, Math.PI / 2);
+    for (const x of [-1.3, -1.0, -0.7, 0.7, 1.0, 1.3]) for (const y of [0.1, 0.42]) persiana(b, x, y, 0.46);
+    b.caixa(0.42, 1.0, 0.42, 0, 0.7, -0.05, PEDRA).caixa(0.46, 0.04, 0.46, 0, 1.7, -0.05, '#C9BFAA');
+    b.caixa(0.34, 0.25, 0.34, 0, 1.74, -0.05, CLARA).piramide(0.4, 0.4, 0.38, 0, 1.99, -0.05, T.verde);
+    for (const [ry, dx, dz] of [[0, 0, 0.215], [Math.PI, 0, -0.215], [Math.PI / 2, 0.215, 0], [-Math.PI / 2, -0.215, 0]]) {
+      const q = new THREE.CylinderGeometry(0.12, 0.12, 0.01, 18); q.rotateX(Math.PI / 2); b.add(q, T.bianco, dx, 1.45, -0.05 + dz, ry);
+      const p = new THREE.BoxGeometry(0.012, 0.09, 0.006); p.translate(0, 0.035, 0.008); b.add(p, T.scuro, dx, 1.45, -0.05 + dz, ry);
+    }
+    for (const s of [-1, 1]) albero(b, s * 1.75, 0.72, 0.15);
   } else if (tipo === 'bandiera') {
     // blue plaque do fundador num pedestal
     b.caixa(0.12, 0.5, 0.08, 0, 0, 0, '#B85A3E').caixa(0.14, 0.02, 0.1, 0, 0.5, 0, T.pietra);
@@ -492,6 +560,8 @@ export function geometriaEspecial(tipo) {
 // placas de texto (em lotes): posição do centro da face, largura e altura
 export const PLACCA = { x: 0.2, y: 0.24, z: 0.3, w: 0.44, h: 0.25 };
 export const CARTELLONE = { y: 0.42, z: 0, w: 1.0, h: 0.48 };
+// letreiro com o nome do pub, acima do térreo (o pub fica à direita na quadra da igreja)
+export const INSEGNA_PUB = { x: 0.85, y: 0.205, z: 0.405, w: 0.88, h: 0.1 };
 // plano com UV para a face da placa, virado para +z, um pouco à frente da moldura
 export function geometriaFaccia(p, dz = 0.011) {
   const g = new THREE.PlaneGeometry(p.w, p.h);

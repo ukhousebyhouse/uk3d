@@ -40,9 +40,10 @@ export async function carregar(versao, demo = false) {
   const comuni = comuniJ.dados.map(([istat, nome, ci, reg, x, z, pop, rango, bil], i) => ({ i, istat, nome, sigla: comuniJ.contee[ci] ?? '', reg, x, z, pop, rango, bil: bil || '', luogo: null }));
   const comunePorIstat = new Map(comuni.map(c => [c.istat, c]));
 
-  const luoghi = snap.luoghi.map(([ci, n, fondatore, fts, lotti], id) => {
+  // pub: votos no nome do pub, [[índice em pub_nomi, votos], ...] do mais votado para o menos
+  const luoghi = snap.luoghi.map(([ci, n, fondatore, fts, lotti, pub], id) => {
     const c = comuni[ci];
-    const l = { id, comune: c, nome: c.nome, x: c.x, z: c.z, case: n, lotti: lotti ?? n, fondatore, fondatore_ts: fts * 1000, casas: [], regione: regPorCod.get(c.reg) };
+    const l = { id, comune: c, nome: c.nome, x: c.x, z: c.z, case: n, lotti: lotti ?? n, fondatore, fondatore_ts: fts * 1000, casas: [], regione: regPorCod.get(c.reg), pub: pub ?? [] };
     c.luogo = l;
     l.regione.case += n;
     l.regione.luoghi++;

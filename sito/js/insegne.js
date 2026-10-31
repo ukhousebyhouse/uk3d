@@ -72,6 +72,14 @@ export const texturaPubblicita = () => textura(1024, 492, (g, w, h) => {
   linha(g, 'ukhousebyhouse.com', w / 2, h * 0.89, w - 200, 40, 800);
 });
 
+// letreiro do pub: letras douradas sobre verde-escuro, como os pubs de verdade
+export const texturaPub = nome => textura(1024, 116, (g, w, h) => {
+  g.fillStyle = '#C9A040'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#1E3B2C'; g.fillRect(8, 8, w - 16, h - 16);
+  g.fillStyle = '#F2C230'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  linha(g, nome.toUpperCase(), w / 2, h / 2 + 3, w - 60, 76);
+});
+
 // logo opcional: imagem já carregada (HTMLImageElement) desenhada num quadrado à esquerda
 function desenharLogo(g, img, x, y, lado) {
   if (!img) return 0;

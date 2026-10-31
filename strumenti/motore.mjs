@@ -4,7 +4,8 @@
 // eventi = {
 //   inizio: ms,                                   // início do jogo (1º post)
 //   posts:   [{ id, ts }],
-//   commenti:[{ post, conta, ts, luogo: istat|null, tags: [conta], voto: conta|null, stato: 'valido'|'pendente'|'rifiutato' }],
+//   commenti:[{ post, conta, ts, luogo: istat|null, tags: [conta], voto: conta|null, pub: índice|null, stato: 'valido'|'pendente'|'rifiutato' }],
+//            // pub: voto no nome do pub da própria cidade (REGOLE.pub_nomi); vale o último voto de cada conta
 //   storie:  [{ conta, ts }],                     // story que marcou o perfil
 //   bloccati:[conta],                             // escondidos do mapa (lote fica reservado)
 //   doppi:   [{ da: ms, a: ms, tipi: ['storia'] | ['tutto'] }],
@@ -58,7 +59,11 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
       eventos.push({ tipo: 'disputa', luogo: comuni[ci][0], fondatore: l.visiveis[0].conta, secondo: a.conta, differenza_s: Math.round((ts - l.visiveis[0].casa.ts) / 1000), ts });
     }
     a.casa = { ci, ts, lote: l.lotti++ };
-    if (!a.bloc) l.visiveis.push(a);
+    if (!a.bloc) {
+      l.visiveis.push(a);
+      const t = R.traguardi.find(x => x.case === l.visiveis.length);
+      if (t) eventos.push({ tipo: 'traguardo', luogo: comuni[ci][0], id: t.id, conta: a.conta, ts });
+    }
     add(a, F.casa, P.casa, ts);
     if (a.taggatoDa && !a.recrutado) {
       a.recrutado = true;
@@ -116,6 +121,7 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
         const v = c.voto.toLowerCase(), alvo = contas.get(v);
         if (v !== a.conta && alvo?.casa && !votos.has(ch)) { votos.add(ch); add(alvo, F.voto, P.voto, c.ts); }
       }
+      if (c.pub != null && R.pub_nomi[c.pub] && !a.bloc) a.pub = { i: c.pub, ts: c.ts };   // o último voto vale
       a.giorni.add(giornoRoma(c.ts));
     } else {
       const a = contas.get(e.s.conta.toLowerCase());
@@ -197,6 +203,12 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
     while (a.giorni.has(d)) { n++; d = ontem(d); }
     return n;
   };
+  // nome do pub: mais votos entre os moradores; empate -> o nome votado primeiro
+  const votiPub = l => {
+    const v = new Map();
+    for (const a of l.visiveis) if (a.pub) { const x = v.get(a.pub.i) ?? { n: 0, ts: Infinity }; x.n++; x.ts = Math.min(x.ts, a.pub.ts); v.set(a.pub.i, x); }
+    return [...v].sort((a, b) => b[1].n - a[1].n || a[1].ts - b[1].ts).map(([i, x]) => [i, x.n]);
+  };
   const saidaCasas = casas.sort((a, b) => a.casa.ts - b.casa.ts).map(a => [
     a.conta, liDe.get(a.casa.ci), a.casa.lote, Math.round(a.casa.ts / 1000), a.tot, sett(a),
     a.fiamme > agora ? Math.round(a.fiamme / 1000) : 0, a.fonti, serie(a),
@@ -222,7 +234,8 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
       luoghi: lugares.length, regioni: regioni.length, comuni: comuni.length, storie: cont.storie, follower,
     },
     doppi: doppi.filter(d => d.a > agora - dia && d.da < agora + dia).map(d => ({ da: new Date(d.da).toISOString(), a: new Date(d.a).toISOString(), tipi: d.tipi })),
-    luoghi: lugares.map(l => [l.ci, l.visiveis.length, l.visiveis[0].conta, Math.round(l.visiveis[0].casa.ts / 1000), l.lotti]),
+    // [comune, casas, fundador, ts do fundador, lotes ocupados, votos do pub [[nome, votos], ...] (mais votado primeiro)]
+    luoghi: lugares.map(l => [l.ci, l.visiveis.length, l.visiveis[0].conta, Math.round(l.visiveis[0].casa.ts / 1000), l.lotti, votiPub(l)]),
     // [conta, luogo, lote, ts, punti_totali, punti_settimana, fiamme_fino, [fonti], serie_giorni]
     case: saidaCasas,
     commerci: commerci.filter(n => liDe.has(n.ci) && !(n.fino && n.fino <= agora)).map(n => ({

@@ -8,6 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { raccogliere, lerConfig, PASTA_IG } from './raccoglitore.mjs';
 import { Risolutore, estrairTags, estrairVoto, norm } from './risolutore.mjs';
 import { gerarSnapshot } from './genera-snapshot.mjs';
+import { estrairPub } from '../sito/js/regole.js';
 
 const RAIZ = path.resolve(import.meta.dirname, '..');
 const CFG = path.join(RAIZ, 'config');
@@ -38,10 +39,12 @@ export function montarEventi({ posts, comentarios, storie, tags = [], cfg, log =
   const commenti = lista.map(c => {
     if (contaProibida(c.conta, mod.parole_vietate ?? [])) bloccati.add(c.conta);
     let stato = 'valido', luogo = null;
+    // voto no nome do pub ("pub Red Lion"): o nome não entra na busca da cidade ("Leeds, England. Pub: The Crown")
+    const pub = estrairPub(c.testo), testo = pub == null ? c.testo : c.testo.replace(/\bpub\b[\s\S]*$/i, '').trim();
     if (/https?:\/\//i.test(c.testo)) stato = 'rifiutato';
-    else if (!comCidade.has(c.conta)) {
+    else if (!comCidade.has(c.conta) && testo) {
       const manual = corr.conte[c.conta] ?? corr.testi[norm(c.testo)];
-      const r = manual ? { istat: manual, motivo: 'manuale' } : risolutore.risolvere(c.testo);
+      const r = manual ? { istat: manual, motivo: 'manuale' } : risolutore.risolvere(testo);
       motivos[r.motivo] = (motivos[r.motivo] ?? 0) + 1;
       if (r.istat) { luogo = r.istat; comCidade.add(c.conta); }
       else if (['omonimo', 'solo_regione'].includes(r.motivo)) {
@@ -52,7 +55,7 @@ export function montarEventi({ posts, comentarios, storie, tags = [], cfg, log =
         revisao.set(k, item);
       }
     }
-    return { post: c.post, conta: c.conta, ts: c.ts, luogo, tags: estrairTags(c.testo), voto: estrairVoto(c.testo), stato };
+    return { post: c.post, conta: c.conta, ts: c.ts, luogo, tags: estrairTags(c.testo), voto: estrairVoto(c.testo), pub, stato };
   });
 
   const storieEventi = [

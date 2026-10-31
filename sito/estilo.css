@@ -140,7 +140,7 @@ a { color: inherit; }
 .carta.plaque { background: var(--placca); color: #fff; border: 4px solid #fff; outline: 3px solid var(--inchiostro); border-radius: 999px; text-align: center; padding: 14px 18px; margin: 14px auto; max-width: 340px; cursor: pointer; }
 .carta.plaque b { display: block; font-size: 18px; }
 .carta.plaque span { display: block; font-size: 14px; font-weight: 800; }
-.carta.plaque small { display: block; font-size: 11px; opacity: .9; }
+.carta.plaque small { display: block; font-size: 12px; font-weight: 800; color: #fff; }
 /* nome galês/Gaelic ao lado do inglês, como nas placas bilíngues */
 h2 small.bil { font-size: .62em; font-style: italic; color: var(--grigio); font-weight: 800; }
 /* cartão da nação: faixa na cor dela */

@@ -33,6 +33,9 @@ if (comando === 'push') {
   const remoto = `https://github.com/${REPO}.git`;
   if (git('remote', 'get-url', 'origin').status !== 0) git('remote', 'add', 'origin', remoto);
   else git('remote', 'set-url', 'origin', remoto);
+  // o robô faz um commit mensal (keepalive): traz antes, com rebase, para o push não ser recusado
+  const p = git('pull', '--rebase', 'origin', 'main');
+  if (p.status !== 0) { console.log((p.stdout + p.stderr).trim()); process.exit(p.status); }
   const r = git('push', '-u', 'origin', 'main');
   console.log((r.stdout + r.stderr).trim());
   process.exit(r.status);

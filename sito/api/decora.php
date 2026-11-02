@@ -1,8 +1,12 @@
 <?php
 // Pedido de casa decorada (decori.js): confere as contas no mapa e os efeitos, guarda em CARTELLA/decori/<id>.json
-// e devolve o id, que vai como "sck" no link da Hotmart. Só aparece no mapa depois que hotmart.php confirma o pagamento.
+// e devolve o id. Hotmart: o id vai como "sck" no link de pagamento. Stripe (data/negozio.json decora.provedor = "stripe",
+// ou o código de teste STRIPE_PROVA): cria a Checkout Session e devolve a url dela.
+// Só aparece no mapa depois que o webhook (hotmart.php / stripe.php) confirma o pagamento.
 declare(strict_types=1);
 require is_file(__DIR__ . '/../../privato/config.php') ? __DIR__ . '/../../privato/config.php' : __DIR__ . '/../privato/config.php';
+$arqStripe = is_file(__DIR__ . '/../../privato/stripe.php') ? __DIR__ . '/../../privato/stripe.php' : __DIR__ . '/../privato/stripe.php';
+if (is_file($arqStripe)) require $arqStripe;
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
@@ -65,6 +69,42 @@ if ($modello !== '') {
 }
 
 $id = date('ymd') . '-' . bin2hex(random_bytes(4));
-$pedido = ['id' => $id, 'creato' => gmdate('c'), 'stato' => 'nuovo', 'modo' => $modo, 'conta' => $conta, 'da' => $modo === 'regalo' ? $da : '', 'squadra' => $squadra, 'modello' => $modello, 'extra' => $extra];
+$cfg = json_decode((string)@file_get_contents(__DIR__ . '/../data/negozio.json'), true)['decora'] ?? [];
+$prova = defined('STRIPE_PROVA') && STRIPE_PROVA !== '' && hash_equals(STRIPE_PROVA, (string)($d['prova'] ?? ''));
+$usaStripe = defined('STRIPE_SECRET') && STRIPE_SECRET !== '' && (($cfg['provedor'] ?? 'hotmart') === 'stripe' || $prova);
+$pedido = ['id' => $id, 'creato' => gmdate('c'), 'stato' => 'nuovo', 'modo' => $modo, 'conta' => $conta, 'da' => $modo === 'regalo' ? $da : '', 'squadra' => $squadra, 'modello' => $modello, 'extra' => $extra, 'provedor' => $usaStripe ? 'stripe' : 'hotmart'];
 file_put_contents("$pasta/$id.json", json_encode($pedido, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX);
-resposta(200, ['ok' => true, 'id' => $id]);
+if (!$usaStripe) resposta(200, ['ok' => true, 'id' => $id]);
+
+// ---------- Stripe Checkout ----------
+$giorni = max(1, (int)($cfg['giorni'] ?? 10));
+$NOMI = ['faro' => 'Lighthouse', 'castello' => 'Castle', 'mulino' => 'Windmill', 'barca' => 'Narrowboat', 'bus' => 'Double-decker', 'albero' => 'Treehouse', 'capanne' => 'Beach huts', 'pastore' => "Shepherd's hut", 'collina' => 'Hillside house', 'stregata' => 'Haunted manor', 'osservatorio' => 'Observatory', 'zenzero' => 'Gingerbread house', 'cabina' => 'Giant phone box', 'teiera' => 'Teapot cottage', 'razzo' => 'Rocket'];
+$nome = $modello !== '' ? "Rare house: {$NOMI[$modello]} · @$conta" : ($modo === 'regalo' ? "Gift for @$conta" : "House decoration · @$conta");
+$base = ((($_SERVER['HTTPS'] ?? '') !== '' && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'ukhousebyhouse.com');
+$dados = [
+    'mode' => 'payment',
+    'locale' => 'en-GB',
+    'client_reference_id' => $id,
+    'metadata' => ['pedido' => $id, 'conta' => $conta],
+    'payment_intent_data' => ['description' => $nome, 'metadata' => ['pedido' => $id, 'conta' => $conta]],
+    'line_items' => [['quantity' => 1, 'price_data' => [
+        'currency' => 'gbp', 'unit_amount' => (int)($cfg['prezzo'] ?? 499),
+        'product_data' => ['name' => $nome, 'description' => "Shown on the UK House by House map for $giorni days" . ($modo === 'regalo' ? ", with \"from @$da\" above the house" : '') . '. Looks only: no points.'],
+    ]]],
+    'success_url' => "$base/?pagato=1",
+    'cancel_url' => "$base/#decora",
+];
+$ctx = stream_context_create(['http' => [
+    'method' => 'POST', 'timeout' => 20, 'ignore_errors' => true,
+    'header' => "Authorization: Bearer " . STRIPE_SECRET . "\r\nContent-Type: application/x-www-form-urlencoded\r\nIdempotency-Key: decora-$id\r\n",
+    'content' => http_build_query($dados),
+]]);
+$sessao = json_decode((string)@file_get_contents('https://api.stripe.com/v1/checkout/sessions', false, $ctx), true) ?: [];
+if (empty($sessao['url'])) {
+    file_put_contents("$pasta/$id.json", json_encode($pedido + ['erro_stripe' => $sessao['error']['message'] ?? 'sem resposta'], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX);
+    resposta(502, ['ok' => false, 'erro' => 'We couldn\'t open the payment page. Please try again in a minute.']);
+}
+$pedido['sessione'] = $sessao['id'];
+$pedido['test'] = empty($sessao['livemode']);
+file_put_contents("$pasta/$id.json", json_encode($pedido, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX);
+resposta(200, ['ok' => true, 'id' => $id, 'url' => $sessao['url']]);

@@ -319,7 +319,11 @@ export class Decori {
     this.attive = new Map();     // conta -> { casa, sel, da, g, anima, pilha } (desenhadas agora: pagas + prévia)
     this.ed = null;              // edição aberta: { modo, casa, sel, da }
     this.giro = null;            // câmera girando em volta da casa
-    this.cfg = { attivo: false, prezzo: 499, giorni: 10, checkout: '' };
+    this.cfg = { attivo: false, prezzo: 499, giorni: 10, checkout: '', provedor: 'hotmart' };
+    // teste da Stripe antes da troca: ?stripe=<código> fica guardado neste aparelho até pagar
+    const q = new URLSearchParams(location.search).get('stripe');
+    if (q) gravar('stripe_prova', q);
+    this.prova = ler('stripe_prova');
     this.ANIM = {}; this.GIRO = {};
     mappa.aoFrame.push(t => this.quadro(t));
     mappa.aoMover.push(() => this.visibili());
@@ -328,6 +332,7 @@ export class Decori {
   }
 
   get aperto() { return this.cfg.attivo || new URLSearchParams(location.search).has('decora'); }
+  get stripe() { return this.cfg.provedor === 'stripe' || !!this.prova; }
 
   async iniciar() {
     try { Object.assign(this.cfg, (await (await fetch(`data/negozio.json?t=${Date.now()}`)).json()).decora ?? {}); } catch { /* sem config: fica desligado */ }
@@ -596,23 +601,24 @@ export class Decori {
     this.ui.abrir(`
       <h2>Nearly there! 🔒</h2>
       <div class="sub">${ed.modo === 'regalo' ? `Gift for @${esc(ed.casa.conta)} from @${esc(ed.da)}` : `@${esc(ed.casa.conta)}'s house`} · ${n} ${n === 1 ? 'effect' : 'effects'} · ${this.cfg.giorni} days · <b>${eur(this.cfg.prezzo)}</b> (VAT included)</div>
-      <label class="consenso-dec"><input type="checkbox" id="dec-ok"><span>I want the decoration to start straight after payment, and I understand I lose my 14-day right to cancel once it starts. I've read the <a href="privacy.html#decorazioni" target="_blank" rel="noopener">privacy notice</a>.</span></label>
+      <label class="consenso-dec"><input type="checkbox" id="dec-ok"><span>I want the decoration to start straight after payment, and I understand I lose my 14-day right to cancel once it starts. I've read the <a href="terms.html#purchases" target="_blank" rel="noopener">terms</a> and the <a href="privacy.html#decorazioni" target="_blank" rel="noopener">privacy notice</a>.</span></label>
       <div class="regola">👨‍👩‍👧 Under 18? Ask a parent or carer before paying.</div>
-      <button class="paga-dec" data-dp="paga" style="margin-top:12px">Go to secure checkout · ${eur(this.cfg.prezzo)}<small>card, PayPal, Google Pay · via Hotmart</small></button>
+      <button class="paga-dec" data-dp="paga" style="margin-top:12px">Go to secure checkout · ${eur(this.cfg.prezzo)}<small>${this.stripe ? 'card, Apple Pay, Google Pay · secure checkout by Stripe' : 'card, PayPal, Google Pay · via Hotmart'}</small></button>
       <div class="bottoni"><button class="sec" data-dp="indietro">← back</button></div>`);
   }
 
   async paga(botao) {
     const ed = this.ed;
     if (!$('#dec-ok')?.checked) return this.ui.aviso('Tick the box to carry on.');
-    if (!this.cfg.checkout) return this.ui.aviso('Payment isn\'t available yet. Please try again later.');
+    if (!this.stripe && !this.cfg.checkout) return this.ui.aviso('Payment isn\'t available yet. Please try again later.');
     botao.disabled = true;
     try {
-      const r = await fetch('api/decora.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conta: ed.casa.conta, modo: ed.modo, da: ed.modo === 'regalo' ? ed.da : '', squadra: ed.sel.squadra ?? '', modello: ed.sel.modello ?? '', extra: [...ed.sel.extra] }) });
+      const r = await fetch('api/decora.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conta: ed.casa.conta, modo: ed.modo, da: ed.modo === 'regalo' ? ed.da : '', squadra: ed.sel.squadra ?? '', modello: ed.sel.modello ?? '', extra: [...ed.sel.extra], prova: this.prova ?? '' }) });
       const j = await r.json().catch(() => ({}));
       if (!j.ok) throw new Error(j.erro || 'We couldn\'t set up the payment. Please try again.');
       gravar('decora_attesa', { id: j.id, conta: ed.casa.conta, modo: ed.modo, da: ed.da, sel: { squadra: ed.sel.squadra, modello: ed.sel.modello, extra: [...ed.sel.extra] }, t: Date.now() });
-      location.href = `${this.cfg.checkout}${this.cfg.checkout.includes('?') ? '&' : '?'}sck=${j.id}`;
+      // Stripe: o servidor devolve a página de pagamento; Hotmart: link fixo com o id do pedido
+      location.href = j.url ?? `${this.cfg.checkout}${this.cfg.checkout.includes('?') ? '&' : '?'}sck=${j.id}`;
     } catch (e) {
       botao.disabled = false;
       this.ui.aviso(e.message);

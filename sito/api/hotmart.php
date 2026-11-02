@@ -3,6 +3,7 @@
 // No painel da Hotmart: Ferramentas > Webhook > URL https://ukhousebyhouse.com/api/hotmart.php ; copie o "hottok" para HOTMART_HOTTOK no config.php.
 declare(strict_types=1);
 require is_file(__DIR__ . '/../../privato/config.php') ? __DIR__ . '/../../privato/config.php' : __DIR__ . '/../privato/config.php';
+require __DIR__ . '/_decori.php';
 
 // a Hotmart testa a URL ao cadastrar o webhook: responde 200 sempre, mas só processa com o hottok certo
 $valido = $_SERVER['REQUEST_METHOD'] === 'POST' && defined('HOTMART_HOTTOK') && HOTMART_HOTTOK
@@ -50,22 +51,8 @@ if ($evento === 'PURCHASE_OUT_OF_SHOPPING_CART') {
 $novo = ['PURCHASE_APPROVED' => 'pagato', 'PURCHASE_COMPLETE' => 'pagato', 'PURCHASE_REFUNDED' => 'rimborsato', 'PURCHASE_CHARGEBACK' => 'rimborsato', 'PURCHASE_CANCELED' => 'annullato'][$evento] ?? null;
 
 // casa decorada (api/decora.php): pago liga por N dias (data/negozio.json decora.giorni); reembolso desliga na hora
-$pastaDec = CARTELLA . '/decori';
-if ($novo && preg_match('/^\d{6}-[0-9a-f]{8}$/', $sck) && is_file("$pastaDec/$sck.json")) {
-    $p = json_decode((string)file_get_contents("$pastaDec/$sck.json"), true) ?: [];
-    if ($novo === 'pagato' && empty($p['scade'])) {
-        $cfg = json_decode((string)@file_get_contents(__DIR__ . '/../data/negozio.json'), true) ?: [];
-        $giorni = max(1, (int)($cfg['decora']['giorni'] ?? 10));
-        $p['attivo_da'] = gmdate('c');
-        $p['scade'] = gmdate('c', time() + $giorni * 86400);
-    }
-    // PURCHASE_COMPLETE chega dias depois do APPROVED: não desfaz um reembolso
-    if (!($novo === 'pagato' && ($p['pagamento'] ?? '') === 'rimborsato')) $p['pagamento'] = $novo;
-    $p['transazione'] = $registro['transazione'];
-    $p['valore'] = $registro['valore'];
-    $p['pagamento_em'] = $registro['em'];
-    file_put_contents("$pastaDec/$sck.json", json_encode($p, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX);
-    rigeneraDecori($pastaDec, __DIR__ . '/../data/decori.json');
+// (PURCHASE_COMPLETE chega dias depois do APPROVED: aggiornaPedido não desfaz um reembolso)
+if ($novo && aggiornaPedido($sck, $novo, ['transazione' => $registro['transazione'], 'valore' => $registro['valore']])) {
     http_response_code(200); echo 'ok'; exit;
 }
 
@@ -80,19 +67,3 @@ if ($novo && preg_match('/^\d{6}-[0-9a-f]{8}$/', $sck) && is_file("$pasta/$sck.j
 }
 http_response_code(200);
 echo 'ok';
-
-// lista pública das decorações ativas (o site lê data/decori.json): a compra mais recente de cada conta vale
-// (amministra.mjs "decori rimuovi" refaz a mesma lista no PC)
-function rigeneraDecori(string $pasta, string $destino): void {
-    $agora = time(); $por = [];
-    foreach (glob("$pasta/[0-9][0-9][0-9][0-9][0-9][0-9]-*.json") ?: [] as $a) {
-        $p = json_decode((string)file_get_contents($a), true) ?: [];
-        if (!in_array($p['pagamento'] ?? '', ['pagato', 'omaggio'], true) || ($p['stato'] ?? '') === 'rimosso' || strtotime((string)($p['scade'] ?? '')) <= $agora) continue;
-        $c = (string)$p['conta'];
-        if (!isset($por[$c]) || strcmp((string)$p['attivo_da'], (string)$por[$c]['attivo_da']) > 0) $por[$c] = $p;
-    }
-    $lista = array_values(array_map(fn($p) => ['id' => $p['id'], 'conta' => $p['conta'], 'da' => $p['da'] ?? '', 'squadra' => $p['squadra'] ?? '', 'modello' => $p['modello'] ?? '', 'extra' => $p['extra'] ?? [], 'scade' => $p['scade']], $por));
-    $tmp = "$destino.tmp";
-    file_put_contents($tmp, json_encode(['agg' => gmdate('c'), 'decori' => $lista], JSON_UNESCAPED_UNICODE), LOCK_EX);
-    rename($tmp, $destino);
-}

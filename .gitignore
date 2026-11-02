@@ -3,6 +3,7 @@ config/instagram.json
 config/hostinger.json
 config/github.json
 privato/config.php
+privato/stripe.php
 privato/dati/
 dati-grezzi/
 .tools/

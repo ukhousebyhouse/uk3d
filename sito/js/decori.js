@@ -1,15 +1,17 @@
 // Casa decorada: cores de time, ouro, neon, coroa, fogos, cores da Union Jack... na própria casa ou de presente para um amigo.
+// Ou uma casa rara (speciali.js): farol, castelo, moinho... só uma de cada por cidade ao mesmo tempo.
 // Só estética (não dá pontos). Compras pagas ficam em data/decori.json (reescrito pelo webhook da Hotmart a cada pagamento).
 // Teste antes do lançamento: ?decora=1 mostra o botão mesmo com "decora.attivo": false em data/negozio.json.
 import * as THREE from 'three';
-import { geometriaCasa, ALTURA_NIVEL, stileRegione } from './modelli.js';
+import { geometriaCasa, ALTURA_NIVEL, stileRegione, aspetto, CORI_CASA } from './modelli.js';
+import { SPECIALI, costruisciSpeciale, altezzaSpeciale } from './speciali.js';
 import { LOTE, posLote } from './citta.js';
 import { PERFIL } from './storie.js';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const hash = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); };
-const variante = s => hash(s) % 3;   // mesma variante de cor que citta.js usa
+const variante = casa => aspetto(casa.conta, casa.livello).v;   // mesma variante que citta.js usa
+const altezza = (casa, sel) => (sel.modello ? altezzaSpeciale(sel.modello) : ALTURA_NIVEL[casa.livello]);
 const eur = cent => `£${(cent / 100).toFixed(2)}`;
 const ler = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const gravar = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch { /* sem storage */ } };
@@ -33,7 +35,11 @@ const ORO = { muro: '#F2C230', tetto: '#C99A1E' };
 // a lista igual está em api/decora.php
 export const EFFETTI = [
   { id: 'oro', em: '✨', nome: 'Golden house', mia: true, regalo: true },
-  { id: 'neon', em: '🌈', nome: 'Neon', mia: true, regalo: true },
+  { id: 'neon', em: '💡', nome: 'Neon', mia: true, regalo: true },
+  { id: 'arcobaleno', em: '🌈', nome: 'Rainbow', mia: true, regalo: true },
+  { id: 'cuori', em: '💖', nome: 'Hearts', mia: true, regalo: true },
+  { id: 'neve', em: '❄️', nome: 'Snow', mia: true, regalo: true },
+  { id: 'ufo', em: '🛸', nome: 'UFO', mia: true, regalo: true },
   { id: 'corona', em: '👑', nome: 'Crown', mia: true, regalo: true },
   { id: 'fuochi', em: '🎆', nome: 'Fireworks', mia: true, regalo: true },
   { id: 'campione', em: '🏆', nome: 'Champion', mia: true, regalo: true },
@@ -43,9 +49,9 @@ export const EFFETTI = [
 ];
 
 // ---------- cores: troca parede, telhado e porta da casa original pelas da paleta (as cores dos temas de modelli.js) ----------
-const MURI = ['#A94A34', '#B85A3E', '#9A4430', '#D8B878', '#E2C590', '#CDAE6E', '#F2EEE3', '#F5E9D0', '#EFE6D6', '#9C9E9A', '#B0ADA5', '#8F918D', '#F1EFE9', '#ECEAE2', '#F4F2EC', '#F2B8C6', '#9FD3E6', '#F7DC6F', '#F5F3EC', '#F0EEE6', '#F7F4EB', '#F1EADB', '#D8CDB5', '#F2C230'];
-const TETTI = ['#4E5866', '#3E4652', '#8E7E62', '#7A6C54', '#3C434D', '#30363E', '#454B55', '#373C44', '#B8955A', '#9C7C48', '#C99A1E'];
-const PERSIANE = ['#1F3A6B', '#22252B', '#C8102E', '#5E7A6A', '#2E4A3A', '#7A4B2A', '#2E5E3A', '#6B1F2A', '#1F6FB5', '#2E7D45'];
+const MURI = [...CORI_CASA.muri, '#F1EADB', '#D8CDB5', '#F2C230'];
+const TETTI = [...CORI_CASA.tetti, '#C99A1E'];
+const PERSIANE = CORI_CASA.porte;
 const lin = l => l.map(h => new THREE.Color(h));
 const [cMuri, cTetti, cPers] = [lin(MURI), lin(TETTI), lin(PERSIANE)];
 const vicino = (r, g, b, lista) => lista.some(c => Math.abs(c.r - r) + Math.abs(c.g - g) + Math.abs(c.b - b) < 0.02);
@@ -173,26 +179,96 @@ function fuochi(h) {
   return pts;
 }
 
+// corações subindo e sumindo em volta da casa
+function cuori(h) {
+  const s = new THREE.Shape();
+  s.moveTo(0, -0.05); s.bezierCurveTo(-0.07, 0, -0.05, 0.06, 0, 0.03); s.bezierCurveTo(0.05, 0.06, 0.07, 0, 0, -0.05);
+  const geo = new THREE.ExtrudeGeometry(s, { depth: 0.02, bevelEnabled: false }), g = new THREE.Group();
+  for (let k = 0; k < 7; k++) {
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: k % 3 ? '#FF4F8B' : '#FF8FB8', transparent: true }));
+    m.userData.k = k; g.add(m);
+  }
+  g.userData.anima = t => g.children.forEach(m => {
+    const k = m.userData.k, f = ((t * 0.00025 + k / 7) % 1), a = k * 2.4 + t * 0.0004;
+    m.position.set(Math.cos(a) * (0.3 + (k % 3) * 0.08), h * 0.5 + f * (h * 0.6 + 0.7), Math.sin(a) * (0.3 + (k % 3) * 0.08));
+    m.rotation.y = -a + Math.PI / 2;
+    m.scale.setScalar((0.8 + (k % 2) * 0.5) * (0.4 + Math.min(1, f * 4)));
+    m.material.opacity = Math.min(1, (1 - f) * 2.5);
+  });
+  return g;
+}
+// neve caindo sobre a casa
+function neve(h) {
+  const N = 140, pos = new Float32Array(N * 3), seme = Array.from({ length: N }, (_, i) => [Math.sin(i * 12.9898) * 0.5 + 0.5, Math.sin(i * 78.233) * 0.5 + 0.5, Math.sin(i * 39.425) * 0.5 + 0.5]);
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const pts = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.0045, map: bolinha(), color: '#FFFFFF', transparent: true, depthWrite: false }));
+  pts.frustumCulled = false;
+  const alto = h + 1.0;
+  pts.userData.anima = t => {
+    for (let i = 0; i < N; i++) {
+      const [a, r, f] = seme[i], y = alto - ((t * 0.00018 + f) % 1) * alto;
+      pos[i * 3] = Math.cos(a * 6.28) * r * 0.62 + Math.sin(t * 0.001 + i) * 0.03; pos[i * 3 + 1] = y; pos[i * 3 + 2] = Math.sin(a * 6.28) * r * 0.62;
+    }
+    geo.attributes.position.needsUpdate = true;
+  };
+  return pts;
+}
+// arco-íris atrás da casa
+const ARCO = ['#E0473C', '#FF9F43', '#F2C230', '#2E9B55', '#3FA7F5', '#7B2CBF'];
+const raioArco = h => 0.62 + h * 0.35;
+function arcobaleno(h) {
+  const g = new THREE.Group(), R = raioArco(h);
+  ARCO.forEach((c, k) => { const m = new THREE.Mesh(new THREE.TorusGeometry(R - k * 0.045, 0.024, 6, 40, Math.PI), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.88 })); g.add(m); });
+  g.position.z = -0.32;
+  return g;
+}
+// disco voador girando em cima da casa, com luzes que piscam e o raio verde
+function ufo(yBase, h) {
+  const g = new THREE.Group(), piatto = new THREE.Group();
+  piatto.add(new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.13, 0.05, 20), lambert('#C9CED6')));
+  const cup = new THREE.Mesh(new THREE.SphereGeometry(0.1, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: '#7FE3F0', emissive: new THREE.Color('#1E6A74') }));
+  cup.position.y = 0.025; piatto.add(cup);
+  const luci = [];
+  for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2, l = new THREE.Mesh(new THREE.SphereGeometry(0.018, 6, 4), basico(k % 2 ? '#FFD34D' : '#FF5A5A')); l.position.set(Math.cos(a) * 0.2, 0, Math.sin(a) * 0.2); piatto.add(l); luci.push(l); }
+  g.add(piatto);
+  const lung = Math.max(0.2, yBase - h + 0.1);
+  const raggio = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.32, lung, 18, 1, true), new THREE.MeshBasicMaterial({ color: '#9BFFB0', transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  raggio.position.y = -lung / 2 - 0.02; g.add(raggio);
+  g.userData.anima = t => {
+    piatto.rotation.y = t * 0.003;
+    g.position.set(Math.sin(t * 0.0009) * 0.05, yBase + Math.sin(t * 0.002) * 0.04, 0);
+    luci.forEach((l, k) => l.scale.setScalar(Math.sin(t * 0.008 + k * 0.8) > 0 ? 1.2 : 0.6));
+    raggio.material.opacity = 0.16 + 0.08 * Math.sin(t * 0.005);
+  };
+  return g;
+}
+
 // altura total com o que flutua e os fogos (em lotes; para enquadrar a câmera)
 const topoDi = (casa, sel) => {
-  const ex = sel.extra, h = ALTURA_NIVEL[casa.livello];
-  const y = h + 0.25 + (ex.has('corona') ? 0.35 : 0) + (ex.has('campione') ? 0.42 : 0);
-  return ex.has('fuochi') ? y + 0.9 : Math.max(y, ex.has('palloncini') ? h * 0.75 + 0.6 : 0);
+  const ex = sel.extra, h = altezza(casa, sel);
+  const y = h + 0.25 + (ex.has('corona') ? 0.35 : 0) + (ex.has('campione') ? 0.42 : 0) + (ex.has('ufo') ? 0.45 : 0);
+  const base = Math.max(y, ex.has('palloncini') ? h * 0.75 + 0.6 : 0, ex.has('arcobaleno') ? raioArco(h) : 0, ex.has('cuori') ? h * 1.1 + 0.6 : 0);
+  return ex.has('fuochi') ? Math.max(base, y + 0.9) : base;
 };
 
 // monta o grupo 3D da casa decorada: { g, anima, pilha } (pilha = topo do que flutua; o rótulo do @ fica acima)
 function costruisci(D, citta, notte, casa, sel) {
-  const l = D.luoghi[casa.luogo], stile = stileRegione(l.regione.cod, l.comune.sigla), h = ALTURA_NIVEL[casa.livello];
+  const l = D.luoghi[casa.luogo], stile = stileRegione(l.regione.cod, l.comune.sigla), h = altezza(casa, sel);
   const g = new THREE.Group(), anim = [];
   const p = citta.posCasa(casa);
   g.position.set(p.x, p.y + 0.0009, p.z);
   g.rotation.y = posLote(casa.lote).rot;
   g.scale.setScalar(LOTE);
-  const ex = sel.extra, oro = ex.has('oro'), squadra = SQUADRE.find(s => s.id === sel.squadra);
-  const base = geoCasa(casa.livello, variante(casa.conta), stile);
+  const ex = sel.extra, sp = sel.modello ? costruisciSpeciale(sel.modello) : null;
+  // casa rara: o modelo troca a casa inteira (sem cores de time nem ouro)
+  const oro = !sp && ex.has('oro'), squadra = sp ? null : SQUADRE.find(s => s.id === sel.squadra);
+  const base = sp ? sp.geo : geoCasa(casa.livello, variante(casa), stile);
   const pal = oro ? ORO : squadra;
   const corpo = new THREE.Mesh(pal ? ricolora(base, pal) : base, oro ? matOro : citta.mat);
   g.add(corpo);
+  if (sp?.extra) g.add(sp.extra);
+  if (sp?.anima) anim.push(t => sp.anima(t, notte()));
   // bandeira: num mastro ao lado da casa; nas torres (casa alta), no terraço
   const pianta = (b, lado) => {
     if (h > 1.5) { b.position.set(lado * 0.12, h - 0.05, 0); b.scale.setScalar(0.8); }
@@ -219,16 +295,21 @@ function costruisci(D, citta, notte, casa, sel) {
   let y = h + 0.25;
   if (ex.has('corona')) { const c = corona(); g.add(c); const y0 = y; anim.push(t => { c.position.set(0, y0 + Math.sin(t * 0.003) * 0.04, 0); c.rotation.y = t * 0.0012; }); y += 0.35; }
   if (ex.has('campione')) { const c = trofeo(); g.add(c); const y0 = y; anim.push(t => { c.position.set(0, y0 + Math.sin(t * 0.003 + 1) * 0.04, 0); c.rotation.y = -t * 0.001; }); y += 0.42; }
+  if (ex.has('ufo')) { const u = ufo(y + 0.15, h); g.add(u); anim.push(u.userData.anima); y += 0.45; }
   if (ex.has('palloncini')) { const b = palloncini(h); g.add(b); anim.push(b.userData.anima); }
+  if (ex.has('arcobaleno')) g.add(arcobaleno(h));
+  if (ex.has('cuori')) { const c = cuori(h); g.add(c); anim.push(c.userData.anima); }
+  if (ex.has('neve')) { const n = neve(h); g.add(n); anim.push(n.userData.anima); }
   if (ex.has('fuochi')) { const f = fuochi(y - 0.35); g.add(f); anim.push(f.userData.anima); }
   const anima = t => anim.forEach(f => f(t));
   anima(performance.now());   // posições iniciais (a foto da story pode sair antes do próximo quadro)
   return { g, anima, pilha: y - 0.25 > h ? y - 0.1 : h };
 }
 
-const vuota = () => ({ squadra: null, extra: new Set() });
-const copia = s => ({ squadra: s.squadra, extra: new Set(s.extra) });
-const quanti = s => (s.squadra ? 1 : 0) + s.extra.size;
+const vuota = () => ({ squadra: null, modello: null, extra: new Set() });
+const copia = s => ({ squadra: s.squadra, modello: s.modello ?? null, extra: new Set(s.extra) });
+const quanti = s => (s.squadra ? 1 : 0) + (s.modello ? 1 : 0) + s.extra.size;
+const emojiDi = s => [SPECIALI.find(m => m.id === s.modello)?.em, ...[...s.extra].map(id => EFFETTI.find(e => e.id === id)?.em)].filter(Boolean).join(' ');
 
 export class Decori {
   constructor(D, mappa, citta, festa) {
@@ -267,7 +348,7 @@ export class Decori {
     const agora = Date.now(), novas = new Map();
     for (const x of lista) {
       if (Date.parse(x.scade) <= agora || !this.D.porConta.has(x.conta)) continue;
-      novas.set(x.conta, { id: x.id, conta: x.conta, da: x.da || null, scade: Date.parse(x.scade), sel: { squadra: x.squadra || null, extra: new Set(x.extra ?? []) } });
+      novas.set(x.conta, { id: x.id, conta: x.conta, da: x.da || null, scade: Date.parse(x.scade), sel: { squadra: x.squadra || null, modello: x.modello || null, extra: new Set(x.extra ?? []) } });
     }
     const chave = m => JSON.stringify([...m.values()].map(x => [x.id, x.conta]));
     if (chave(novas) === chave(this.pagate)) return;
@@ -283,6 +364,11 @@ export class Decori {
     if (aberta && (vecchie.has(aberta) || novas.has(aberta))) this.ui.casa(this.D.porConta.get(aberta), false);
   }
   pagata(conta) { const p = this.pagate.get(conta); return p && p.scade > Date.now() ? p : null; }
+  // casa rara já tomada nesta cidade por outra conta (só uma de cada por cidade): a compra ativa, ou null
+  occupato(casa, id) {
+    for (const p of this.pagate.values()) if (p.sel.modello === id && p.conta !== casa.conta && p.scade > Date.now() && this.D.porConta.get(p.conta)?.luogo === casa.luogo) return p;
+    return null;
+  }
 
   // ---------- desenho ----------
   // tira a casa do InstancedMesh da cidade (a cidade é remontada) e desenha a versão decorada; sel vazia = casa normal
@@ -290,10 +376,11 @@ export class Decori {
     if (!casa) return;
     const c = this.citta, l = this.D.luoghi[casa.luogo], velha = this.attive.get(casa.conta);
     if (velha) c.grupo.remove(velha.g);
-    const tinha = c.nascoste.has(casa.conta), vazia = !quanti(sel);
+    const tinha = c.nascoste.has(casa.conta), vazia = !quanti(sel), eraRara = c.speciali.has(casa.conta), rara = !vazia && !!sel.modello;
     if (vazia) { this.attive.delete(casa.conta); c.nascoste.delete(casa.conta); }
     else c.nascoste.add(casa.conta);
-    if (tinha === vazia) { c.cache.delete(l.id); c.ultimo = null; c.atualizar(true); }   // muda quem está no InstancedMesh
+    if (rara) c.speciali.add(casa.conta); else c.speciali.delete(casa.conta);
+    if (tinha === vazia || eraRara !== rara) { c.cache.delete(l.id); c.ultimo = null; c.atualizar(true); }   // muda quem está no InstancedMesh
     if (!vazia) {
       const o = costruisci(this.D, c, () => !!this.mappa.notte, casa, sel);
       c.grupo.add(o.g);
@@ -322,6 +409,8 @@ export class Decori {
     const y = casa.y + (a.pilha + 0.25) * LOTE;
     if (a.da) return { cls: `et-casa ${cornice ? 'vip' : 'regalo'}`, html: `${cornice ? '✨ ' : ''}${base}<small>🎁 from @${esc(a.da)}</small>`, y };
     if (cornice) return { cls: 'et-casa vip', html: `✨ ${base}<small>SPECIAL HOUSE</small>`, y };
+    const rara = SPECIALI.find(m => m.id === a.sel.modello);
+    if (rara) return { cls: 'et-casa regalo', html: `${base}<small>${rara.em} ${esc(rara.nome.toUpperCase())}</small>`, y };
     return { cls: 'et-casa deco', html: `✨ ${base}`, y };
   }
   vicine(perto) {
@@ -345,7 +434,7 @@ export class Decori {
   // ---------- câmera ----------
   enquadra(casa) {
     const sel = this.attive.get(casa.conta)?.sel ?? vuota(), topo = topoDi(casa, sel) * LOTE;
-    return { d: 0.24 + topo * 3.4, k: innerWidth >= 900 ? [-0.32, 0] : [0, ALTURA_NIVEL[casa.livello] > 1.5 ? 0.05 : 0.2] };
+    return { d: 0.24 + topo * 3.4, k: innerWidth >= 900 ? [-0.32, 0] : [0, altezza(casa, sel) > 1.5 ? 0.05 : 0.2] };
   }
   inquadra(casa, az) {
     const alvo = this.enquadra(casa), g = this.giro, mp = this.mappa;
@@ -387,7 +476,7 @@ export class Decori {
     if (!b) return;
     b.hidden = false;
     if (velho) velho.hidden = true;
-    const testo = b.querySelector('.testo'), frasi = ['✨ Decorate your house', '🎁 Send a mate a gift'];
+    const testo = b.querySelector('.testo'), frasi = ['✨ Decorate your house', '🏰 Get a rare house', '🎁 Send a mate a gift'];
     let i = 0;
     setInterval(() => { testo.classList.add('via'); setTimeout(() => { i = (i + 1) % frasi.length; testo.textContent = frasi[i]; testo.classList.remove('via'); }, 250); }, 3200);
     b.onclick = () => this.home();
@@ -400,8 +489,15 @@ export class Decori {
       mia: () => (this.ui.minha && this.D.porConta.get(this.ui.minha) ? this.editor('mia', this.D.porConta.get(this.ui.minha)) : this.scegli('mia')),
       regalo: () => this.scegli('regalo'),
       scelto: () => this.editor(d.modo, this.D.porConta.get(v)),
-      squadra: () => { ed.sel.squadra = ed.sel.squadra === v ? null : v; if (ed.sel.squadra) ed.sel.extra.delete('oro'); this.aggiorna(); },
-      eff: () => { const s = ed.sel.extra; s.has(v) ? s.delete(v) : s.add(v); if (v === 'oro' && s.has('oro')) ed.sel.squadra = null; this.aggiorna(); },
+      squadra: () => { ed.sel.squadra = ed.sel.squadra === v ? null : v; if (ed.sel.squadra) { ed.sel.extra.delete('oro'); ed.sel.modello = null; } this.aggiorna(); },
+      eff: () => { const s = ed.sel.extra; s.has(v) ? s.delete(v) : s.add(v); if (v === 'oro' && s.has('oro')) { ed.sel.squadra = null; ed.sel.modello = null; } this.aggiorna(); },
+      modello: () => {
+        const p = this.occupato(ed.casa, v);
+        if (p) return this.ui.aviso(`${this.D.luoghi[ed.casa.luogo].nome} already has one: @${p.conta}'s, until ${dataCurta(p.scade)}. Pick another!`);
+        ed.sel.modello = ed.sel.modello === v ? null : v;
+        if (ed.sel.modello) { ed.sel.squadra = null; ed.sel.extra.delete('oro'); }
+        this.aggiorna();
+      },
       notte: () => { this.mappa.definirNotte(v === '1'); if (this.festa?.luci) this.festa.luci.visible = v === '1'; },
       checkout: () => this.checkout(),
       paga: () => this.paga(t),
@@ -416,7 +512,7 @@ export class Decori {
       <h2>Make a house special ✨</h2>
       <div class="sub">Try it <b>free</b> here on the map. Only pay if you love it: <b>${eur(this.cfg.prezzo)}</b>, VAT included, for ${this.cfg.giorni} days.</div>
       <div class="scelta2">
-        <button data-dp="mia"><span class="em">🏠</span><span><b>My house</b><small>Your team's colours, golden house, neon, crown…</small></span></button>
+        <button data-dp="mia"><span class="em">🏠</span><span><b>My house</b><small>A rare house (castle, lighthouse, windmill…), your team's colours, golden house, crown…</small></span></button>
         <button data-dp="regalo"><span class="em">🎁</span><span><b>Send a mate a gift</b><small>A surprise on their house, with your name on it</small></span></button>
       </div>
       <div class="regola">✅ Looks only: no points and no change to the league table. The players always win.</div>`);
@@ -463,6 +559,8 @@ export class Decori {
       <div class="sub">${regalo ? 'Tap a gift: you\'ll see it on their house straight away.' : 'Tap and watch your house change. It\'s just a preview.'}</div>
       ${p ? `<div class="regola">${p.da ? `🎁 Already has a gift from @${esc(p.da)}` : '✨ Already decorated'} until ${dataCurta(p.scade)}: a new purchase replaces it.</div>` : ''}
       ${regalo ? `<div class="cerca-dec"><span>from @</span><input id="dec-da" placeholder="your_account" value="${esc(ed.da ?? '')}" autocomplete="off" autocapitalize="off" spellcheck="false"></div><div class="nota" id="dec-da-nota" style="margin-top:4px"></div>` : ''}
+      <div class="gruppo-dec">🏰 Rare houses <small>· only one of each per town</small></div>
+      <div class="griglia-dec">${SPECIALI.map(m => { const p = this.occupato(casa, m.id); return `<button data-dp="modello" data-v="${m.id}"${p ? ' class="preso"' : ''}><span class="em">${m.em}</span><b>${m.nome}</b>${p ? '<small>🔒 taken</small>' : ''}</button>`; }).join('')}</div>
       ${regalo ? '' : `<div class="gruppo-dec">⚽ Your team's colours</div>
       <div class="griglia-dec">${SQUADRE.map(s => `<button data-dp="squadra" data-v="${s.id}"><span class="sw" style="background:linear-gradient(90deg,${s.muro} 0 25%,${s.tetto} 25% 50%,${s.muro} 50% 75%,${s.tetto} 75%)"></span><b>${s.nome}</b></button>`).join('')}</div>`}
       <div class="gruppo-dec">${regalo ? '🎁 Pick the gift' : '✨ Effects'} <small>· pick as many as you like</small></div>
@@ -480,6 +578,7 @@ export class Decori {
     const painel = $('#pannello-contenuto');
     painel.querySelectorAll('[data-dp="squadra"]').forEach(b => b.classList.toggle('on', ed.sel.squadra === b.dataset.v));
     painel.querySelectorAll('[data-dp="eff"]').forEach(b => b.classList.toggle('on', ed.sel.extra.has(b.dataset.v)));
+    painel.querySelectorAll('[data-dp="modello"]').forEach(b => b.classList.toggle('on', ed.sel.modello === b.dataset.v));
     const regalo = ed.modo === 'regalo', okDa = this.okDa();
     if (ridisegna) this.disegna(ed.casa, ed.sel, regalo ? (ed.da || '…') : null);
     else { const a = this.attive.get(ed.casa.conta); if (a) a.da = ed.da || '…'; }
@@ -509,10 +608,10 @@ export class Decori {
     if (!this.cfg.checkout) return this.ui.aviso('Payment isn\'t available yet. Please try again later.');
     botao.disabled = true;
     try {
-      const r = await fetch('api/decora.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conta: ed.casa.conta, modo: ed.modo, da: ed.modo === 'regalo' ? ed.da : '', squadra: ed.sel.squadra ?? '', extra: [...ed.sel.extra] }) });
+      const r = await fetch('api/decora.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conta: ed.casa.conta, modo: ed.modo, da: ed.modo === 'regalo' ? ed.da : '', squadra: ed.sel.squadra ?? '', modello: ed.sel.modello ?? '', extra: [...ed.sel.extra] }) });
       const j = await r.json().catch(() => ({}));
       if (!j.ok) throw new Error(j.erro || 'We couldn\'t set up the payment. Please try again.');
-      gravar('decora_attesa', { id: j.id, conta: ed.casa.conta, modo: ed.modo, da: ed.da, sel: { squadra: ed.sel.squadra, extra: [...ed.sel.extra] }, t: Date.now() });
+      gravar('decora_attesa', { id: j.id, conta: ed.casa.conta, modo: ed.modo, da: ed.da, sel: { squadra: ed.sel.squadra, modello: ed.sel.modello, extra: [...ed.sel.extra] }, t: Date.now() });
       location.href = `${this.cfg.checkout}${this.cfg.checkout.includes('?') ? '&' : '?'}sck=${j.id}`;
     } catch (e) {
       botao.disabled = false;
@@ -538,7 +637,7 @@ export class Decori {
     if (!casa || !p) return;
     this.coriandoli();
     this.vaiACasa(casa);
-    const regalo = !!p.da, emoji = [...p.sel.extra].map(id => EFFETTI.find(e => e.id === id)?.em).filter(Boolean).join(' ');
+    const regalo = !!p.da, emoji = emojiDi(p.sel);
     this.ui.abrir(`
       <h2>${regalo ? 'Gift delivered! 🎁' : 'Sorted! Your house is shining ✨'}</h2>
       <div class="sub">${regalo ? `@${esc(casa.conta)} sees it as soon as they open the map. Send them the story and tag them! 👇` : `Everyone can see it on the map now, until ${dataCurta(p.scade)}.`}</div>

@@ -28,15 +28,20 @@ $conta = strtolower(ltrim(trim((string)($d['conta'] ?? '')), '@'));
 $modo = ($d['modo'] ?? '') === 'regalo' ? 'regalo' : 'mia';
 $da = strtolower(ltrim(trim((string)($d['da'] ?? '')), '@'));
 $squadra = (string)($d['squadra'] ?? '');
+$modello = (string)($d['modello'] ?? '');
 $extra = array_values(array_unique(array_map('strval', (array)($d['extra'] ?? []))));
 
-// mesmas listas de decori.js (presente: só coisas positivas, sem cores de time nem Union Jack)
+// mesmas listas de decori.js e speciali.js (presente: só coisas positivas, sem cores de time nem Union Jack)
 $SQUADRE = ['reds', 'blues', 'skyblues', 'claret', 'magpies', 'amber', 'redblue', 'tangerine', 'greens'];
-$EFFETTI = $modo === 'regalo' ? ['oro', 'neon', 'corona', 'fuochi', 'campione', 'palloncini', 'cornice'] : ['oro', 'neon', 'corona', 'fuochi', 'campione', 'tricolore', 'cornice'];
+$COMUNS = ['oro', 'neon', 'arcobaleno', 'cuori', 'neve', 'ufo', 'corona', 'fuochi', 'campione', 'cornice'];
+$EFFETTI = array_merge($COMUNS, $modo === 'regalo' ? ['palloncini'] : ['tricolore']);
+$MODELLI = ['faro', 'castello', 'mulino', 'barca', 'bus', 'albero', 'capanne', 'pastore', 'collina', 'stregata', 'osservatorio', 'zenzero', 'cabina', 'teiera', 'razzo'];
 if ($squadra !== '' && ($modo === 'regalo' || !in_array($squadra, $SQUADRE, true))) erro('Invalid colours.');
+if ($modello !== '' && !in_array($modello, $MODELLI, true)) erro('Invalid house.');
 if (array_diff($extra, $EFFETTI)) erro('Invalid effect.');
-if ($squadra === '' && !$extra) erro('Pick at least one effect.');
+if ($squadra === '' && $modello === '' && !$extra) erro('Pick at least one effect.');
 if (in_array('oro', $extra, true) && $squadra !== '') erro('Pick the golden house or your team colours, not both.');
+if ($modello !== '' && ($squadra !== '' || in_array('oro', $extra, true))) erro('A rare house can\'t have team colours or gold.');
 
 // as contas precisam ter casa no mapa (o "da @" aparece em público: só @ de quem joga, nada de texto livre)
 if (!preg_match('/^[a-z0-9._]{1,30}$/', $conta)) erro('Invalid account.');
@@ -47,7 +52,19 @@ $conte = array_flip(array_map(fn($c) => (string)$c[0], (array)($snap['case'] ?? 
 if (!isset($conte[$conta])) erro("@$conta hasn't got a house on the map yet.");
 if ($modo === 'regalo' && !isset($conte[$da])) erro("@$da hasn't got a house on the map yet.");
 
+// casa rara: só uma de cada por cidade (confere as decorações ativas de data/decori.json)
+if ($modello !== '') {
+    $cidade = [];
+    foreach ((array)($snap['case'] ?? []) as $c) $cidade[(string)$c[0]] = $c[1] ?? null;
+    $ativas = json_decode((string)@file_get_contents(__DIR__ . '/../data/decori.json'), true)['decori'] ?? [];
+    foreach ((array)$ativas as $x) {
+        $outra = (string)($x['conta'] ?? '');
+        if (($x['modello'] ?? '') === $modello && $outra !== $conta && strtotime((string)($x['scade'] ?? '')) > time()
+            && ($cidade[$outra] ?? -1) === ($cidade[$conta] ?? -2)) erro("Someone in this town already has that one (@$outra). Pick another rare house!");
+    }
+}
+
 $id = date('ymd') . '-' . bin2hex(random_bytes(4));
-$pedido = ['id' => $id, 'creato' => gmdate('c'), 'stato' => 'nuovo', 'modo' => $modo, 'conta' => $conta, 'da' => $modo === 'regalo' ? $da : '', 'squadra' => $squadra, 'extra' => $extra];
+$pedido = ['id' => $id, 'creato' => gmdate('c'), 'stato' => 'nuovo', 'modo' => $modo, 'conta' => $conta, 'da' => $modo === 'regalo' ? $da : '', 'squadra' => $squadra, 'modello' => $modello, 'extra' => $extra];
 file_put_contents("$pasta/$id.json", json_encode($pedido, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX);
 resposta(200, ['ok' => true, 'id' => $id]);

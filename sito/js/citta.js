@@ -1,7 +1,7 @@
 // Cidades 3D: quadras em espiral ao redor do village green, casas por nível e prédios especiais.
 // Só as cidades perto da câmera entram nos InstancedMesh (atualizado quando a câmera anda).
 import * as THREE from 'three';
-import { geometriaCasa, geometriaEspecial, ALTURA_NIVEL, Construtor, PLACCA, CARTELLONE, INSEGNA_PUB, geometriaFaccia, geometriaLuminaria, stileRegione, geometriaFinestre, geometriaLampione, geometriaLuceLampione, geometriaZucca, geometriaZuccaLuce } from './modelli.js';
+import { geometriaCasa, geometriaEspecial, ALTURA_NIVEL, Construtor, PLACCA, CARTELLONE, INSEGNA_PUB, geometriaFaccia, geometriaLuminaria, stileRegione, geometriaFinestre, geometriaLampione, geometriaLuceLampione, geometriaZucca, geometriaZuccaLuce, geometriaFioriere, geometriaOrnamento, ORNAMENTI, aspetto, hashConta } from './modelli.js';
 import { REGOLE, nataleAttivo, halloweenAttivo, sogliaDi, nomePub } from './regole.js';
 import { texturaVendita, texturaLavori, texturaPubblicita, texturaCartellone, texturaPub, carregarImagem, fontePronta } from './insegne.js';
 import { creaNegozio3D } from './negozio3d.js';
@@ -39,8 +39,7 @@ export function posLote(n) {
   return { x: i * QW + (col - 1.5) * LOTE, z: j * QH + (linha - 0.5) * LOTE, rot: linha === 0 ? Math.PI : 0 };
 }
 
-const hash = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); };
-const variante = s => hash(s) % 3;
+const hash = hashConta;
 
 // vegetação em volta das cidades: mistura de espécies por nação (carvalho inglês, pinheiro escocês, bétula, palmeira da Cornualha)
 const ALBERI = ['quercia', 'abete', 'betulla', 'palma'];
@@ -129,6 +128,7 @@ export class Citta {
     mappa.scene.add(this.grupo);
     this.cache = new Map();
     this.nascoste = new Set();   // contas cuja casa não entra no InstancedMesh (casas decoradas, ver decori.js)
+    this.speciali = new Set();   // casas trocadas por um modelo raro (decori.js): sem janelas, floreiras e jardim da casa normal
     this.perto = [];
     this.ultimo = null;
     const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
@@ -159,13 +159,17 @@ export class Citta {
     }
     this.camadas.lampione = add('lampione', geometriaLampione());
     this.camadas.lampLuce = addNotte('lampLuce', geometriaLuceLampione(), matAlone);
-    // casas: camada por nível, variante de cor e estilo regional, criada só quando aparece uma ("c<nível>_<var>_<estilo>");
-    // janelas acesas: "f<nível>_<estilo>" (camada vazia quando a casa não tem janelas)
+    // enfeites do jardim: uma camada por tipo, para todas as casas
+    for (const o of ORNAMENTI) this.camadas[`o_${o}`] = add(`o_${o}`, geometriaOrnamento(o));
+    // casas: camada por nível, variante (parede/porta/telhado) e estilo regional, criada só quando aparece uma ("c<nível>_<var>_<estilo>");
+    // janelas acesas: "f<nível>_<estilo>" (camada vazia quando a casa não tem janelas); floreiras: "fl<nível>_<estilo>"
     const VAZIA = new THREE.BufferGeometry();
     this.novaCamada = k => {
+      const fl = k.match(/^fl(\d+)_(\w+)$/);
+      if (fl) return (this.camadas[k] = add(k, geometriaFioriere(+fl[1], fl[2]) ?? VAZIA));
       const f = k.match(/^f(\d+)_(\w+)$/);
       if (f) return (this.camadas[k] = addNotte(k, geometriaFinestre(+f[1], f[2]) ?? VAZIA));
-      const [, n, v, s] = k.match(/^c(\d+)_(\d)_(\w+)$/);
+      const [, n, v, s] = k.match(/^c(\d+)_(\d+)_(\w+)$/);
       return (this.camadas[k] = add(k, geometriaCasa(+n, +v, s)));
     };
     // faces com texto (redesenhadas quando a fonte do site carrega)
@@ -279,9 +283,15 @@ export class Citta {
       const casa = this.D.casas[ci], q = posLote(casa.lote);
       const x = l.x + q.x, z = l.z + q.z;
       casa.x = x; casa.z = z; casa.y = hc;
-      const m = matriz(x, hc + 0.0009, z, q.rot, LOTE);
-      if (!this.nascoste.has(casa.conta)) push(`c${casa.livello}_${variante(casa.conta)}_${stile}`, m);   // decorada: desenhada por decori.js
-      push(`f${casa.livello}_${stile}`, m);
+      const m = matriz(x, hc + 0.0009, z, q.rot, LOTE), asp = aspetto(casa.conta, casa.livello);
+      if (!this.nascoste.has(casa.conta)) push(`c${casa.livello}_${asp.v}_${stile}`, m);   // decorada: desenhada por decori.js
+      if (!this.speciali.has(casa.conta)) {
+        push(`f${casa.livello}_${stile}`, m);
+        if (asp.fiori) push(`fl${casa.livello}_${stile}`, m);
+        // enfeite no lote: o deslocamento gira junto com a casa
+        const cs = Math.cos(q.rot), sn = Math.sin(q.rot);
+        for (const o of asp.orn) push(`o_${o.id}`, matriz(x + (o.x * cs + o.z * sn) * LOTE, hc + 0.0009, z + (-o.x * sn + o.z * cs) * LOTE, q.rot + o.rot, LOTE));
+      }
       if (this.halloween) { push('zucca', m); push('zuccaL', m); }
       c.casas.push(ci);
     }

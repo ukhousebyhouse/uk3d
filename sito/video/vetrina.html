@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<base href="../">
+<title>Showcase · UK House by House</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=block" rel="stylesheet">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
+<style>
+  html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #86AFC4; font-family: 'Nunito', 'Segoe UI Emoji', sans-serif; }
+  canvas { position: absolute; inset: 0; }
+  .nome { position: absolute; transform: translate(-50%, 0); background: #fff; border: 4px solid #152033; border-radius: 99px; padding: 2px 14px; font-weight: 900; font-size: 26px; color: #152033; white-space: nowrap; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<div id="nomi"></div>
+<script type="module" src="video/vetrina.js"></script>
+</body>
+</html>

@@ -91,7 +91,7 @@ function rigeneraDecori(string $pasta, string $destino): void {
         $c = (string)$p['conta'];
         if (!isset($por[$c]) || strcmp((string)$p['attivo_da'], (string)$por[$c]['attivo_da']) > 0) $por[$c] = $p;
     }
-    $lista = array_values(array_map(fn($p) => ['id' => $p['id'], 'conta' => $p['conta'], 'da' => $p['da'] ?? '', 'squadra' => $p['squadra'] ?? '', 'extra' => $p['extra'] ?? [], 'scade' => $p['scade']], $por));
+    $lista = array_values(array_map(fn($p) => ['id' => $p['id'], 'conta' => $p['conta'], 'da' => $p['da'] ?? '', 'squadra' => $p['squadra'] ?? '', 'modello' => $p['modello'] ?? '', 'extra' => $p['extra'] ?? [], 'scade' => $p['scade']], $por));
     $tmp = "$destino.tmp";
     file_put_contents($tmp, json_encode(['agg' => gmdate('c'), 'decori' => $lista], JSON_UNESCAPED_UNICODE), LOCK_EX);
     rename($tmp, $destino);

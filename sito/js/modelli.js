@@ -67,24 +67,34 @@ export class Construtor {
 
 // ---------- estilos de cada nação (e das regiões da England) ----------
 // C = tema em uso enquanto uma casa é montada (geometriaCasa troca e depois volta ao padrão)
+// porte: 4 cores de porta; tetto2: o outro telhado ([telhado, telhado escuro]); palha2: a palha mais clara
 const TEMI = {
-  // England: tijolo vermelho e ardósia, porta azul-marinho, preta ou vermelha
-  eng: { ...T, porte: ['#1F3A6B', '#22252B', '#C8102E'], camino: '#9A4430' },
-  // Cotswolds e Bath: pedra cor de mel, telhado de pedra
-  cotswold: { ...T, muri: ['#D8B878', '#E2C590', '#CDAE6E'], tetto: '#8E7E62', tettoScuro: '#7A6C54', camino: '#CDAE6E', porte: ['#5E7A6A', '#2E4A3A', '#7A4B2A'] },
+  // England: tijolo vermelho; ardósia ou telha de barro; porta azul-marinho, preta, vermelha ou verde
+  eng: { ...T, porte: ['#1F3A6B', '#22252B', '#C8102E', '#2E5E3A'], camino: '#9A4430', tetto2: ['#8A4B3C', '#73402F'] },
+  // Cotswolds e Bath: pedra cor de mel, telhado de pedra (ou ardósia)
+  cotswold: { ...T, muri: ['#D8B878', '#E2C590', '#CDAE6E'], tetto: '#8E7E62', tettoScuro: '#7A6C54', camino: '#CDAE6E', porte: ['#5E7A6A', '#2E4A3A', '#7A4B2A', '#4A5A7A'], tetto2: ['#6E7178', '#5C5F66'] },
   // sudoeste e East Anglia: chalé caiado com telhado de palha
-  thatch: { ...T, muri: ['#F2EEE3', '#F5E9D0', '#EFE6D6'], soloPaglia: true, camino: '#B85A3E', porte: ['#2E5E3A', '#1F3A6B', '#7A4B2A'] },
+  thatch: { ...T, muri: ['#F2EEE3', '#F5E9D0', '#EFE6D6'], soloPaglia: true, camino: '#B85A3E', porte: ['#2E5E3A', '#1F3A6B', '#7A4B2A', '#C8102E'], palha2: ['#CBB079', '#AD9260'] },
   // Scotland: granito cinza, empena em degraus (crow-stepped), ardósia escura
-  sct: { ...T, muri: ['#9C9E9A', '#B0ADA5', '#8F918D'], tetto: '#3C434D', tettoScuro: '#30363E', gradini: true, camino: '#8F918D', porte: ['#1F3A6B', '#6B1F2A', '#2E5E3A'], baronial: true },
-  // Highlands e ilhas: chalé branco caiado (harled), ardósia
-  highland: { ...T, muri: ['#F1EFE9', '#ECEAE2', '#F4F2EC'], tetto: '#3C434D', tettoScuro: '#30363E', camino: '#E4E1D8', porte: ['#C8102E', '#1F3A6B', '#2E5E3A'], baronial: true },
+  sct: { ...T, muri: ['#9C9E9A', '#B0ADA5', '#8F918D'], tetto: '#3C434D', tettoScuro: '#30363E', gradini: true, camino: '#8F918D', porte: ['#1F3A6B', '#6B1F2A', '#2E5E3A', '#22252B'], baronial: true, tetto2: ['#5A626C', '#4A515A'] },
+  // Highlands e ilhas: chalé branco caiado (harled), ardósia ou o telhado vermelho de zinco dos crofts
+  highland: { ...T, muri: ['#F1EFE9', '#ECEAE2', '#F4F2EC'], tetto: '#3C434D', tettoScuro: '#30363E', camino: '#E4E1D8', porte: ['#C8102E', '#1F3A6B', '#2E5E3A', '#F2C230'], baronial: true, tetto2: ['#9A3A30', '#7E2F27'] },
   // Wales: fileiras de casas pastel (estilo Tenby) com ardósia galesa
-  wls: { ...T, muri: ['#F2B8C6', '#9FD3E6', '#F7DC6F'], tetto: '#454B55', tettoScuro: '#373C44', camino: '#8A8F96', porte: ['#1F3A6B', '#C8102E', '#2E5E3A'] },
+  wls: { ...T, muri: ['#F2B8C6', '#9FD3E6', '#F7DC6F'], tetto: '#454B55', tettoScuro: '#373C44', camino: '#8A8F96', porte: ['#1F3A6B', '#C8102E', '#2E5E3A', '#22252B'], tetto2: ['#5E646E', '#4D535C'] },
   // Northern Ireland: chalé branco com porta de cor viva; palha nas casas pequenas
-  nir: { ...T, muri: ['#F5F3EC', '#F0EEE6', '#F7F4EB'], tetto: '#454B55', tettoScuro: '#373C44', camino: '#E4E1D8', porte: ['#C8102E', '#1F6FB5', '#2E7D45'], pagliaFino: 3 },
+  nir: { ...T, muri: ['#F5F3EC', '#F0EEE6', '#F7F4EB'], tetto: '#454B55', tettoScuro: '#373C44', camino: '#E4E1D8', porte: ['#C8102E', '#1F6FB5', '#2E7D45', '#F2C230'], pagliaFino: 3, tetto2: ['#5A606A', '#4A5058'], palha2: ['#CBB079', '#AD9260'] },
 };
+for (const [k, t] of Object.entries(TEMI)) t.stile = k;
 TEMI.base = TEMI.eng;
 let C = TEMI.base, NIV = 0;
+
+// todas as cores de parede, telhado e porta dos temas (decori.js troca essas pelas cores de time / ouro)
+const todas = f => [...new Set(Object.values(TEMI).flatMap(f))];
+export const CORI_CASA = {
+  muri: todas(t => t.muri),
+  tetti: todas(t => [t.tetto, t.tettoScuro, ...(t.tetto2 ?? []), ...(t.palha2 ?? []), T.paglia, T.pagliaScura]),
+  porte: todas(t => t.porte),
+};
 
 // nação (+ county, para as regiões da England e as Highlands) -> estilo
 const THATCH = /Cornwall|Devon|Dorset|Somerset|Wiltshire|Norfolk|Suffolk|Isles of Scilly/;
@@ -97,9 +107,20 @@ export const stileRegione = (cod, contea = '') => (cod === 'SCT' ? (HIGHLAND.tes
 // ---------- peças ----------
 // FINESTRE != null: em vez de montar a casa, só coleta as janelas (acesas à noite), na mesma posição das sash windows
 let FINESTRE = null;
+// FIORI != null: só coleta as floreiras embaixo das janelas da frente (camada à parte, nas casas que têm flores)
+let FIORI = null;
 const LUCI = ['#FFD36B', '#FFC24A', '#FFE29A'];
+const PETALI = ['#E0473C', '#FF7EB6', '#F2C230', '#9B5DE5', '#FFFFFF', '#FF9F43'];
 // sash window: moldura branca, vidro e a barra do meio (onde as duas folhas se encontram)
 function persiana(b, x, y, z, lado = 'frente') {
+  if (FIORI) {
+    if (lado !== 'frente') return;
+    const f = new Construtor(), k = FIORI.length;
+    f.caixa(0.1, 0.026, 0.034, x, y - 0.026, z + 0.016, k % 2 ? '#F4F1EA' : '#7A5236').caixa(0.092, 0.012, 0.03, x, y, z + 0.016, '#3F7F3A');
+    for (let i = 0; i < 4; i++) f.esfera(0.013, x - 0.036 + i * 0.024, y + 0.014, z + 0.02 + (i % 2) * 0.008, PETALI[(k + i * 2) % PETALI.length]);
+    FIORI.push(...f.partes);
+    return;
+  }
   if (FINESTRE) {
     const g = lado === 'frente' ? new THREE.BoxGeometry(0.075, 0.1, 0.024) : new THREE.BoxGeometry(0.024, 0.1, 0.075);
     g.translate(x, y + 0.065, z);
@@ -122,7 +143,7 @@ function tetto(b, w, d, h, x, y, z) {
   const paglia = C.soloPaglia || NIV < (C.pagliaFino ?? 0);   // (T.paglia é a cor; a opção é soloPaglia)
   const hr = Math.min(w, d) * (paglia ? 0.55 : 0.42);
   if (paglia) {
-    b.telhado(w + 0.12, d + 0.12, hr, x, y - 0.02, z, T.paglia).telhado(w * 0.6, 0.06, 0.03, x, y + hr - 0.03, z, T.pagliaScura);
+    b.telhado(w + 0.12, d + 0.12, hr, x, y - 0.02, z, C.paglia ?? T.paglia).telhado(w * 0.6, 0.06, 0.03, x, y + hr - 0.03, z, C.pagliaScura ?? T.pagliaScura);
   } else b.telhado(w + 0.06, d + 0.06, hr, x, y, z, C.tetto);
   if (C.gradini && !paglia) {
     // empena em degraus: blocos de pedra subindo nas duas pontas
@@ -262,7 +283,7 @@ const NIVEIS = [
 function terraced(b, m, z0) {
   const w = 0.3, h = 0.56, d = 0.42;
   for (const [x, k] of [[-0.31, 0.88], [0, 1], [0.31, 0.93]]) {
-    const cor = x === 0 ? m : C === TEMI.wls ? C.muri[(C.muri.indexOf(m) + (x < 0 ? 1 : 2)) % 3] : tinta(m, k);
+    const cor = x === 0 ? m : C.stile === 'wls' ?C.muri[(C.muri.indexOf(m) + (x < 0 ? 1 : 2)) % 3] : tinta(m, k);
     b.caixa(w + 0.01, h, d, x, 0, z0, cor);
     b.caixa(0.09, 0.18, 0.02, x - 0.06, 0, z0 + d / 2 + 0.01, x === 0 ? C.porta : C.porte[(C.porte.indexOf(C.porta) + 1) % 3]);
     persiana(b, x + 0.07, 0.06, z0 + d / 2 + 0.01); persiana(b, x, 0.34, z0 + d / 2 + 0.01);
@@ -370,16 +391,96 @@ export function geometriaZuccaLuce(dove = 'casa') {
   return b.geometria();
 }
 
+// floreiras embaixo das janelas da frente (mesmo nível e estilo); null se a casa não tem janelas
+export function geometriaFioriere(nivel, stile = 'base') {
+  FIORI = [];
+  C = { ...(TEMI[stile] ?? TEMI.base) }; NIV = nivel;
+  C.porta = C.porte[0];
+  try { NIVEIS[nivel](new Construtor(), C.muri[0]); } finally { C = TEMI.base; NIV = 0; }
+  const partes = FIORI; FIORI = null;
+  if (!partes.length) return null;
+  const g = mergeGeometries(partes); g.computeVertexNormals(); g.computeBoundingSphere();
+  return g;
+}
+
+// variante (0..23) = parede (3) x porta (4) x telhado (2); as variantes 0..2 são as antigas (só a parede muda)
+export const VARIANTI = 24;
 export function geometriaCasa(nivel, variante, stile = 'base') {
-  const b = new Construtor();
-  C = TEMI[stile] ?? TEMI.base; NIV = nivel;
-  C.porta = C.porte[variante % C.porte.length];
-  try { NIVEIS[nivel](b, C.muri[variante]); } finally { C = TEMI.base; NIV = 0; }
+  const b = new Construtor(), tema = TEMI[stile] ?? TEMI.base;
+  const muro = variante % 3, porta = Math.floor(variante / 3) % 4, outro = Math.floor(variante / 12) % 2;
+  C = { ...tema, porta: tema.porte[porta % tema.porte.length] }; NIV = nivel;
+  if (outro && tema.tetto2) [C.tetto, C.tettoScuro] = tema.tetto2;
+  if (outro && tema.palha2) [C.paglia, C.pagliaScura] = tema.palha2;
+  try { NIVEIS[nivel](b, C.muri[muro]); } finally { C = TEMI.base; NIV = 0; }
   return b.geometria();
 }
 
+// ---------- jardim: enfeites na frente da casa (cada tipo é uma camada só, para todas as casas) ----------
+export const ORNAMENTI = ['aiuola', 'rose', 'bidoni', 'bici', 'panchina', 'gnomo', 'vasi', 'ciliegio', 'stendino', 'altalena'];
+export function geometriaOrnamento(id) {
+  const b = new Construtor();
+  if (id === 'aiuola') {
+    b.caixa(0.15, 0.022, 0.075, 0, 0, 0, '#6B4A2E');
+    for (let i = 0; i < 7; i++) b.cilindro(0.003, 0.03, -0.06 + i * 0.02, 0.02, (i % 2 ? 0.014 : -0.014), '#3F7F3A', 3).esfera(0.016, -0.06 + i * 0.02, 0.05, (i % 2 ? 0.014 : -0.014), PETALI[i % PETALI.length]);
+  } else if (id === 'rose') {
+    b.esfera(0.05, -0.03, 0.045, 0, '#3F7F3A').esfera(0.04, 0.035, 0.038, 0.005, '#4E8F43');
+    for (const [x, y, z] of [[-0.05, 0.075, 0.03], [-0.01, 0.085, 0.02], [0.02, 0.06, 0.035], [0.05, 0.07, 0.01], [-0.06, 0.04, 0.04]]) b.esfera(0.014, x, y, z, '#C8102E');
+  } else if (id === 'bidoni') {
+    // wheelie bins: preto (lixo), verde (jardim) e azul (reciclagem)
+    for (const [x, cor] of [[-0.05, '#2A2E36'], [0, '#2E7D45'], [0.05, '#1F6FB5']]) b.caixa(0.042, 0.085, 0.05, x, 0, 0, cor).caixa(0.046, 0.008, 0.056, x, 0.085, -0.002, cor);
+  } else if (id === 'bici') {
+    for (const x of [-0.042, 0.042]) { const g = new THREE.TorusGeometry(0.03, 0.005, 4, 14); g.translate(0, 0.03, 0); b.add(g, '#22252B', x, 0, 0); }
+    b.caixa(0.07, 0.007, 0.007, 0, 0.045, 0, '#C8102E').caixa(0.007, 0.035, 0.007, -0.012, 0.03, 0, '#C8102E').caixa(0.007, 0.04, 0.007, 0.035, 0.03, 0, '#C8102E');
+    b.caixa(0.025, 0.008, 0.012, -0.012, 0.066, 0, '#22252B').caixa(0.006, 0.006, 0.04, 0.035, 0.07, 0, '#22252B');
+  } else if (id === 'panchina') {
+    b.caixa(0.13, 0.012, 0.042, 0, 0.035, 0, '#9C7148').caixa(0.13, 0.035, 0.008, 0, 0.05, -0.018, '#9C7148');
+    for (const x of [-0.055, 0.055]) b.caixa(0.008, 0.035, 0.04, x, 0, 0, '#2A2E36').caixa(0.008, 0.05, 0.008, x, 0.035, -0.018, '#2A2E36');
+  } else if (id === 'gnomo') {
+    for (const [x, s, c] of [[-0.025, 1, '#1F6FB5'], [0.03, 0.8, '#2E7D45']]) {
+      b.cilindro(0.016 * s, 0.035 * s, x, 0, 0, c, 6, 0.012 * s).esfera(0.013 * s, x, 0.045 * s, 0, '#F1C6A0').esfera(0.011 * s, x, 0.036 * s, 0.008 * s, '#FFFFFF').cone(0.015 * s, 0.04 * s, x, 0.05 * s, 0, '#E0473C', 6);
+    }
+  } else if (id === 'vasi') {
+    for (const [x, r, h] of [[-0.05, 0.022, 0.035], [0.0, 0.018, 0.028], [0.045, 0.025, 0.04]]) b.cilindro(r * 0.8, h, x, 0, 0, '#C8693A', 8, r).esfera(r * 1.2, x, h + r * 0.8, 0, x > 0 ? '#2E5E3A' : '#4E9A43');
+    b.esfera(0.012, -0.05, 0.075, 0.01, '#FF7EB6').esfera(0.012, 0.0, 0.06, 0.01, '#F2C230');
+  } else if (id === 'ciliegio') {
+    b.cilindro(0.012, 0.11, 0, 0, 0, T.tronco, 5).esfera(0.07, 0, 0.15, 0, '#F4A6C6').esfera(0.05, 0.04, 0.17, -0.02, '#F7C1D9').esfera(0.045, -0.04, 0.18, 0.01, '#EE8FB6');
+  } else if (id === 'stendino') {
+    // varal com roupa colorida (o clássico do quintal britânico)
+    for (const x of [-0.07, 0.07]) b.caixa(0.006, 0.11, 0.006, x, 0, 0, '#9AA3AE');
+    b.caixa(0.14, 0.003, 0.003, 0, 0.105, 0, '#FFFFFF');
+    for (const [x, w, h, c] of [[-0.045, 0.024, 0.04, '#E0473C'], [-0.012, 0.03, 0.03, '#3FA7F5'], [0.022, 0.022, 0.045, '#F2C230'], [0.05, 0.02, 0.025, '#FFFFFF']]) b.caixa(w, h, 0.004, x, 0.105 - h, 0, c);
+  } else if (id === 'altalena') {
+    for (const x of [-0.06, 0.06]) for (const z of [-0.025, 0.025]) { const g = new THREE.CylinderGeometry(0.004, 0.004, 0.13, 4); g.rotateX(z > 0 ? 0.35 : -0.35); g.translate(0, 0.062, 0); b.add(g, '#C8102E', x, 0, z * 0.2); }
+    b.caixa(0.13, 0.007, 0.007, 0, 0.12, 0, '#C8102E');
+    for (const x of [-0.015, 0.015]) b.caixa(0.002, 0.08, 0.002, x, 0.04, 0, '#DDDDDD');
+    b.caixa(0.04, 0.005, 0.02, 0, 0.038, 0, '#F2C230');
+  }
+  return b.geometria();
+}
+// onde cabe um enfeite em cada nível (em lotes, frente = +z): espaços livres do jardim da frente
+const SLOT = [
+  [[-0.33, 0.32], [0.33, 0.3]], [[-0.3, 0.37], [0.3, 0.37]], [[-0.3, 0.22], [0.12, 0.24]], [[-0.15, 0.37], [0.15, 0.37]],
+  [[-0.22, 0.37], [0.0, 0.37]], [[-0.26, 0.33], [0.26, 0.33]], [[0.0, 0.32], [0.3, 0.42]], [[-0.4, 0.38], [0.4, 0.38]],
+  [[-0.36, 0.3], [0.36, 0.3]], [[-0.3, 0.4], [0.3, 0.4]], [[-0.3, 0.3], [-0.1, 0.42]], [[-0.4, 0.4], [0.4, 0.4]],
+  [[-0.22, 0.28], [0.22, 0.28]], [[-0.22, 0.38], [0.22, 0.38]], [[-0.38, 0.38], [0.38, 0.38]],
+];
+
+export const hashConta = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); };
+// aparência fixa de cada casa, tirada do @: variante (parede/porta/telhado), floreiras e enfeites do jardim
+// (a parede é a mesma de antes: hash % 3)
+export function aspetto(conta, livello) {
+  const h = hashConta(conta), h2 = hashConta(`${conta}*`);
+  const v = h % 3 + 3 * (Math.floor(h / 3) % 4) + 12 * (Math.floor(h / 12) % 2);
+  const fiori = h2 % 5 < 2, orn = [];
+  (SLOT[livello] ?? []).forEach(([x, z], s) => {
+    const k = Math.floor(h2 / (5 * 13 ** s)) % 13;   // 10 enfeites + 3 "nada" (nem todo jardim tem tudo)
+    if (k < ORNAMENTI.length) orn.push({ id: ORNAMENTI[k], x, z, rot: ((h2 >> (s * 3)) % 7 - 3) * 0.12 });
+  });
+  return { v, fiori, orn };
+}
+
 // cabine telefônica vermelha e pillar box (em lotes, base no chão)
-function cabina(b, x, z, s = 1) {
+export function cabina(b, x, z, s = 1) {
   b.caixa(0.12 * s, 0.32 * s, 0.12 * s, x, 0, z, T.rosso).cupola(0.075 * s, x, 0.32 * s, z, T.rosso);
   for (let k = 0; k < 3; k++) b.caixa(0.08 * s, 0.05 * s, 0.124 * s, x, (0.1 + k * 0.065) * s, z, '#F4E9C9');
   b.caixa(0.1 * s, 0.03 * s, 0.126 * s, x, 0.27 * s, z, T.scuro);

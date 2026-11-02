@@ -215,7 +215,7 @@ try {
         console.log(`lista pública atualizada: ${pub.decori.length} casa(s) decorada(s) no mapa`);
       };
       const quando = s => new Date(s).toLocaleString('en-GB', { timeZone: 'Europe/London', dateStyle: 'short', timeStyle: 'short' });
-      const linha = p => `${p.id}  ${(ativa(p) ? `✨ até ${quando(p.scade)}` : p.stato === 'rimosso' ? '✖ removida' : p.scade ? '⌛ vencida' : `${p.pagamento ?? 'não pagou'}`).padEnd(24)} @${p.conta}${p.da ? ` 🎁 da @${p.da}` : ''} · ${[p.squadra, ...(p.extra ?? [])].filter(Boolean).join(', ')}`;
+      const linha = p => `${p.id}  ${(ativa(p) ? `✨ até ${quando(p.scade)}` : p.stato === 'rimosso' ? '✖ removida' : p.scade ? '⌛ vencida' : `${p.pagamento ?? 'não pagou'}`).padEnd(24)} @${p.conta}${p.da ? ` 🎁 da @${p.da}` : ''} · ${[p.modello && `🏰 ${p.modello}`, p.squadra, ...(p.extra ?? [])].filter(Boolean).join(', ')}${p.checkout === 'abbandonato' ? ' · saiu do checkout' : ''}`;
       if (args[0] === 'rimuovi') {
         const p = baixar(args[1] ?? '');
         if (!p) throw new Error(`decoração ${args[1]} não encontrada no servidor`);

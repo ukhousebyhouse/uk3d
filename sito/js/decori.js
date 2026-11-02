@@ -179,8 +179,8 @@ function fuochi(h) {
   return pts;
 }
 
-// corações subindo e sumindo em volta da casa
-function cuori(h) {
+// corações subindo e sumindo em volta da casa (também usado no gravador do Reel 5)
+export function cuori(h) {
   const s = new THREE.Shape();
   s.moveTo(0, -0.05); s.bezierCurveTo(-0.07, 0, -0.05, 0.06, 0, 0.03); s.bezierCurveTo(0.05, 0.06, 0.07, 0, 0, -0.05);
   const geo = new THREE.ExtrudeGeometry(s, { depth: 0.02, bevelEnabled: false }), g = new THREE.Group();

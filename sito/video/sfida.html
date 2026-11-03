@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<base href="../">
+<title>Record reel "Bring Your Mates" · UK House by House</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=block" rel="stylesheet">
+<link rel="stylesheet" href="video/reel.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
+<style>
+  #titolo { left: 30px; right: 30px; top: 520px; text-align: center; font-size: 132px; line-height: 1.02; -webkit-text-stroke-width: 24px; }
+  #titolo small { display: block; font-size: 70px; -webkit-text-stroke-width: 14px; margin-top: 14px; }
+  #orologio { left: 0; right: 0; top: 250px; text-align: center; }
+  #orologio .carta { display: inline-block; background: var(--rosso); color: #fff; border: 8px solid var(--ink); border-radius: 34px; padding: 8px 46px 16px; box-shadow: 0 12px 0 rgba(0,0,0,.3); font-weight: 900; }
+  #orologio small { display: block; font-size: 40px; letter-spacing: 4px; color: #FFE3DF; }
+  #orologio b { display: block; font-size: 120px; line-height: 1; font-variant-numeric: tabular-nums; }
+  #elezione { left: 50px; right: 50px; top: 240px; }
+  #elezione .pan { background: #fff; border: 8px solid var(--ink); border-radius: 36px; padding: 24px 30px 28px; box-shadow: 0 14px 0 rgba(0,0,0,.3); }
+  #elezione h3 { margin: 0 0 4px; text-align: center; font-size: 60px; color: var(--ink); text-transform: uppercase; }
+  #elezione h3 small { display: block; font-size: 30px; color: #5B6475; letter-spacing: 2px; }
+  #elezione .riga { display: flex; align-items: center; gap: 16px; margin: 16px 0 0; font-size: 38px; font-weight: 900; color: var(--ink); }
+  #elezione .riga .naz { width: 70px; font-size: 54px; text-align: center; }
+  #elezione .riga .chi { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #elezione .riga .chi small { display: block; font-size: 26px; color: #5B6475; }
+  #elezione .riga .pts { font-variant-numeric: tabular-nums; min-width: 150px; text-align: right; }
+  #elezione .riga .piu { color: var(--verde); font-size: 40px; opacity: 0; }
+  #chip { left: 0; right: 0; top: 1200px; text-align: center; }
+  #chip span { display: inline-block; background: #FFF6D6; border: 6px solid var(--ink); border-radius: 99px; padding: 12px 30px 16px; font-size: 42px; font-weight: 800; color: var(--ink); box-shadow: 0 10px 0 rgba(0,0,0,.3); white-space: nowrap; }
+  #chip span b { color: var(--rosso); font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<canvas id="mappa"></canvas>
+<div id="vinheta"></div>
+<div id="scuro"></div>
+<div id="etichette"></div>
+<div id="bolle"></div>
+<div id="timbri"></div>
+<div id="titolo" class="pop forte">🏆 Bring<br><span class="g">your mates</span><small>win a rare house</small></div>
+<div id="orologio" class="pop"><div class="carta"><small>ENDS AT MIDNIGHT · UK TIME</small><b></b></div></div>
+<div id="elezione" class="pop"><div class="pan"><h3>🏛️ First Minister<small>RESULTS · 29 NOV · 9PM</small></h3><div id="righe"></div></div></div>
+<div id="chip" class="pop"><span><b>🔴 LIVE</b> ⏱️ countdown · Bring Your Mates</span></div>
+<div id="banner" class="pop forte"></div>
+<div id="sott" class="forte"></div>
+<div id="flash"></div>
+<script type="module" src="video/sfida.js"></script>
+</body>
+</html>

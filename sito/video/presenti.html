@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<base href="../">
+<title>Record reel "Gifts are taking over" · UK House by House</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=block" rel="stylesheet">
+<link rel="stylesheet" href="video/reel.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
+<style>
+  html, body { background: #1E3560; }
+  .spillo { position: absolute; left: 0; top: 0; font-size: 64px; opacity: 0; filter: drop-shadow(0 6px 0 rgba(0,0,0,.35)); transform-origin: 50% 100%; }
+  #domanda { left: 30px; right: 30px; top: 260px; text-align: center; font-size: 104px; line-height: 1.05; -webkit-text-stroke-width: 22px; }
+  #negozio { left: 60px; right: 60px; top: 330px; }
+  #negozio .pan { background: #fff; border: 8px solid var(--ink); border-radius: 40px; padding: 30px 28px 34px; box-shadow: 0 14px 0 rgba(0,0,0,.3); }
+  #negozio h4 { margin: 0 0 6px; font-size: 60px; color: var(--ink); }
+  #negozio .sub { font-size: 32px; font-weight: 800; color: #5B6475; margin-bottom: 22px; }
+  #negozio .bt { display: flex; align-items: center; gap: 22px; border: 6px solid var(--ink); border-radius: 30px; background: #FFF7E6; padding: 22px 26px; margin-top: 18px; }
+  #negozio .bt:last-child { background: #FFE3EE; }
+  #negozio .bt .em { font-size: 84px; line-height: 1; }
+  #negozio .bt b { display: block; font-size: 50px; color: var(--ink); }
+  #negozio .bt small { display: block; font-size: 30px; font-weight: 800; color: #5B6475; }
+  #negozio .bt.on { box-shadow: 0 0 0 7px #fff, 0 0 0 14px var(--ink); transform: scale(1.03); }
+  #dito { position: absolute; left: 0; top: 0; font-size: 120px; opacity: 0; filter: drop-shadow(0 6px 0 rgba(0,0,0,.35)); }
+</style>
+</head>
+<body>
+<canvas id="mappa"></canvas>
+<div id="vinheta"></div>
+<div id="scuro"></div>
+<div id="spilli"></div>
+<div id="etichette"></div>
+<div id="bolle"></div>
+<div id="timbri"></div>
+<div id="sc-noah" class="pop scambio" style="top:450px"><div class="pill"></div><div class="dono">🎁</div><div class="pill oro"></div></div>
+<div id="sc-gun" class="pop scambio" style="top:450px"><div class="pill"></div><div class="dono">🎁</div><div class="pill oro"></div></div>
+<div id="domanda" class="pop forte">Who's getting<br><span class="r">one from you?</span> 🎁</div>
+<div id="negozio" class="pop"><div class="pan"><h4>Make a house special ✨</h4><div class="sub">Try it free on the map first</div>
+  <div class="bt" id="bt-regalo"><span class="em">🎁</span><span><b>Send a mate a gift</b><small>A surprise on their house, with your name on it</small></span></div>
+  <div class="bt" id="bt-mia"><span class="em">🏠</span><span><b>My house</b><small>A rare house, gold, neon, a crown…</small></span></div></div></div>
+<div id="dito">👆</div>
+<div id="banner" class="pop forte"></div>
+<div id="sott" class="forte"></div>
+<div id="flash"></div>
+<script type="module" src="video/presenti.js"></script>
+</body>
+</html>

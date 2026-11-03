@@ -6,6 +6,9 @@ import { immagineCasa, immagineFondazione, immagineCitta, PERFIL } from './stori
 import { tipoDi, linkWhatsapp } from './commerci.js';
 import { NAZIONI, saluto, nomeBil } from './nazioni.js';
 
+// contagem regressiva "05:42:09"
+const relogio = ms => { const s = Math.max(0, Math.floor(ms / 1000)); return [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60].map(n => String(n).padStart(2, '0')).join(':'); };
+
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9._ ']/g, '').trim();
@@ -100,7 +103,7 @@ export class UI {
   }
 
   rota(r) {
-    const mapa = { palazzo: () => this.palazzo(), classifica: () => this.classifica(), tabellone: () => this.tabellone(), negozi: () => this.negozi(), senzapadrone: () => this.senzaPadrone(), fiamme: () => this.fiamme(), 'come-funziona': () => this.comeFunziona(), video: () => this.video(), decora: () => this.decori?.aperto && this.decori.home(), derby: () => this.derby(), meta: () => this.meta(), gran: () => this.granElezione() };
+    const mapa = { palazzo: () => this.palazzo(), classifica: () => this.classifica(), tabellone: () => this.tabellone(), negozi: () => this.negozi(), senzapadrone: () => this.senzaPadrone(), fiamme: () => this.fiamme(), 'come-funziona': () => this.comeFunziona(), video: () => this.video(), decora: () => this.decori?.aperto && this.decori.home(), derby: () => this.derby(), meta: () => this.meta(), gran: () => this.granElezione(), sfida: () => this.sfida() };
     if (mapa[r]) mapa[r]();
   }
 
@@ -141,6 +144,19 @@ export class UI {
     if (dz) add('chip-derby', `⚔️ ${esc(D.comunePorIstat.get(dz.a).nome)} <b>${num(dz.pts_a)}</b> – <b>${num(dz.pts_b)}</b> ${esc(D.comunePorIstat.get(dz.b).nome)}`, () => this.derby());
     const g = D.snap.cariche.guerra?.[0];
     if (g?.pts) add('chip-nazioni', `${NAZIONI[g.cod]?.emoji ?? ''} <b>${esc(D.regPorCod.get(g.cod).nome)}</b> top the Battle of the Nations`, () => this.palazzo());
+    // desafio relâmpago: contagem regressiva até o fim (o chip se atualiza sozinho a cada segundo)
+    const sf = D.snap.sfida;
+    if (sf) {
+      add('chip-sfida', '', () => this.sfida());
+      const b = document.getElementById('chip-sfida'), ini = Date.parse(sf.inizio), fim = Date.parse(sf.fine);
+      const tic = () => {
+        const t = Date.now();
+        b.innerHTML = t >= fim ? `🏆 <b>${esc(sf.titolo)}</b>: ${sf.classifica[0] ? `@${esc(sf.classifica[0].conta)} won!` : 'results'}`
+          : t < ini ? `⏳ <b>${esc(sf.titolo)}</b> starts at ${ora(ini)}`
+            : `⏱️ <b>${relogio(fim - t)}</b> left · ${esc(sf.titolo)}`;
+      };
+      tic(); clearInterval(this._sfida); this._sfida = setInterval(tic, 1000);
+    }
     const ge = D.snap.gran_elezione;
     if (ge) add('chip-gran', ge.conclusa ? '🏛️ <b>The first First Ministers</b> are in' : `🏛️ <b>Grand Election</b> · ${dataBreve(Date.parse(ge.data))}, ${ora(Date.parse(ge.data))}`, () => this.granElezione());
     const meta = this.metaCase();
@@ -559,6 +575,7 @@ export class UI {
       citta_fondata: () => `🔵 ${quem(e.fondatore)} founded <b>${nomeCom(e.luogo)}</b>`,
       disputa: () => `⚔️ Photo finish in <b>${nomeCom(e.luogo)}</b>: ${quem(e.fondatore)} beat ${quem(e.secondo)} by ${e.differenza_s} seconds`,
       traguardo: () => { const t = REGOLE.traguardi.find(x => x.id === e.id); return t ? `🔓 <b>${nomeCom(e.luogo)}</b> unlocked: ${t.emoji} ${esc(t.nome)} (${num(t.case)} houses)` : ''; },
+      sfida_vinta: () => `🏆 ${quem(e.conta)} won <b>${esc(e.titolo)}</b> with ${num(e.n)} new ${e.n === 1 ? 'mate' : 'mates'} on the map`,
       gran_eletto: () => `🏛️ ${quem(e.conta)} is the first ever ${esc(REGOLE.gran_elezione?.titolo ?? 'First Minister')} of <b>${esc(D.regPorCod.get(e.regione)?.nome ?? '')}</b>, with ${punti(e.pts)}`,
       livello: () => `🏗️ ${quem(e.conta)}'s house is now a <b>${esc(REGOLE.livelli[e.livello].nome)}</b>`,
       presidente_eletto: () => `🚪 ${quem(e.conta)} was elected ${NOMI_CARICHE.presidente} with ${punti(e.pts)}`,
@@ -571,6 +588,22 @@ export class UI {
     const ge = this.D.snap.gran_elezione;
     if (!ge?.conclusa) return null;
     return Object.entries(ge.nazioni).find(([, l]) => l[0]?.conta === conta)?.[0] ?? null;
+  }
+  // desafio relâmpago: regra, tempo que falta e o placar ao vivo
+  sfida() {
+    const D = this.D, sf = D.snap.sfida;
+    if (!sf) return;
+    const ini = Date.parse(sf.inizio), fim = Date.parse(sf.fine), t = Date.now(), aberta = t >= ini && t < fim;
+    const lista = sf.classifica.length ? `<ol class="ranking">${sf.classifica.map((x, i) => `<li data-casa="${esc(x.conta)}"><span class="pos">${i ? i + 1 : (sf.conclusa ? '🏆' : '1')}</span><span class="quem"><b>@${esc(x.conta)}</b><small>${esc(D.luoghi[D.porConta.get(x.conta)?.luogo]?.nome ?? '')}</small></span><span class="pts">${num(x.n)} ${x.n === 1 ? 'mate' : 'mates'}</span></li>`).join('')}</ol>`
+      : '<p class="nota">No new mates yet: the first one takes the lead!</p>';
+    this.abrir(`
+      <h2>🏆 ${esc(sf.titolo)}</h2>
+      <div class="sub">${sf.conclusa || t >= fim ? 'Finished' : aberta ? `<b id="sfida-tempo">${relogio(fim - t)}</b> left` : `Starts ${dataBreve(ini)}, ${ora(ini)}`} · until ${ora(fim - 1000)} (UK time)</div>
+      <div class="carta meta"><b>Bring the most new players to the map and win ${esc(sf.premio)}.</b><small>Tag your mates in the comments of our posts. Every mate you tagged who comments their town and gets a house during the challenge counts for you (+${REGOLE.punti.recluta} points too, and they count for the First Minister election). On a tie, whoever got there first wins. <a href="terms.html#challenges" target="_blank" rel="noopener">Rules</a></small></div>
+      ${lista}
+      <p class="nota">The board updates every half hour or so, with the map.</p>`);
+    clearInterval(this._sfidaPainel);
+    if (aberta) this._sfidaPainel = setInterval(() => { const el = $('#sfida-tempo'); if (!el) return clearInterval(this._sfidaPainel); el.textContent = relogio(fim - Date.now()); }, 1000);
   }
   granElezione() {
     const D = this.D, ge = D.snap.gran_elezione;

@@ -28,7 +28,8 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
   const doppi = eventi.doppi ?? [];
   const lim = limitiMandati(eventi.inizio, agora);
   const kc = mandatoDi(lim, agora);
-  const fator = (f, ts) => (doppi.some(d => ts >= d.da && ts < d.a && (d.tipi.includes('tutto') || d.tipi.includes(NOMES_F[f]))) ? 2 : 1);
+  const sfidaAtiva = ts => (R.sfide ?? []).find(s => ts >= Date.parse(s.inizio) && ts < Date.parse(s.fine)) ?? null;
+  const fator = (f, ts) =>(doppi.some(d => ts >= d.da && ts < d.a && (d.tipi.includes('tutto') || d.tipi.includes(NOMES_F[f]))) ? 2 : 1);
 
   const contas = new Map(), luoghi = new Map(), postEst = new Map(), votos = new Set(), eventos = [];
   const cont = { commenti: 0, validi: 0, pendenti: 0, rifiutati: 0, storie: 0 };
@@ -68,7 +69,12 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
     if (a.taggatoDa && !a.recrutado) {
       a.recrutado = true;
       const quem = contas.get(a.taggatoDa);
-      if (quem?.casa) add(quem, F.recluta, P.recluta, ts);
+      if (quem?.casa) {
+        add(quem, F.recluta, P.recluta, ts);
+        // desafio relâmpago: o amigo novo conta se a casa dele nasceu dentro da janela
+        const sf = sfidaAtiva(ts);
+        if (sf && !quem.bloc && !a.bloc) { const r = (quem.sfide ??= {})[sf.id] ??= { n: 0, ts: 0 }; r.n++; r.ts = ts; }
+      }
     }
   };
 
@@ -150,6 +156,18 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
 
   if (!eletti && agora >= G) eletti = placarNazioni(G);
   if (eletti) for (const [cod, l] of Object.entries(eletti)) if (l[0]) eventos.push({ tipo: 'gran_eletto', regione: cod, conta: l[0].conta, pts: l[0].pts, ts: G });
+
+  // desafio relâmpago no site: o que está valendo, o que começa em até 1 dia ou o que acabou há até 3 dias
+  const sfida = (R.sfide ?? []).filter(s => agora >= Date.parse(s.inizio) - 864e5 && agora < Date.parse(s.fine) + 3 * 864e5).sort((a, b) => Date.parse(b.inizio) - Date.parse(a.inizio))[0];
+  let sfidaSnap = null;
+  if (sfida) {
+    const classifica = [...contas.values()].filter(a => a.sfide?.[sfida.id] && !a.bloc)
+      .map(a => ({ conta: a.conta, n: a.sfide[sfida.id].n, ts: a.sfide[sfida.id].ts }))
+      .sort((x, y) => y.n - x.n || x.ts - y.ts).slice(0, 10);
+    const conclusa = agora >= Date.parse(sfida.fine);
+    sfidaSnap = { id: sfida.id, titolo: sfida.titolo, premio: sfida.premio, inizio: sfida.inizio, fine: sfida.fine, conclusa, classifica: classifica.map(({ conta, n }) => ({ conta, n })) };
+    if (conclusa && classifica[0]) eventos.push({ tipo: 'sfida_vinta', conta: classifica[0].conta, n: classifica[0].n, titolo: sfida.titolo, ts: Date.parse(sfida.fine) });
+  }
 
   // ---------- mecenati: quem comprou um negócio ou outdoor (campo "giocatore" do pedido) ----------
   for (const n of eventi.commerci ?? []) {
@@ -265,6 +283,7 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
     derby,
     // antes da data: os 5 primeiros de cada nação agora; depois: o resultado congelado (o 1º de cada nação é o eleito)
     ...(R.gran_elezione ? { gran_elezione: { data: R.gran_elezione.data, conclusa: !!eletti, nazioni: eletti ?? placarNazioni() } } : {}),
+    ...(sfidaSnap ? { sfida: sfidaSnap } : {}),
     eventi: eventos.filter(e => e.ts <= agora).sort((a, b) => b.ts - a.ts).slice(0, 40).map(e => ({ ...e, ts: new Date(e.ts).toISOString() })),
   };
 }

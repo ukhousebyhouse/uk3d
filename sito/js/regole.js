@@ -66,6 +66,11 @@ export const REGOLE = {
   // (o que vem depois, provavelmente eleição mensal, ainda vai ser decidido)
   // (pontos de negócio no mapa não contam, como nas eleições da semana; empate -> a casa mais antiga)
   gran_elezione: { data: '2026-11-29T21:00:00Z', titolo: 'First Minister' },
+  // desafios relâmpago: quem trouxer mais amigos novos (marcou nos comentários e o amigo ganhou casa) entre inizio e fim;
+  // empate -> quem chegou primeiro ao número. O prêmio é dado à mão (amministra.mjs decori omaggio).
+  sfide: [
+    { id: 'mates-1103', inizio: '2026-11-03T12:00:00Z', fine: '2026-11-04T00:00:00Z', titolo: 'Bring Your Mates', premio: 'a rare house of your choice, decorated however you like, for 10 days' },
+  ],
   // nome do pub: os moradores votam comentando "pub Red Lion"; sem votos, um nome fixo da lista
   pub_nomi: ['The Red Lion', 'The Royal Oak', 'The Crown', 'The White Hart', 'The Rose & Crown', "The King's Head", "The Queen's Head",
     'The Swan', 'The Plough', 'The Bell', 'The Black Horse', 'The Fox & Hounds', 'The George', 'The Railway', 'The Ship', 'The Wheatsheaf'],

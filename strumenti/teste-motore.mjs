@@ -145,5 +145,28 @@ ok(ge?.conclusa && ge.nazioni['12'][0].conta === 'bruno' && ge.nazioni['03'][0].
 ok(s6.eventi.filter(e => e.tipo === 'gran_eletto').length === 2, 'eventos gran_eletto: um por nação com casas');
 ok(estrairPub('Pub: the rose and crown!') === 4 && estrairPub('pub Crown') === 2 && estrairPub("pub kings head") === 5 && estrairPub('the pub is great') === null && estrairPub('Leeds, England') === null,
   'estrairPub: "rose and crown", "Crown", "kings head"; frase qualquer com "pub" não vale');
+
+// desafio relâmpago: conta só amigos novos cuja casa nasceu na janela; empate -> quem chegou primeiro
+const sfAntes = REGOLE.sfide;
+REGOLE.sfide = [{ id: 't', inizio: new Date(qui + 1 * H).toISOString(), fine: new Date(qui + 5 * H).toISOString(), titolo: 'Teste', premio: 'x' }];
+const s7 = calcolare({
+  eventi: {
+    ...eventi,
+    commenti: [
+      c('anna', qui, { luogo: '058091' }), c('bruno', qui + 1e3, { luogo: '058091' }),
+      c('anna', qui + 2e3, { tags: ['a1', 'a2', 'a3'] }), c('bruno', qui + 3e3, { tags: ['b1', 'b2'] }),
+      c('a1', qui + 0.5 * H, { luogo: '058091' }),                                   // antes da janela: não conta
+      c('b1', qui + 2 * H, { luogo: '058091' }), c('a2', qui + 2.5 * H, { luogo: '058091' }),
+      c('b2', qui + 3 * H, { luogo: '058091' }), c('a3', qui + 3.5 * H, { luogo: '058091' }),
+      c('a4', qui + 6 * H, { luogo: '058091' }),                                      // depois da janela (e sem tag)
+    ],
+    storie: [], bloccati: [], doppi: [], commerci: [], post: [],
+  },
+  comuni, regioni, agora: qui + 8 * H,
+});
+REGOLE.sfide = sfAntes;
+const sf = s7.sfida;
+ok(sf?.conclusa && JSON.stringify(sf.classifica) === JSON.stringify([{ conta: 'bruno', n: 2 }, { conta: 'anna', n: 2 }]), `desafio: bruno e anna com 2, bruno chegou antes (deu ${JSON.stringify(sf?.classifica)})`);
+ok(s7.eventi.some(e => e.tipo === 'sfida_vinta' && e.conta === 'bruno'), 'evento sfida_vinta para bruno');
 console.log(falhas ? `\n${falhas} falha(s)` : '\ntodos os testes passaram');
 process.exit(falhas ? 1 : 0);

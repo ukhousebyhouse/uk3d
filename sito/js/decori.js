@@ -253,7 +253,8 @@ const topoDi = (casa, sel) => {
 };
 
 // monta o grupo 3D da casa decorada: { g, anima, pilha } (pilha = topo do que flutua; o rótulo do @ fica acima)
-function costruisci(D, citta, notte, casa, sel) {
+// (também usado pelos gravadores de reel)
+export function costruisci(D, citta, notte, casa, sel) {
   const l = D.luoghi[casa.luogo], stile = stileRegione(l.regione.cod, l.comune.sigla), h = altezza(casa, sel);
   const g = new THREE.Group(), anim = [];
   const p = citta.posCasa(casa);

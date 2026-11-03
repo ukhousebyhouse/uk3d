@@ -2,7 +2,9 @@
 export const REGOLE = {
   versao: 'rule-1.0',
   // mecenate/misura: quem compra um negócio no mapa; só fazem a casa crescer, NÃO contam no mandato (eleições)
-  punti: { casa: 10, commento: 5, extra: 1, tag: 3, recluta: 25, voto: 5, storia: 20, post: 20, mecenate: 100, misura: 50 },
+  punti: { casa: 10, commento: 5, extra: 1, tag: 3, recluta: 25, invitato: 25, voto: 5, storia: 20, post: 20, mecenate: 100, misura: 50 },
+  // boas-vindas de quem entra porque um amigo marcou: vale para casas criadas a partir desta hora (não muda o passado)
+  invitato_da: '2026-11-03T12:00:00Z',
   // extra e tag: por post; storia e post (no feed, marcando o perfil): por dia (fuso de Londres)
   limiti: { extra: 10, tag: 10, storia: 1, post: 1 },
   extra_attivo: true,          // false = comentar várias vezes no mesmo post não soma
@@ -184,13 +186,15 @@ export const FONTI = [
   ['storia', 'Stories tagging us', '#FF8A00'],
   ['post', 'Posts tagging us', '#D94F8A'],
   ['mecenate', 'Business on the map', '#6C4FD3'],
+  ['invitato', 'Welcome bonus (a mate brought you)', '#9B5DE5'],
 ];
 
 export const COME_GUADAGNARE = p => [
   ['commento', 'Comment on our posts', `+${p.commento} per post`],
   ['extra', 'Extra comments', `+${p.extra} (up to 10)`],
   ['tag', 'Tag your mates', `+${p.tag} per mate (up to 10)`],
-  ['recluta', 'Mates who join', `+${p.recluta} when a mate you tagged gets a house`],
+  ['recluta', 'Mates who join', `+${p.recluta} when a mate you tagged gets a house, and +${p.invitato} for them too`],
+  ['invitato', 'Join through a mate', `+${p.invitato} welcome bonus when you join after a mate tagged you`],
   ['voto', 'Votes received', `+${p.voto} (1 per person per post)`],
   ['storia', 'Story tagging @ukhousebyhouse', `+${p.storia} (1 a day) and your house is on fire for 24 h`],
   ['post', 'Feed post tagging us', `+${p.post} (1 a day): tag @ukhousebyhouse in the photo`],

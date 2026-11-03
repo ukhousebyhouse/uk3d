@@ -44,7 +44,7 @@ let falhas = 0;
 const ok = (cond, msg) => { console.log(`${cond ? '✔' : '✘'} ${msg}`); if (!cond) falhas++; };
 
 ok(casa('anna')[4] === 10 + 5 + 10 + 6 + 50 + 5, `anna: casa+commento+10 extras+2 tags+2 recrute+1 voto = 86 (deu ${casa('anna')[4]})`);
-ok(JSON.stringify(casa('anna')[7]) === JSON.stringify([10, 5, 10, 6, 50, 5, 0, 0, 0]), `anna: fontes ${JSON.stringify(casa('anna')[7])}`);
+ok(JSON.stringify(casa('anna')[7]) === JSON.stringify([10, 5, 10, 6, 50, 5, 0, 0, 0, 0]), `anna: fontes ${JSON.stringify(casa('anna')[7])}`);
 ok(casa('bruno')[4] === 10 + 5 + 2 + 20 + 5, `bruno: casa+commento+2 extras (votos)+1 storia+commento no mandato 2 = 42 (deu ${casa('bruno')[4]})`);
 ok(casa('bruno')[5] === 5, `bruno: pontos do mandato 2 = 5 (deu ${casa('bruno')[5]})`);
 ok(casa('bruno')[6] === 0, 'bruno: chamas apagadas (story há mais de 24 h)');
@@ -168,5 +168,22 @@ REGOLE.sfide = sfAntes;
 const sf = s7.sfida;
 ok(sf?.conclusa && JSON.stringify(sf.classifica) === JSON.stringify([{ conta: 'bruno', n: 2 }, { conta: 'anna', n: 2 }]), `desafio: bruno e anna com 2, bruno chegou antes (deu ${JSON.stringify(sf?.classifica)})`);
 ok(s7.eventi.some(e => e.tipo === 'sfida_vinta' && e.conta === 'bruno'), 'evento sfida_vinta para bruno');
+
+// boas-vindas: quem entra por indicação ganha +25 só se a casa nasceu depois de invitato_da
+const invAntes = REGOLE.invitato_da;
+REGOLE.invitato_da = new Date(qui + 1 * H).toISOString();
+const s8 = calcolare({
+  eventi: {
+    ...eventi,
+    commenti: [c('anna', qui, { luogo: '058091' }), c('anna', qui + 2e3, { tags: ['v1', 'v2'] }),
+      c('v1', qui + 0.5 * H, { luogo: '058091' }), c('v2', qui + 2 * H, { luogo: '058091' })],
+    storie: [], bloccati: [], doppi: [], commerci: [], post: [],
+  },
+  comuni, regioni, agora: qui + 3 * H,
+});
+REGOLE.invitato_da = invAntes;
+const c8 = conta => s8.case.find(x => x[0] === conta);
+ok(c8('v1')[7][9] === 0 && c8('v2')[7][9] === 25 && c8('v2')[4] === 10 + 5 + 25, `boas-vindas: v1 (antes) 0, v2 (depois) +25 (deu ${c8('v1')[7][9]}, ${c8('v2')[7][9]}, total v2 ${c8('v2')[4]})`);
+ok(c8('anna')[7][4] === 50, `anna continua com +25 por cada amigo (deu ${c8('anna')[7][4]})`);
 console.log(falhas ? `\n${falhas} falha(s)` : '\ntodos os testes passaram');
 process.exit(falhas ? 1 : 0);

@@ -16,7 +16,7 @@
 import { REGOLE, livelloDi } from '../sito/js/regole.js';
 import { giornoRoma, limitiMandati, mandatoDi } from '../sito/js/tempo.js';
 
-const F = { casa: 0, commento: 1, extra: 2, tag: 3, recluta: 4, voto: 5, storia: 6, post: 7, mecenate: 8 };
+const F = { casa: 0, commento: 1, extra: 2, tag: 3, recluta: 4, voto: 5, storia: 6, post: 7, mecenate: 8, invitato: 9 };
 const NOMES_F = Object.keys(F);
 const dia = 86400e3;
 const ontem = d => new Date(Date.parse(`${d}T12:00:00Z`) - dia).toISOString().slice(0, 10);
@@ -71,6 +71,8 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
       const quem = contas.get(a.taggatoDa);
       if (quem?.casa) {
         add(quem, F.recluta, P.recluta, ts);
+        // boas-vindas: quem entra por indicação também ganha (só a partir de REGOLE.invitato_da)
+        if (P.invitato && ts >= Date.parse(R.invitato_da ?? 0)) add(a, F.invitato, P.invitato, ts);
         // desafio relâmpago: o amigo novo conta se a casa dele nasceu dentro da janela
         const sf = sfidaAtiva(ts);
         if (sf && !quem.bloc && !a.bloc) { const r = (quem.sfide ??= {})[sf.id] ??= { n: 0, ts: 0 }; r.n++; r.ts = ts; }

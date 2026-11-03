@@ -71,8 +71,8 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
       const quem = contas.get(a.taggatoDa);
       if (quem?.casa) {
         add(quem, F.recluta, P.recluta, ts);
-        // boas-vindas: quem entra por indicação também ganha (só a partir de REGOLE.invitato_da)
-        if (P.invitato && ts >= Date.parse(R.invitato_da ?? 0)) add(a, F.invitato, P.invitato, ts);
+        // boas-vindas: quem entra por indicação também ganha (só na janela REGOLE.invitato_da .. invitato_a)
+        if (P.invitato && ts >= Date.parse(R.invitato_da ?? 0) && ts < Date.parse(R.invitato_a ?? '9999-01-01')) add(a, F.invitato, P.invitato, ts);
         // desafio relâmpago: o amigo novo conta se a casa dele nasceu dentro da janela
         const sf = sfidaAtiva(ts);
         if (sf && !quem.bloc && !a.bloc) { const r = (quem.sfide ??= {})[sf.id] ??= { n: 0, ts: 0 }; r.n++; r.ts = ts; }

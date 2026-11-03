@@ -170,8 +170,8 @@ ok(sf?.conclusa && JSON.stringify(sf.classifica) === JSON.stringify([{ conta: 'b
 ok(s7.eventi.some(e => e.tipo === 'sfida_vinta' && e.conta === 'bruno'), 'evento sfida_vinta para bruno');
 
 // boas-vindas: quem entra por indicação ganha +25 só se a casa nasceu depois de invitato_da
-const invAntes = REGOLE.invitato_da;
-REGOLE.invitato_da = new Date(qui + 1 * H).toISOString();
+const [invAntes, invFim] = [REGOLE.invitato_da, REGOLE.invitato_a];
+REGOLE.invitato_da = new Date(qui + 1 * H).toISOString(); REGOLE.invitato_a = new Date(qui + 10 * H).toISOString();
 const s8 = calcolare({
   eventi: {
     ...eventi,
@@ -181,7 +181,7 @@ const s8 = calcolare({
   },
   comuni, regioni, agora: qui + 3 * H,
 });
-REGOLE.invitato_da = invAntes;
+REGOLE.invitato_da = invAntes; REGOLE.invitato_a = invFim;
 const c8 = conta => s8.case.find(x => x[0] === conta);
 ok(c8('v1')[7][9] === 0 && c8('v2')[7][9] === 25 && c8('v2')[4] === 10 + 5 + 25, `boas-vindas: v1 (antes) 0, v2 (depois) +25 (deu ${c8('v1')[7][9]}, ${c8('v2')[7][9]}, total v2 ${c8('v2')[4]})`);
 ok(c8('anna')[7][4] === 50, `anna continua com +25 por cada amigo (deu ${c8('anna')[7][4]})`);

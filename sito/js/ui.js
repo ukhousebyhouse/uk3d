@@ -599,7 +599,7 @@ export class UI {
     this.abrir(`
       <h2>🏆 ${esc(sf.titolo)}</h2>
       <div class="sub">${sf.conclusa || t >= fim ? 'Finished' : aberta ? `<b id="sfida-tempo">${relogio(fim - t)}</b> left` : `Starts ${dataBreve(ini)}, ${ora(ini)}`} · until ${ora(fim - 1000)} (UK time)</div>
-      <div class="carta meta"><b>Bring the most new players to the map and win ${esc(sf.premio)}.</b><small>Tag your mates in the comments of our posts. Every mate you tagged who comments their town and gets a house during the challenge counts for you. You get +${REGOLE.punti.recluta} points per mate and they get a +${REGOLE.punti.invitato} welcome bonus, and it all counts for the First Minister election. On a tie, whoever got there first wins. <a href="terms.html#challenges" target="_blank" rel="noopener">Rules</a></small></div>
+      <div class="carta meta"><b>Bring the most new players to the map and win ${esc(sf.premio)}.</b><small>Tag your mates in the comments of our posts. Every mate you tagged who comments their town and gets a house during the challenge counts for you. You get +${REGOLE.punti.recluta} points per mate and, today only, they get a +${REGOLE.punti.invitato} welcome bonus too. It all counts for the First Minister election. On a tie, whoever got there first wins. <a href="terms.html#challenges" target="_blank" rel="noopener">Rules</a></small></div>
       ${lista}
       <p class="nota">The board updates every half hour or so, with the map.</p>`);
     clearInterval(this._sfidaPainel);

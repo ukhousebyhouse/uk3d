@@ -36,7 +36,51 @@ const ALIAS = {
   pompey: 'Portsmouth', donny: 'Doncaster', brad: 'Bradford', notts: 'Nottingham', nottz: 'Nottingham',
   'derry londonderry': 'Derry/Londonderry', 'stroke city': 'Derry/Londonderry', 'the bru': 'Bournemouth',
   'stoke': 'Stoke-on-Trent', 'stoke on trent': 'Stoke-on-Trent', 'hull': 'Kingston upon Hull', 'kingston upon hull': 'Kingston upon Hull',
-  'newcastle under lyme': 'Newcastle-under-Lyme', 'st andrews': 'Saint Andrews', 'st albans': 'St Albans', 'st helens': 'St Helens', 'st ives': 'St Ives',
+  'newcastle under lyme': 'Newcastle under Lyme', 'st andrews': 'Saint Andrews', 'st albans': 'St Albans', 'st helens': 'St Helens', 'st ives': 'St Ives',
+  // revisão de 4/11/2026 (comentários pendentes): bairros de Londres, nomes curtos, erros comuns e lugares fora da base -> o vizinho mais próximo
+  // (valor: nome, "Nome (County)" ou id GeoNames; se o county/nação citado não bater, vale o nome original)
+  bromley: 'London', crayford: 'London', enfield: 'London', bexley: 'London', putney: 'London', hornchurch: 'London', hornchuch: 'London', londen: 'London',
+  southend: 'Southend-on-Sea', benfleet: 'South Benfleet', wimborne: 'Wimborne Minster', wallacey: 'Wallasey', wigston: 'Wigston Magna', adwick: 'Adwick le Street',
+  blandford: 'Blandford Forum', hayling: 'South Hayling', 'hayling island': 'South Hayling', dereham: 'East Dereham',
+  blairgowrie: 'Blairgowrie and Rattray', mk: 'Milton Keynes', burmingham: 'Birmingham', lestershire: 'Leicester', gloustershire: 'Gloucester',
+  // "~": lugar fora da base -> vizinho (incerto: se a conta escrever outro lugar exato, vale esse)
+  bidbourgh: 'Bidborough', tedburn: 'Tedburn Saint Mary', cardrona: 'Cardrona Mains', ystrad: '~Rhondda', danesmoor: '~Clay Cross', heamoor: '~Penzance',
+  teemore: '~Derrylin', knoydart: '~Inverie', benone: '~Castlerock', niwbwrch: '2641706', 'isle of mull': '7290043', mull: '7290043', 'isle of lewis': '~Stornoway',
+  rousay: '~Kirkwall', shapinsay: '~Kirkwall', 'barton seagrave': '~Kettering', 'deeping st james': '~Market Deeping', 'deeping saint james': '~Market Deeping', methilhill: '~Methil',
+  llanfairpwllgwyngyllgogerychwyrndrobwllllantysiliogogogoch: 'Llanfairpwllgwyngyll', llanfairpwllgwyllgychgogerochwyndrobwillantysilliogogogoch: 'Llanfairpwllgwyngyll', llanfairpwll: 'Llanfairpwllgwyngyll',
+  crosby: 'Great Crosby', barrow: 'Barrow in Furness', 'barrow ribble valley': '12265949', 'minster on sea': '2642434', melton: 'Melton Mowbray',
+  'hythe dibden': 'Hythe (Hampshire)',
+};
+// mesmo nome em vários lugares, sem um claramente maior: o mais provável (só quando county/nação citados não decidem)
+const PREFERITI = {
+  attleborough: 'Attleborough (Norfolk)', balloch: 'Balloch (West Dunbartonshire)', neston: 'Neston (Cheshire West and Chester)', ravensthorpe: 'Ravensthorpe (West Yorkshire)',
+  reepham: 'Reepham (Norfolk)', lowton: 'Lowton (Greater Manchester)', rhynie: 'Rhynie (Aberdeenshire)', coleshill: 'Coleshill (Warwickshire)', hythe: 'Hythe (Kent)',
+  comrie: 'Comrie (Perth and Kinross)', dromore: 'Dromore (Armagh City, Banbridge and Craigavon)', featherstone: 'Featherstone (West Yorkshire)', royston: 'Royston (Hertfordshire)',
+  symington: 'Symington (South Ayrshire)', watton: 'Watton (Norfolk)', blackburn: 'Blackburn (West Lothian)', newport: 'Newport (Isle of Wight)', kirkheaton: 'Kirkheaton (West Yorkshire)',
+  hadleigh: 'Hadleigh (Essex)',
+};
+// só o county escrito ("Essex, England", "Cornwall"): a casa vai para a cidade principal dele
+// (se a mesma conta escrever a cidade em outro comentário, vale a cidade: ver aggiorna.mjs)
+const CAPOLUOGHI = {
+  essex: 'Chelmsford', wirral: 'Birkenhead', 'the wirral': 'Birkenhead', cornwall: 'Truro', 'isle of wight': 'Newport (Isle of Wight)', surrey: 'Guildford',
+  fife: 'Glenrothes', somerset: 'Taunton', cheshire: 'Chester', hampshire: 'Winchester', hants: 'Winchester', dorset: 'Dorchester (Dorset)', cumbria: 'Carlisle', devon: 'Exeter',
+  leicestershire: 'Leicester', leics: 'Leicester', hertfordshire: 'Hertford', herts: 'Hertford', norfolk: 'Norwich', warwickshire: 'Warwick', warks: 'Warwick',
+  flintshire: 'Mold', shetland: 'Lerwick', 'shetland islands': 'Lerwick', anglesey: 'Llangefni', 'isle of anglesey': 'Llangefni', 'ynys mon': 'Llangefni',
+  derbyshire: 'Derby', derbys: 'Derby', sussex: 'Lewes', 'east sussex': 'Lewes', 'west sussex': 'Chichester', orkney: 'Kirkwall', 'orkney islands': 'Kirkwall',
+  pembrokeshire: 'Haverfordwest', 'county durham': 'Durham', carmarthenshire: 'Carmarthen', renfrewshire: 'Paisley', wiltshire: 'Trowbridge', wilts: 'Trowbridge',
+  suffolk: 'Ipswich', ayrshire: 'Ayr', 'south ayrshire': 'Ayr', buckinghamshire: 'Aylesbury', bucks: 'Aylesbury', cambridgeshire: 'Cambridge', cambs: 'Cambridge',
+  gwynedd: 'Caernarfon', worcestershire: 'Worcester', worcs: 'Worcester', herefordshire: 'Hereford', gloucestershire: 'Gloucester', glos: 'Gloucester',
+  merseyside: 'Liverpool', medway: 'Gillingham (Medway)', kent: 'Maidstone', berkshire: 'Reading', berks: 'Reading', tyrone: 'Omagh', shropshire: 'Shrewsbury',
+  shrops: 'Shrewsbury', lancashire: 'Preston', lancs: 'Preston', lincolnshire: 'Lincoln', lincs: 'Lincoln', staffordshire: 'Stafford', staffs: 'Stafford',
+  nottinghamshire: 'Nottingham', northamptonshire: 'Northampton', northants: 'Northampton', oxfordshire: 'Oxford', oxon: 'Oxford', bedfordshire: 'Bedford',
+  northumberland: 'Morpeth', 'west yorkshire': 'Leeds', 'south yorkshire': 'Sheffield', 'north yorkshire': 'York', 'east riding of yorkshire': 'Beverley',
+  'greater manchester': 'Manchester', 'tyne and wear': 'Newcastle upon Tyne', 'west midlands': 'Birmingham', highland: 'Inverness', highlands: 'Inverness',
+  aberdeenshire: 'Aberdeen', 'scottish borders': 'Galashiels', borders: 'Galashiels', 'dumfries and galloway': 'Dumfries', 'west lothian': 'Livingston',
+  'east lothian': 'Haddington', midlothian: 'Dalkeith', 'north ayrshire': 'Irvine', 'east ayrshire': 'Kilmarnock', 'north lanarkshire': 'Motherwell',
+  'south lanarkshire': 'Hamilton', lanarkshire: 'Hamilton', angus: 'Forfar', moray: 'Elgin', 'argyll and bute': 'Oban', 'perth and kinross': 'Perth',
+  'na h eileanan siar': 'Stornoway', 'western isles': 'Stornoway', powys: 'Llandrindod Wells', ceredigion: 'Aberystwyth', conwy: 'Conwy', denbighshire: 'Ruthin',
+  monmouthshire: 'Monmouth', fermanagh: 'Enniskillen', antrim: 'Antrim', armagh: 'Armagh', 'county down': 'Downpatrick', 'co down': 'Downpatrick',
+  rutland: 'Oakham', 'isles of scilly': 'Hugh Town',
 };
 
 // nações e apelidos; county escrito por extenso também confirma (ver this.contee)
@@ -57,7 +101,8 @@ const CONTEE_EXTRA = {
   hants: ['Hampshire', 'Southampton', 'Portsmouth'], hampshire: ['Hampshire', 'Southampton', 'Portsmouth'], wilts: ['Wiltshire', 'Swindon'],
   glos: ['Gloucestershire', 'South Gloucestershire'], oxon: ['Oxfordshire'], cambs: ['Cambridgeshire', 'Peterborough'], northants: ['North Northamptonshire', 'West Northamptonshire'],
   northamptonshire: ['North Northamptonshire', 'West Northamptonshire'], leics: ['Leicestershire', 'Leicester', 'Rutland'], lincs: ['Lincolnshire', 'North Lincolnshire', 'North East Lincolnshire'],
-  staffs: ['Staffordshire', 'Stoke-on-Trent'], warks: ['Warwickshire'], worcs: ['Worcestershire'], derbys: ['Derbyshire', 'Derby'], shrops: ['Shropshire', 'Telford and Wrekin'],
+  staffs: ['Staffordshire', 'Stoke-on-Trent'], warks: ['Warwickshire'], worcs: ['Worcestershire'], derbys: ['Derbyshire', 'Derby'], shrops: ['Shropshire', 'Telford and Wrekin'], shropshire: ['Shropshire', 'Telford and Wrekin'],
+  shetland: ['Shetland Islands'], orkney: ['Orkney Islands'],
   cheshire: ['Cheshire East', 'Cheshire West and Chester', 'Warrington', 'Halton'], cumbria: ['Cumberland', 'Westmorland and Furness'],
   somerset: ['Somerset', 'North Somerset', 'Bath and North East Somerset'], durham: ['County Durham', 'Darlington', 'Hartlepool', 'Stockton-on-Tees'],
   'county durham': ['County Durham', 'Darlington', 'Hartlepool', 'Stockton-on-Tees'], teesside: ['Middlesbrough', 'Stockton-on-Tees', 'Redcar and Cleveland', 'Hartlepool'],
@@ -68,7 +113,7 @@ const CONTEE_EXTRA = {
   'east anglia': ['Norfolk', 'Suffolk', 'Cambridgeshire'], 'the wirral': ['Merseyside'], wirral: ['Merseyside'],
   highlands: ['Highland'], 'western isles': ['Na h-Eileanan Siar'], hebrides: ['Na h-Eileanan Siar', 'Highland', 'Argyll and Bute'], fife: ['Fife'], ayrshire: ['North Ayrshire', 'South Ayrshire', 'East Ayrshire'],
   lanarkshire: ['North Lanarkshire', 'South Lanarkshire'], 'the borders': ['Scottish Borders'], borders: ['Scottish Borders'], lothian: ['Edinburgh', 'West Lothian', 'East Lothian', 'Midlothian'],
-  'south wales': ['Cardiff', 'Swansea', 'Newport', 'Vale of Glamorgan', 'Rhondda Cynon Taf', 'Bridgend', 'Neath Port Talbot', 'Caerphilly', 'Merthyr Tydfil', 'Blaenau Gwent', 'Torfaen', 'Monmouthshire'],
+  'south wales': ['Cardiff', 'Swansea', 'Newport', 'Carmarthenshire', 'Pembrokeshire', 'Vale of Glamorgan', 'Rhondda Cynon Taf', 'Bridgend', 'Neath Port Talbot', 'Caerphilly', 'Merthyr Tydfil', 'Blaenau Gwent', 'Torfaen', 'Monmouthshire'],
   'the valleys': ['Rhondda Cynon Taf', 'Merthyr Tydfil', 'Caerphilly', 'Blaenau Gwent', 'Torfaen', 'Neath Port Talbot', 'Bridgend'],
   'north wales': ['Gwynedd', 'Isle of Anglesey', 'Conwy', 'Denbighshire', 'Flintshire', 'Wrexham'], anglesey: ['Isle of Anglesey'], 'ynys mon': ['Isle of Anglesey'],
   // os 6 counties tradicionais de Northern Ireland -> distritos atuais (aproximação, só para confirmar)
@@ -132,8 +177,9 @@ export class Risolutore {
         const toks = norm(parte).split(' ');
         add(toks.join(' '), istat, paraFuzzy);
         add(toks.filter(t => !STOP.has(t)).join(' '), istat, paraFuzzy);
-        if (toks[0] === 'saint') add(['st', ...toks.slice(1)].join(' '), istat);
-        if (toks[0] === 'st') add(['saint', ...toks.slice(1)].join(' '), istat);
+        // "Chalfont Saint Peter" = "Chalfont St Peter" (em qualquer posição)
+        if (toks.includes('saint')) add(toks.map(t => t === 'saint' ? 'st' : t).join(' '), istat);
+        if (toks.includes('st')) add(toks.map(t => t === 'st' ? 'saint' : t).join(' '), istat);
       }
     };
     for (const c of this.comuni.values()) addNome(c.nome, c.istat, true);
@@ -142,8 +188,21 @@ export class Risolutore {
     // bairros de Londres: só quando nenhuma outra cidade tem o nome, ou com "London" escrito junto
     this.quartieri = new Map(Object.entries(lerDado('quartieri.json')).map(([k, v]) => [norm(k), v]));
     this.postcode = lerDado('postcode.json');
+    // "Nome", "Nome (County)" ou id GeoNames -> id (null se não existe na base)
+    const achar = v => {
+      if (!v) return null;
+      v = v.replace(/^~/, '');
+      if (/^\d+$/.test(v)) return this.comuni.has(v) ? v : null;
+      const m = v.match(/^(.*) \((.*)\)$/);
+      if (m) return [...this.comuni.values()].find(c => c.nome === m[1] && c.sigla === m[2])?.istat ?? null;
+      return this.porNome.get(v)?.istat ?? null;
+    };
     this.alias = new Map();
-    for (const [k, nome] of Object.entries(ALIAS)) this.alias.set(k, nome ? this.porNome.get(nome)?.istat ?? null : null);
+    for (const [k, nome] of Object.entries(ALIAS)) this.alias.set(k, achar(nome));
+    this.vicini = new Set(Object.entries(ALIAS).filter(([, v]) => v?.startsWith('~')).map(([k]) => k));
+    this.preferiti = new Map(Object.entries(PREFERITI).map(([k, v]) => [k, achar(v)]).filter(([, v]) => v));
+    this.capoluoghi = new Map(Object.entries(CAPOLUOGHI).map(([k, v]) => [k, achar(v)]).filter(([, v]) => v));
+    this.mancanti = [...Object.entries(ALIAS), ...Object.entries(PREFERITI), ...Object.entries(CAPOLUOGHI)].filter(([, v]) => v && !achar(v)).map(([k, v]) => `${k} -> ${v}`);
     this.nazioni = new Map();
     for (const [cod, nomes] of Object.entries(NAZIONI)) for (const n of nomes) this.nazioni.set(n, cod);
     // counties por extenso (oficiais e históricos) -> conjunto de nomes de county
@@ -186,7 +245,7 @@ export class Risolutore {
         if (reg && !(k1 === 'ireland' && toks[i - 1] === 'northern')) { regs.add(reg); for (let j = i; j < i + n; j++) usadoRegiao.add(j); }
         const ct = this.contee.get(k1) ?? this.contee.get(k2);
         if (ct) {
-          citazioni.push({ nomi: ct, ini: i, fim: i + n });
+          citazioni.push({ nomi: ct, ini: i, fim: i + n, k: this.contee.has(k1) ? k1 : k2 });
           // Cardiff, Newport, Reading, Bristol...: o county tem o nome de uma cidade dele -> a palavra é a cidade
           // (Nottingham, Derby, Leicester: unitary authority com o nome da cidade, que nos dados está no shire)
           const mesmas = this.idx.get(k1) ?? this.idx.get(k2);
@@ -196,10 +255,11 @@ export class Risolutore {
         // "ireland" sozinho (sem "northern" antes) e os outros países: fora do mapa
         if (this.esteri.has(k1) && !(k1 === 'ireland' && ['northern', 'n'].includes(toks[i - 1]))) estero = true;
         let ids = this.idx.get(k1) ?? this.idx.get(k2) ?? (n > 1 ? this.idx.get(g.join('')) : null), tipo = 'esatto';
+        const orig = ids ? [...ids] : null;
         const al = this.alias.has(k1) ? this.alias.get(k1) : this.alias.has(k2) ? this.alias.get(k2) : undefined;
-        if (al !== undefined) { ids = al ? new Set([al]) : null; tipo = 'alias'; }
+        if (al !== undefined) { ids = al ? new Set([al]) : null; tipo = this.vicini.has(this.alias.has(k1) ? k1 : k2) ? 'vicino' : 'alias'; }
         if (!ids && this.quartieri.has(k1)) { ids = new Set([this.quartieri.get(k1)]); tipo = 'quartiere'; }
-        if (ids) achados.push({ ids: [...ids], ini: i, fim: i + n, peso: k2.split(' ').length, tipo });
+        if (ids) achados.push({ ids: [...ids], ini: i, fim: i + n, peso: k2.split(' ').length, tipo, orig: tipo !== 'esatto' && tipo !== 'quartiere' ? orig : null });
       }
     }
     // fora do Reino Unido (sem nação britânica citada): recusa
@@ -215,7 +275,7 @@ export class Risolutore {
     cand = cand.filter(a => !(a.fim - a.ini === 1 && usadoRegiao.has(a.ini) && !a.ids.some(id => confirmaEm(a)(this.comuni.get(id)))));
     // palavras comuns / vilas sozinhas exigem confirmação
     cand = cand.filter(a => {
-      if (a.peso > 1 || a.tipo === 'alias') return true;
+      if (a.peso > 1 || a.tipo === 'alias' || a.tipo === 'vicino') return true;
       const t = toks[a.ini], cs = a.ids.map(id => this.comuni.get(id));
       if (cs.some(confirmaEm(a))) return true;
       if (COMUNI_PAROLE.has(t) || COMUNS.has(t)) return maiuscula(t) && significativos <= 2;
@@ -230,12 +290,22 @@ export class Risolutore {
       if (f) return f;
       // só o postcode: vale o district
       if (pcIds.length === 1 || (pcIds.length && pcIds.every(id => id === pcIds[0]))) return { istat: pcIds[0], nome: this.comuni.get(pcIds[0]).nome, motivo: 'postcode' };
+      // só um county escrito: a cidade principal dele
+      // ("County Durham" também cita "durham": vale só o trecho maior)
+      const cits = new Set(citazioni.filter(z => usadoRegiao.has(z.ini) && !citazioni.some(w => w !== z && w.ini <= z.ini && w.fim >= z.fim && w.fim - w.ini > z.fim - z.ini)).map(z => z.k));
+      const cap = cits.size === 1 ? this.capoluoghi.get([...cits][0]) : null;
+      if (cap) return { istat: cap, nome: this.comuni.get(cap).nome, motivo: 'contea' };
       return { istat: null, motivo: regs.size || conteeCit.size ? 'solo_regione' : 'nessuna_citta' };
     }
 
     // filtra por nação/county/postcode citados
+    // county escrito vale mais que a nação: "Fawley, Hampshire, England" -> só a Fawley de Hampshire
+    const porConto = a => c => pcIds.includes(c.istat) || citazioni.some(z => (z.fim <= a.ini || z.ini >= a.fim) && z.nomi.has(c.sigla));
     for (const a of cand) {
-      const ok = a.ids.filter(id => confirmaEm(a)(this.comuni.get(id)));
+      const filtra = ids => { const fc = ids.filter(id => porConto(a)(this.comuni.get(id))); return fc.length ? fc : ids.filter(id => confirmaEm(a)(this.comuni.get(id))); };
+      let ok = filtra(a.ids);
+      // apelido que não bate com o county/nação citado ("Barrow, Suffolk"): volta para o nome original
+      if (!ok.length && a.orig) { const ok2 = filtra(a.orig); if (ok2.length) { a.ids = ok2; a.tipo = 'esatto'; ok = ok2; } }
       const outras = regs.size || pcIds.length || citazioni.some(z => z.fim <= a.ini || z.ini >= a.fim);
       a.consistente = outras ? ok.length > 0 : true;
       if (ok.length) a.ids = ok;
@@ -249,7 +319,7 @@ export class Risolutore {
     }
     // sobrou palavra ao lado do nome achado ("Kirkby Lonsdle" achou só "Kirkby"): tenta um nome mais longo por aproximação
     const sobra = toks.filter((t, j) => !STOP.has(t) && !COMUNS.has(t) && !usadoRegiao.has(j) && !(j >= top.ini && j < top.fim) && !/\d/.test(t)).length;
-    if (sobra > 0 && top.tipo !== 'alias') {
+    if (sobra > 0 && top.tipo !== 'alias' && top.tipo !== 'vicino') {
       const f = aprox(toks, regs, conteeCit, maiuscula, significativos, top.peso + 1, usadoRegiao);
       if (f && !top.ids.includes(f.istat)) return f;
     }
@@ -258,7 +328,9 @@ export class Risolutore {
     if (ids.length > 1) {
       // mesmo nome em vários lugares: vence a cidade claramente maior (população ou importância); senão, revisão manual
       const cs = ids.map(id => this.comuni.get(id)).sort((a, b) => b.pop - a.pop || b.rango - a.rango);
+      const pref = this.preferiti.get(norm(cs[0].nome));
       if (cs[0].pop >= 4 * Math.max(cs[1].pop, 1) || (cs[0].rango >= 2 && cs[0].rango > cs[1].rango + 1)) ids = [cs[0].istat];
+      else if (pref && ids.includes(pref)) return { istat: pref, nome: this.comuni.get(pref).nome, motivo: 'preferito' };
       else return { istat: null, motivo: 'omonimo', candidati: cs.slice(0, 8).map(c => `${c.nome} (${c.sigla})`) };
     }
     return { istat: ids[0], nome: this.comuni.get(ids[0]).nome, motivo: distintos.size > 1 ? 'piu_citta' : top.tipo };

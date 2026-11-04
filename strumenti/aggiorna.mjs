@@ -36,6 +36,16 @@ export function montarEventi({ posts, comentarios, storie, tags = [], cfg, log =
   const inizio = Date.parse(cfg.inizio), postsDoJogo = new Set(posts.map(p => p.id));
   const lista = Object.values(comentarios).filter(c => c.conta && c.conta !== proprio && postsDoJogo.has(c.post) && c.ts >= inizio).sort((a, b) => a.ts - b.ts);
   const comCidade = new Set(), revisao = new Map(), motivos = {};
+  // quem escreveu só o county ("Essex") vai para a cidade principal dele, a não ser que a mesma conta
+  // escreva a cidade de verdade em algum comentário: aí vale essa (a primeira) desde o começo
+  const semPub = t => (estrairPub(t) == null ? t : t.replace(/\bpub\b[\s\S]*$/i, '').trim());
+  // (o mesmo vale para o homônimo escolhido por padrão: "grab Neston" marcando um amigo e depois "Sandridge" -> Sandridge)
+  const INCERTI = ['contea', 'preferito', 'vicino'], precisa = new Map();
+  for (const c of lista) {
+    if (precisa.has(c.conta) || !c.testo || /https?:\/\//i.test(c.testo)) continue;
+    const r = risolutore.risolvere(semPub(c.testo));
+    if (r.istat && !INCERTI.includes(r.motivo)) precisa.set(c.conta, r.istat);
+  }
   const commenti = lista.map(c => {
     if (contaProibida(c.conta, mod.parole_vietate ?? [])) bloccati.add(c.conta);
     let stato = 'valido', luogo = null;
@@ -44,7 +54,8 @@ export function montarEventi({ posts, comentarios, storie, tags = [], cfg, log =
     if (/https?:\/\//i.test(c.testo)) stato = 'rifiutato';
     else if (!comCidade.has(c.conta) && testo) {
       const manual = corr.conte[c.conta] ?? corr.testi[norm(c.testo)];
-      const r = manual ? { istat: manual, motivo: 'manuale' } : risolutore.risolvere(testo);
+      let r = manual ? { istat: manual, motivo: 'manuale' } : risolutore.risolvere(testo);
+      if (INCERTI.includes(r.motivo) && precisa.has(c.conta)) r = { istat: precisa.get(c.conta), motivo: 'precisata' };
       motivos[r.motivo] = (motivos[r.motivo] ?? 0) + 1;
       if (r.istat) { luogo = r.istat; comCidade.add(c.conta); }
       else if (['omonimo', 'solo_regione'].includes(r.motivo)) {

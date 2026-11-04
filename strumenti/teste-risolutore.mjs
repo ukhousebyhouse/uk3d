@@ -49,6 +49,20 @@ caso('Richmond, North Yorkshire', 'Richmond (North Yorkshire)');
 // homônimos: county / nação decidem
 caso('Newport, Wales', 'Newport (Newport)');
 caso('Newport, Isle of Wight', 'Newport (Isle of Wight)');
+// county + nação: o county decide (antes a nação deixava todos passarem)
+caso('Fawley, Hampshire, England', 'Fawley (Hampshire)');
+caso('newport, shropshire, england', 'Newport (Telford and Wrekin)');
+caso('Hythe and Dibden, England', 'Hythe (Hampshire)');
+caso('Hythe england', 'Hythe (Kent)');
+caso('Barrow, Suffolk', 'Barrow (Suffolk)');
+caso('Barrow,england', 'Barrow in Furness (Westmorland and Furness)');
+caso('Chalfont St Peter, England', 'Chalfont Saint Peter (Buckinghamshire)');
+caso('Southend, England', 'Southend-on-Sea (Southend-on-Sea)');
+caso('Bromley, England', 'London (Greater London)');
+// só o county: a cidade principal
+caso('Essex England', 'Chelmsford (Essex)');
+caso('Cornwall, England', 'Truro (Cornwall)');
+caso('Wirral,England', 'Birkenhead (Merseyside)');
 // erros de digitação
 caso('Liverpol', 'Liverpool (Merseyside)');
 caso('Edinbrugh', 'Edinburgh (Edinburgh)');

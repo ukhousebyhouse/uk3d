@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<base href="../">
+<title>Record reel "25 days to First Minister" · UK House by House</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=block" rel="stylesheet">
+<link rel="stylesheet" href="video/reel.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
+<style>
+  #giorni { left: 0; right: 0; top: 330px; text-align: center; }
+  #giorni b { display: block; font-size: 380px; line-height: .95; -webkit-text-stroke-width: 40px; font-variant-numeric: tabular-nums; }
+  #giorni span { display: block; font-size: 120px; -webkit-text-stroke-width: 22px; }
+  #data { left: 0; right: 0; top: 1080px; text-align: center; }
+  #data div { display: inline-block; background: #fff; border: 8px solid var(--ink); border-radius: 30px; padding: 10px 40px 16px; font-size: 52px; font-weight: 900; color: var(--ink); box-shadow: 0 12px 0 rgba(0,0,0,.3); }
+  #data div small { display: block; font-size: 30px; color: var(--rosso); letter-spacing: 3px; }
+  #titolo { left: 30px; right: 30px; top: 380px; text-align: center; font-size: 132px; line-height: 1.02; -webkit-text-stroke-width: 24px; }
+  #titolo small { display: block; font-size: 64px; -webkit-text-stroke-width: 13px; margin-top: 14px; }
+  #leader { left: 60px; right: 60px; top: 260px; text-align: center; }
+  #leader .pan { display: inline-block; background: #fff; border: 8px solid var(--ink); border-radius: 36px; padding: 18px 40px 22px; box-shadow: 0 14px 0 rgba(0,0,0,.3); }
+  #leader .naz { font-size: 40px; font-weight: 900; color: #5B6475; letter-spacing: 2px; text-transform: uppercase; }
+  #leader .chi { font-size: 70px; font-weight: 900; color: var(--ink); white-space: nowrap; }
+  #leader .pts { font-size: 46px; font-weight: 900; color: var(--rosso); }
+  .pannello { left: 50px; right: 50px; top: 230px; }
+  .pannello .pan { background: #fff; border: 8px solid var(--ink); border-radius: 36px; padding: 22px 30px 26px; box-shadow: 0 14px 0 rgba(0,0,0,.3); }
+  .pannello h3 { margin: 0 0 4px; text-align: center; font-size: 56px; color: var(--ink); text-transform: uppercase; }
+  .pannello h3 small { display: block; font-size: 28px; color: #5B6475; letter-spacing: 2px; }
+  #tabella .riga { display: flex; align-items: center; gap: 14px; margin: 14px 0 0; font-size: 38px; font-weight: 900; color: var(--ink); }
+  #tabella .riga .naz { width: 66px; font-size: 52px; text-align: center; }
+  #tabella .riga .chi { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #tabella .riga .chi small { display: block; font-size: 26px; color: #5B6475; }
+  #tabella .riga .gap { font-size: 30px; color: #fff; background: var(--rosso); border-radius: 99px; padding: 4px 16px 8px; white-space: nowrap; }
+  #tabella .riga.stretta { background: #FFF1C2; border-radius: 20px; margin-left: -10px; margin-right: -10px; padding: 4px 10px; }
+  #scala { top: 250px; }
+  #scala .lista { position: relative; height: 560px; margin-top: 10px; }
+  #scala .r { position: absolute; left: 0; right: 0; height: 92px; display: flex; align-items: center; gap: 18px; font-size: 42px; font-weight: 900; color: var(--ink); border-radius: 22px; padding: 0 18px; box-sizing: border-box; }
+  #scala .r .p { width: 70px; color: #5B6475; }
+  #scala .r .c { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #scala .r .n { font-variant-numeric: tabular-nums; }
+  #scala .r.tu { background: var(--giallo); border: 6px solid var(--ink); box-shadow: 0 8px 0 rgba(0,0,0,.25); z-index: 2; }
+</style>
+</head>
+<body>
+<canvas id="mappa"></canvas>
+<div id="vinheta"></div>
+<div id="scuro"></div>
+<div id="etichette"></div>
+<div id="bolle"></div>
+<div id="timbri"></div>
+<div id="giorni" class="pop forte"><b class="g">25</b><span>days left</span></div>
+<div id="data" class="pop"><div><small>RESULTS</small>29 Nov · 9pm</div></div>
+<div id="titolo" class="pop forte">🏛️ First<br><span class="g">Ministers</span><small>the first ever</small></div>
+<div id="leader" class="pop"><div class="pan"><div class="naz"></div><div class="chi"></div><div class="pts"></div></div></div>
+<div id="tabella" class="pop pannello"><div class="pan"><h3>🏛️ The race<small>LEADING EACH NATION · RIGHT NOW</small></h3><div id="righe"></div></div></div>
+<div id="scala" class="pop pannello"><div class="pan"><h3>📈 Climb the table<small>EVERY MATE WHO JOINS · +25</small></h3><div class="lista"></div></div></div>
+<div id="banner" class="pop forte"></div>
+<div id="sott" class="forte"></div>
+<div id="flash"></div>
+<script type="module" src="video/corsa.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<base href="../">
+<title>Record reel "Bonfire Night" · UK House by House</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=block" rel="stylesheet">
+<link rel="stylesheet" href="video/reel.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
+<style>
+  #titolo { left: 30px; right: 30px; top: 470px; text-align: center; font-size: 150px; line-height: 1.02; -webkit-text-stroke-width: 26px; }
+  #titolo small { display: block; font-size: 72px; -webkit-text-stroke-width: 14px; margin-top: 18px; color: #FFD9B0; }
+  #citazione { left: 60px; right: 60px; top: 300px; text-align: center; }
+  #citazione div { display: inline-block; background: rgba(21,32,51,.88); border: 6px solid var(--giallo); border-radius: 30px; padding: 22px 36px 26px; color: #fff; font-size: 54px; font-weight: 900; font-style: italic; line-height: 1.2; box-shadow: 0 12px 0 rgba(0,0,0,.35), 0 0 60px rgba(255,150,60,.5); }
+  #citazione small { display: block; font-size: 30px; font-style: normal; color: var(--giallo); letter-spacing: 3px; margin-top: 10px; }
+  #classifica { left: 60px; right: 60px; top: 250px; }
+  #classifica .pan { background: #fff; border: 8px solid var(--ink); border-radius: 36px; padding: 22px 30px 26px; box-shadow: 0 14px 0 rgba(0,0,0,.3); }
+  #classifica h3 { margin: 0 0 6px; text-align: center; font-size: 58px; color: var(--ink); text-transform: uppercase; }
+  #classifica .riga { display: flex; align-items: center; gap: 18px; margin-top: 14px; font-size: 46px; font-weight: 900; color: var(--ink); opacity: 0; }
+  #classifica .riga .m { width: 70px; font-size: 60px; text-align: center; }
+  #classifica .riga .q { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #classifica .riga .q small { display: block; font-size: 28px; color: #5B6475; }
+  #classifica .riga .n { color: var(--rosso); font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<canvas id="mappa"></canvas>
+<div id="vinheta"></div>
+<div id="scuro"></div>
+<div id="etichette"></div>
+<div id="bolle"></div>
+<div id="timbri"></div>
+<div id="titolo" class="pop forte">🔥 Bonfire<br><span class="g">Night</span><small>5 November</small></div>
+<div id="citazione" class="pop"><div>“Remember, remember<br>the 5th of November”<small>BRITISH TRADITION SINCE 1605</small></div></div>
+<div id="classifica" class="pop"><div class="pan"><h3>🎆 Biggest shows</h3><div id="righe"></div></div></div>
+<div id="banner" class="pop forte"></div>
+<div id="sott" class="forte"></div>
+<div id="flash"></div>
+<script type="module" src="video/fogos.js"></script>
+</body>
+</html>

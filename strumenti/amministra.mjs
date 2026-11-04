@@ -40,7 +40,7 @@ Comandos (depois de mudar algo, rode "node strumenti/aggiorna.mjs --senza-instag
   decori omaggio <conta> <efeitos> [da]  decoração grátis (testes, vídeos, compensação); efeitos separados por vírgula,
                                          ex.: reds,corona,neon ou faro,fuochi  (time: reds blues skyblues claret magpies amber
                                          redblue tangerine greens; efeitos: oro neon arcobaleno cuori neve ufo corona fuochi campione
-                                         palloncini tricolore cornice; casas raras: faro castello mulino barca bus albero capanne
+                                         palloncini tricolore cornice; casas raras: castello_oro faro castello mulino barca bus albero capanne
                                          pastore collina stregata osservatorio zenzero cabina teiera razzo)
 
   lista                                  inscritos na lista de espera do "Crea video così"
@@ -229,7 +229,7 @@ try {
         const conta = (args[1] ?? '').replace(/^@/, '').toLowerCase(), sel = (args[2] ?? '').split(',').filter(Boolean), da = (args[3] ?? '').replace(/^@/, '').toLowerCase();
         const SQ = ['reds', 'blues', 'skyblues', 'claret', 'magpies', 'amber', 'redblue', 'tangerine', 'greens'];
         const EF = ['oro', 'neon', 'arcobaleno', 'cuori', 'neve', 'ufo', 'corona', 'fuochi', 'campione', 'palloncini', 'tricolore', 'cornice'];
-        const MO = ['faro', 'castello', 'mulino', 'barca', 'bus', 'albero', 'capanne', 'pastore', 'collina', 'stregata', 'osservatorio', 'zenzero', 'cabina', 'teiera', 'razzo'];
+        const MO = ['castello_oro', 'faro', 'castello', 'mulino', 'barca', 'bus', 'albero', 'capanne', 'pastore', 'collina', 'stregata', 'osservatorio', 'zenzero', 'cabina', 'teiera', 'razzo'];
         const snap = ler(path.join(RAIZ, 'sito', 'data', 'snapshot.json'), { case: [] }), conte = new Set(snap.case.map(c => c[0]));
         if (!conte.has(conta)) throw new Error(`@${conta} não tem casa no mapa`);
         if (da && !conte.has(da)) throw new Error(`@${da} não tem casa no mapa`);

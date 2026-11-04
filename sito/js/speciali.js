@@ -5,7 +5,9 @@
 import * as THREE from 'three';
 import { Construtor, T, cabina } from './modelli.js';
 
+// novo: selo "NEW" na loja; oro: o corpo vira ouro com brilho (decori.js)
 export const SPECIALI = [
+  { id: 'castello_oro', em: '🏰', nome: 'Golden castle', novo: true, oro: true },
   { id: 'faro', em: '🗼', nome: 'Lighthouse' },
   { id: 'castello', em: '🏰', nome: 'Castle' },
   { id: 'mulino', em: '🌬️', nome: 'Windmill' },
@@ -85,6 +87,8 @@ const COSTRUTTORI = {
     b.caixa(0.14, 0.08, 0.008, 0.17, 0.82, -0.08, '#C8102E').caixa(0.04, 0.04, 0.01, 0.15, 0.84, -0.08, '#F2C230');
     return { geo: b.geometria(), h: 0.95 };
   },
+  // castelo dourado: o mesmo castelo; o ouro e o brilho vêm do decori.js (oro: true na lista)
+  castello_oro() { return COSTRUTTORI.castello(); },
 
   // moinho de torre (Norfolk): torre preta, chapéu branco em forma de barco; as pás giram
   mulino() {

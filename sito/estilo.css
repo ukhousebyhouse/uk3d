@@ -278,6 +278,9 @@ body.decora-edit #pannello { max-height: 50vh; }
 .griglia-dec b { display: block; font-size: 12px; font-weight: 900; }
 .griglia-dec small { display: block; font-size: 10px; font-weight: 800; color: var(--grigio); }
 .griglia-dec button.preso { opacity: .5; background: #EEF1F5; }
+.griglia-dec button.dorato { background: linear-gradient(160deg, #FFF6C8, #F2C230 60%, #C99A1E); }
+.griglia-dec .novo { position: absolute; top: -10px; left: -6px; z-index: 1; background: #E0306E; color: #fff; border: 2px solid var(--inchiostro); border-radius: 8px; padding: 1px 5px; font-size: 10px; font-weight: 900; font-style: normal; letter-spacing: .5px; transform: rotate(-8deg); animation: pulsa-novo 1.2s ease-in-out infinite; }
+@keyframes pulsa-novo { 50% { transform: rotate(-8deg) scale(1.15); } }
 .griglia-dec button.on { background: var(--giallo); box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--inchiostro); }
 .griglia-dec button.on::after { content: '✓'; position: absolute; top: -9px; right: -7px; background: var(--verde); color: #fff; border: 2px solid var(--inchiostro); border-radius: 50%; width: 22px; height: 22px; font-size: 12px; font-weight: 900; line-height: 18px; }
 .riga-vista { display: flex; gap: 8px; margin-top: 10px; }

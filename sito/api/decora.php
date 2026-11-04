@@ -39,7 +39,7 @@ $extra = array_values(array_unique(array_map('strval', (array)($d['extra'] ?? []
 $SQUADRE = ['reds', 'blues', 'skyblues', 'claret', 'magpies', 'amber', 'redblue', 'tangerine', 'greens'];
 $COMUNS = ['oro', 'neon', 'arcobaleno', 'cuori', 'neve', 'ufo', 'corona', 'fuochi', 'campione', 'cornice'];
 $EFFETTI = array_merge($COMUNS, $modo === 'regalo' ? ['palloncini'] : ['tricolore']);
-$MODELLI = ['faro', 'castello', 'mulino', 'barca', 'bus', 'albero', 'capanne', 'pastore', 'collina', 'stregata', 'osservatorio', 'zenzero', 'cabina', 'teiera', 'razzo'];
+$MODELLI = ['castello_oro', 'faro', 'castello', 'mulino', 'barca', 'bus', 'albero', 'capanne', 'pastore', 'collina', 'stregata', 'osservatorio', 'zenzero', 'cabina', 'teiera', 'razzo'];
 if ($squadra !== '' && ($modo === 'regalo' || !in_array($squadra, $SQUADRE, true))) erro('Invalid colours.');
 if ($modello !== '' && !in_array($modello, $MODELLI, true)) erro('Invalid house.');
 if (array_diff($extra, $EFFETTI)) erro('Invalid effect.');
@@ -78,7 +78,7 @@ if (!$usaStripe) resposta(200, ['ok' => true, 'id' => $id]);
 
 // ---------- Stripe Checkout ----------
 $giorni = max(1, (int)($cfg['giorni'] ?? 10));
-$NOMI = ['faro' => 'Lighthouse', 'castello' => 'Castle', 'mulino' => 'Windmill', 'barca' => 'Narrowboat', 'bus' => 'Double-decker', 'albero' => 'Treehouse', 'capanne' => 'Beach huts', 'pastore' => "Shepherd's hut", 'collina' => 'Hillside house', 'stregata' => 'Haunted manor', 'osservatorio' => 'Observatory', 'zenzero' => 'Gingerbread house', 'cabina' => 'Giant phone box', 'teiera' => 'Teapot cottage', 'razzo' => 'Rocket'];
+$NOMI = ['castello_oro' => 'Golden castle', 'faro' => 'Lighthouse', 'castello' => 'Castle', 'mulino' => 'Windmill', 'barca' => 'Narrowboat', 'bus' => 'Double-decker', 'albero' => 'Treehouse', 'capanne' => 'Beach huts', 'pastore' => "Shepherd's hut", 'collina' => 'Hillside house', 'stregata' => 'Haunted manor', 'osservatorio' => 'Observatory', 'zenzero' => 'Gingerbread house', 'cabina' => 'Giant phone box', 'teiera' => 'Teapot cottage', 'razzo' => 'Rocket'];
 $nome = $modello !== '' ? "Rare house: {$NOMI[$modello]} · @$conta" : ($modo === 'regalo' ? "Gift for @$conta" : "House decoration · @$conta");
 $base = ((($_SERVER['HTTPS'] ?? '') !== '' && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'ukhousebyhouse.com');
 $dados = [

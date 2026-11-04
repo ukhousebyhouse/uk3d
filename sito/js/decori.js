@@ -72,6 +72,19 @@ function ricolora(geo, pal) {
   g.setAttribute('color', col);
   return g;
 }
+// casa rara dourada: cinzas e brancos (pedra, reboco, metal) viram ouro, do escuro ao claro; o resto (grama, telhado, bandeira) fica
+function doura(geo) {
+  const g = geo.clone(), col = g.attributes.color.clone(), a = col.array, hsl = {}, c = new THREE.Color();
+  const esc = new THREE.Color(ORO.tetto), cla = new THREE.Color(ORO.muro);
+  for (let i = 0; i < a.length; i += 3) {
+    c.setRGB(a[i], a[i + 1], a[i + 2]).getHSL(hsl, THREE.SRGBColorSpace);
+    if (hsl.s > 0.22 || hsl.l < 0.3) continue;
+    c.copy(esc).lerp(cla, Math.min(1, Math.max(0, (hsl.l - 0.45) / 0.3)));
+    a[i] = c.r; a[i + 1] = c.g; a[i + 2] = c.b;
+  }
+  g.setAttribute('color', col);
+  return g;
+}
 
 // ---------- peças 3D (em unidades de lote; o grupo é escalado por LOTE) ----------
 const basico = cor => new THREE.MeshBasicMaterial({ color: cor });
@@ -262,10 +275,11 @@ export function costruisci(D, citta, notte, casa, sel) {
   g.rotation.y = posLote(casa.lote).rot;
   g.scale.setScalar(LOTE);
   const ex = sel.extra, sp = sel.modello ? costruisciSpeciale(sel.modello) : null;
-  // casa rara: o modelo troca a casa inteira (sem cores de time nem ouro)
-  const oro = !sp && ex.has('oro'), squadra = sp ? null : SQUADRE.find(s => s.id === sel.squadra);
-  const base = sp ? sp.geo : geoCasa(casa.livello, variante(casa), stile);
-  const pal = oro ? ORO : squadra;
+  // casa rara: o modelo troca a casa inteira (sem cores de time). Ouro numa casa rara só vem de prêmio
+  // (amministra omaggio; a loja não deixa escolher): as pedras e paredes claras viram ouro
+  const oro = ex.has('oro') || !!SPECIALI.find(m => m.id === sel.modello)?.oro, squadra = sp ? null : SQUADRE.find(s => s.id === sel.squadra);
+  const base = sp ? (oro ? doura(sp.geo) : sp.geo) : geoCasa(casa.livello, variante(casa), stile);
+  const pal = sp ? null : oro ? ORO : squadra;
   const corpo = new THREE.Mesh(pal ? ricolora(base, pal) : base, oro ? matOro : citta.mat);
   g.add(corpo);
   if (sp?.extra) g.add(sp.extra);
@@ -566,7 +580,7 @@ export class Decori {
       ${p ? `<div class="regola">${p.da ? `🎁 Already has a gift from @${esc(p.da)}` : '✨ Already decorated'} until ${dataCurta(p.scade)}: a new purchase replaces it.</div>` : ''}
       ${regalo ? `<div class="cerca-dec"><span>from @</span><input id="dec-da" placeholder="your_account" value="${esc(ed.da ?? '')}" autocomplete="off" autocapitalize="off" spellcheck="false"></div><div class="nota" id="dec-da-nota" style="margin-top:4px"></div>` : ''}
       <div class="gruppo-dec">🏰 Rare houses <small>· only one of each per town</small></div>
-      <div class="griglia-dec">${SPECIALI.map(m => { const p = this.occupato(casa, m.id); return `<button data-dp="modello" data-v="${m.id}"${p ? ' class="preso"' : ''}><span class="em">${m.em}</span><b>${m.nome}</b>${p ? '<small>🔒 taken</small>' : ''}</button>`; }).join('')}</div>
+      <div class="griglia-dec">${SPECIALI.map(m => { const p = this.occupato(casa, m.id); const cls = [p && 'preso', m.oro && 'dorato'].filter(Boolean).join(' '); return `<button data-dp="modello" data-v="${m.id}"${cls ? ` class="${cls}"` : ''}>${m.novo ? '<i class="novo">NEW</i>' : ''}<span class="em">${m.em}</span><b>${m.nome}</b>${p ? '<small>🔒 taken</small>' : ''}</button>`; }).join('')}</div>
       ${regalo ? '' : `<div class="gruppo-dec">⚽ Your team's colours</div>
       <div class="griglia-dec">${SQUADRE.map(s => `<button data-dp="squadra" data-v="${s.id}"><span class="sw" style="background:linear-gradient(90deg,${s.muro} 0 25%,${s.tetto} 25% 50%,${s.muro} 50% 75%,${s.tetto} 75%)"></span><b>${s.nome}</b></button>`).join('')}</div>`}
       <div class="gruppo-dec">${regalo ? '🎁 Pick the gift' : '✨ Effects'} <small>· pick as many as you like</small></div>

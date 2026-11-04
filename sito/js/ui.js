@@ -102,6 +102,23 @@ export class UI {
     this._av = setTimeout(() => t.classList.remove('on'), 2600);
   }
 
+  // faixa grande da Bonfire Night (só no dia 5): aparece ao abrir o site, fecha no ✕ ou sozinha depois de 14 s
+  faixaBonfire() {
+    if (document.getElementById('faixa-festa')) return;
+    const notte = !!this.festa?.notte, f = document.createElement('div');
+    f.id = 'faixa-festa';
+    f.innerHTML = `<button type="button" aria-label="Close">✕</button>
+      <b>🎆 Happy Bonfire Night! 🔥</b>
+      <i>“Remember, remember the 5th of November”</i>
+      <span>${notte ? 'Fireworks are lighting up the skies across Great Britain right now. Zoom into your town 👀'
+        : 'Tonight at dusk, fireworks light up the skies across Great Britain. Come back after dark 👀'}</span>`;
+    const fecha = () => { f.classList.remove('on'); setTimeout(() => f.remove(), 400); };
+    f.querySelector('button').onclick = fecha;
+    document.body.appendChild(f);
+    requestAnimationFrame(() => f.classList.add('on'));
+    setTimeout(fecha, 14000);
+  }
+
   rota(r) {
     const mapa = { palazzo: () => this.palazzo(), classifica: () => this.classifica(), tabellone: () => this.tabellone(), negozi: () => this.negozi(), senzapadrone: () => this.senzaPadrone(), fiamme: () => this.fiamme(), 'come-funziona': () => this.comeFunziona(), video: () => this.video(), decora: () => this.decori?.aperto && this.decori.home(), derby: () => this.derby(), meta: () => this.meta(), gran: () => this.granElezione(), sfida: () => this.sfida() };
     if (mapa[r]) mapa[r]();
@@ -137,6 +154,7 @@ export class UI {
       if (f.nazioneOggi) return this.regione(D.regPorCod.get(f.nazioneOggi));
       this.mappa.verPais();
     });
+    if (this.festa?.bonfireOggi) this.faixaBonfire();
     this.doppio = (D.snap.doppi ?? []).find(d => agora >= Date.parse(d.da) && agora < Date.parse(d.a)) ?? null;
     if (this.doppio) add('chip-doppi', `⚡ <b>Double points</b> ${this.doppio.tipi.includes('storia') ? 'on stories ' : ''}until ${ora(Date.parse(this.doppio.a))}`, () => this.comeFunziona());
     if (this.emFiamme.length) add('chip-fiamme', `🔥 <b>${num(this.emFiamme.length)}</b> ${this.emFiamme.length === 1 ? 'house on fire' : 'houses on fire'} now`, () => this.fiamme());

@@ -81,8 +81,8 @@ export const REGOLE = {
   // Christmas no village green (mês-dia, hora de Londres): árvore e luzes até a Twelfth Night
   natale: { da: '11-28', a: '01-06' },
   halloween: { da: '10-27', a: '10-31' },
-  // Bonfire Night (5 de novembro): fogueira e fogos no village green
-  bonfire: { da: '11-01', a: '11-06' },
+  // Bonfire Night (5 de novembro): aviso no dia 4, fogos e faixa na noite do dia 5 (só GB, sem NIR)
+  bonfire: { da: '11-04', a: '11-05' },
   // dia de cada nação: casas da nação enfeitadas e pontos em dobro nas stories (amministra.mjs doppi)
   feste_nazione: [
     { reg: 'SCT', md: '11-30', nome: "St Andrew's Day" },

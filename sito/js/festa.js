@@ -71,10 +71,15 @@ export class Festa {
       for (const id of ['2650225', '2643743']) citta(this.comune(id)?.luogo, 1.6);   // Edinburgh, London
       avvisi.push('🎆 Happy New Year! Happy Hogmanay!');
     }
-    // Bonfire Night: fogos em toda parte na noite do dia 5 (e no fim de semana mais próximo, os avisos)
+    // Bonfire Night: só na noite do dia 5, fogos sobre England, Scotland e Wales (Northern Ireland fica de fora:
+    // lá a festa quase não existe e o tema é sensível); no dia 4 só o aviso de "amanhã"
+    this.bonfireOggi = false;
     if (bonfireAttivo(agora) || forca === 'bonfire') {
-      if (r.md === '11-05' || forca === 'bonfire') top.slice(0, 60).forEach(l => citta(l, 0.5));
-      avvisi.push('🎆 Remember, remember the 5th of November!');
+      if (r.md === '11-05' || forca === 'bonfire') {
+        this.bonfireOggi = true;
+        top.filter(l => l.regione.cod !== 'NIR').slice(0, 90).forEach((l, k) => citta(l, k < 12 ? 0.9 : 0.5));
+        avvisi.push(notte ? '🎆 Happy Bonfire Night! Look up 👀' : '🎆 Happy Bonfire Night! Fireworks at dusk');
+      } else avvisi.push('🎆 Bonfire Night tomorrow! Fireworks at dusk');
     }
     if (halloweenAttivo(agora)) avvisi.push("🎃 Happy Halloween! Which town's the spookiest?");
     // dia de cada nação: aviso o dia todo, fogos nas cidades da nação à noite
@@ -100,7 +105,7 @@ export class Festa {
     // vizinhos novos: cidades com casas que chegaram nas últimas 2 horas (fogos pequenos)
     const recenti = new Map(), lim = Date.parse(D.snap.dati_fino) - 2 * 3600e3;
     for (const c of D.casas) if (c.ts >= lim) recenti.set(c.luogo, (recenti.get(c.luogo) ?? 0) + 1);
-    [...recenti].sort((a, b) => b[1] - a[1]).slice(0, 25).forEach(([li, n]) => citta(D.luoghi[li], Math.min(0.25, 0.05 + n * 0.02)));
+    [...recenti].filter(([li]) => !(this.bonfireOggi && D.luoghi[li].regione.cod === 'NIR')).sort((a, b) => b[1] - a[1]).slice(0, 25).forEach(([li, n]) => citta(D.luoghi[li], Math.min(0.25, 0.05 + n * 0.02)));
     // Remembrance Sunday: nenhum fogo no mapa
     this.fonti = notte && !silenzio ? fonti : [];
     this.avvisi = avvisi;

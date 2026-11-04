@@ -299,6 +299,16 @@ button.decora-btn { display: block; width: 100%; margin-top: 10px; background: l
 .coriandoli i { position: absolute; top: -20px; width: 9px; height: 14px; border-radius: 2px; animation: cade 2.4s ease-in forwards; }
 @keyframes cade { to { transform: translateY(110vh) rotate(720deg); } }
 
+/* faixa da Bonfire Night (dia 5) */
+#faixa-festa { position: fixed; left: 50%; bottom: calc(var(--sab) + 140px); transform: translate(-50%, 30px); width: min(440px, calc(100% - 32px)); z-index: 45;
+  background: linear-gradient(160deg, #2A1446, #152033 60%, #4A1A10); color: #fff; border: 3px solid var(--giallo); border-radius: 20px; padding: 16px 44px 16px 18px;
+  box-shadow: 0 6px 0 rgba(0,0,0,.35), 0 0 30px rgba(255,140,40,.45); display: flex; flex-direction: column; gap: 4px; opacity: 0; transition: .4s; }
+#faixa-festa.on { opacity: 1; transform: translate(-50%, 0); }
+#faixa-festa b { font-size: 21px; font-weight: 900; color: var(--giallo); }
+#faixa-festa i { font-size: 14px; font-weight: 800; color: #FFD9B0; }
+#faixa-festa span { font-size: 14px; font-weight: 700; line-height: 1.35; }
+#faixa-festa button { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: 0; background: rgba(255,255,255,.15); color: #fff; font-size: 15px; font-weight: 900; }
+
 /* aviso (toast) */
 #avviso { position: fixed; left: 50%; bottom: calc(var(--sab) + 140px); transform: translate(-50%, 20px); background: var(--inchiostro); color: #fff; font-weight: 800; font-size: 14px; padding: 10px 16px; border-radius: 14px; opacity: 0; transition: .25s; z-index: 50; pointer-events: none; max-width: calc(100% - 32px); text-align: center; }
 #avviso.on { opacity: 1; transform: translate(-50%, 0); }

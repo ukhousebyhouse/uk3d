@@ -64,7 +64,16 @@ const horaRoma = s => {
   return new Date(daRoma(+m[1], +m[2], +m[3], +m[4], +m[5])).toISOString();
 };
 
+// comandos que mudam a configuração do jogo (no fim, ela vai para o servidor)
+const muda = ['correggi', 'assegna', 'blocca', 'sblocca', 'storia', 'approva', 'rinnova', 'rimuovi'].includes(cmd) || (cmd === 'doppi' && args[0] && args[0] !== 'lista');
+
 try {
+  // config/commerci.json: o robô do GitHub também aprova (lojas pagas), então a cópia do servidor é a que vale:
+  // traz antes de mexer ou de reenviar a configuração (senão uma cópia velha do PC apagaria as aprovações dele)
+  if ((muda || cmd === 'commerci') && fs.existsSync(path.join(CFG, 'hostinger.json'))) {
+    const { conectar } = await import('./pubblica.mjs');
+    (await import('./negozi.mjs')).baixarCommerci(conectar(() => {}));
+  }
   switch (cmd) {
     case 'stato': {
       const st = ler(path.join(PASTA_IG, 'stato.json'), {}), snap = ler(path.join(RAIZ, 'sito', 'data', 'snapshot.json'), {});
@@ -157,35 +166,12 @@ try {
       const p = baixarPedido(args[0]);
       if (cmd === 'vedi') { console.log(linhaPedido(p)); console.log(JSON.stringify({ ...p, logo: p.logo || '(sem logo)' }, null, 2)); break; }
       if (cmd === 'rifiuta') { p.stato = 'rifiutato'; salvarPedido(p); console.log(`ok: ${p.id} recusado${p.pagamento === 'pagato' ? ' · ATENÇÃO: está pago, faça o reembolso na Stripe' : ''}`); break; }
-      // approva: confere vagas, publica o logo e acrescenta em config/commerci.json
-      const cfgNeg = ler(path.join(RAIZ, 'sito', 'data', 'negozio.json'), {}), com = r.comuni.get(p.istat);
-      if (!com) throw new Error(`comune ${p.istat} não existe`);
+      // approva: confere vagas, publica o logo e acrescenta em config/commerci.json (mesma função do robô)
+      const { approvaPedido } = await import('./negozi.mjs');
       const lista = ler(path.join(CFG, 'commerci.json'), []);
-      if (lista.some(x => x.id === p.id)) throw new Error(`${p.id} já está aprovado (use rinnova)`);
-      const piano = cfgNeg.piani.find(x => com.pop >= x.da) ?? cfgNeg.piani.at(-1);
-      const ativos = lista.filter(x => x.istat === p.istat && (x.prodotto ?? 'negozio') === p.prodotto && Date.parse(x.fino) > Date.now()).length;
-      if (ativos >= piano.posti[p.prodotto]) throw new Error(`${com.nome} já tem ${ativos}/${piano.posti[p.prodotto]} ${p.prodotto} ativos`);
-      if (p.pagamento !== 'pagato' && !args.includes('gratis')) throw new Error(`${p.id} ainda não foi pago (${fase(p)}): só aprove depois do pagamento (ou "approva ${p.id} gratis")`);
-      if (p.test) console.log('aviso: pagamento de TESTE da Stripe');
-      if (p.su_misura && p.pagamento_su_misura !== 'pagato') console.log('aviso: o adicional «su misura» ainda não foi pago (a loja entra com a personalização mesmo assim; use rimuovi/approva de novo se preciso)');
-      let logo = '';
-      if (p.logo) {
-        const arq = path.join(RAIZ, 'sito', 'data', 'loghi', p.logo);
-        if (ftp.baixar(`${remoto}${p.logo}`, arq)) { ftp.enviar([{ local: arq, remoto: `${ftp.web}data/loghi/${p.logo}` }]); logo = `data/loghi/${p.logo}`; }
-        else console.log('aviso: não consegui baixar o logo; vai sem logo');
-      }
-      const giorni = +(args.slice(1).find(a => /^\d+$/.test(a)) ?? cfgNeg.durata_giorni ?? 30), agora = new Date();
-      lista.push({
-        id: p.id, istat: p.istat, approvato: agora.toISOString(), fino: new Date(agora.getTime() + giorni * 86400e3).toISOString(),
-        prodotto: p.prodotto, nome: p.nome, tipo: p.tipo, colore: p.colore, whatsapp: p.whatsapp, instagram: p.instagram,
-        descrizione: p.descrizione, testo: p.testo, logo,
-        ...(p.su_misura && p.stile ? { stile: p.stile } : {}),
-        ...(p.giocatore ? { giocatore: p.giocatore } : {}),   // casa do comprador: +100 (+50 su misura) e badge Mecenate
-      });
+      const msg = approvaPedido({ ftp, p, comuni: r.comuni, lista, giorni: args.slice(1).find(a => /^\d+$/.test(a)) ?? null, gratis: args.includes('gratis') });
       gravar(path.join(CFG, 'commerci.json'), lista);
-      p.stato = 'approvato'; p.approvato = agora.toISOString();
-      salvarPedido(p);
-      console.log(`ok: ${p.nome} aprovado em ${com.nome} por ${giorni} dias (aparece na próxima atualização do mapa)`);
+      console.log(`ok: ${msg} (aparece na próxima atualização do mapa)`);
       break;
     }
     case 'rinnova': case 'rimuovi': {
@@ -292,7 +278,6 @@ try {
       console.log(AJUDA);
   }
   // mudou alguma configuração do jogo: envia para o servidor (o robô do GitHub usa a de lá)
-  const muda = ['correggi', 'assegna', 'blocca', 'sblocca', 'storia', 'approva', 'rinnova', 'rimuovi'].includes(cmd) || (cmd === 'doppi' && args[0] !== 'lista');
   if (muda && fs.existsSync(path.join(CFG, 'hostinger.json'))) {
     try { (await import('./pubblica.mjs')).pubblicare({ config: true, log: () => {} }); console.log('configuração enviada ao servidor (vale na próxima atualização automática)'); }
     catch (e) { console.log(`aviso: não consegui enviar ao servidor (${e.message}); rode "node strumenti/pubblica.mjs --config" depois`); }

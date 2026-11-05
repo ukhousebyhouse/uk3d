@@ -32,6 +32,13 @@ try {
   const baixadas = CONFIG_GIOCO.filter(n => ftp.baixar(`${ftp.priv}config-gioco/${n}`, arq('config', n)));
   console.log(`configurações do jogo do servidor: ${baixadas.join(', ') || 'nenhuma (usando as do repositório)'}`);
 
+  // lojas e outdoors pagos (Stripe): aprova sozinho e já entram nesta atualização (o dono pode tirar com "amministra rimuovi")
+  try {
+    const { approvaPagati } = await import('./negozi.mjs'), { Risolutore } = await import('./risolutore.mjs');
+    const n = approvaPagati({ ftp, comuni: new Risolutore().comuni });
+    if (n) console.log(`${n} loja(s)/outdoor(s) pago(s) aprovado(s) automaticamente`);
+  } catch (e) { console.log(`aviso: aprovação automática das lojas falhou (${e.message})`); }
+
   const { aggiornare } = await import('./aggiorna.mjs');
   await aggiornare({ completo: process.argv.includes('--completo') });
   pubblicare();

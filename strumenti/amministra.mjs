@@ -28,7 +28,8 @@ Comandos (depois de mudar algo, rode "node strumenti/aggiorna.mjs --senza-instag
   Lojas e outdoors (pedidos feitos em negozio.html):
   negozi [tutti]                         pedidos novos (baixa do servidor); "tutti" mostra também os já tratados
   vedi <id>                              detalhes de um pedido
-  approva <id> [giorni]                  põe no mapa (padrão: data/negozio.json durata_giorni) — reserva um lote fixo
+  approva <id> [giorni] [gratis]         põe no mapa (padrão: data/negozio.json durata_giorni); só pedido pago, ou "gratis"
+                                         (loja reserva um lote fixo; outdoor pega o 1º ponto de destaque livre da cidade)
   rifiuta <id>                           recusa o pedido (devolva o pagamento na Hotmart, se houve)
   rinnova <id> [giorni]                  prolonga um comércio aprovado
   rimuovi <id>                           tira do mapa agora (o lote continua reservado: nenhuma casa muda de lugar)
@@ -155,7 +156,7 @@ try {
       }
       const p = baixarPedido(args[0]);
       if (cmd === 'vedi') { console.log(linhaPedido(p)); console.log(JSON.stringify({ ...p, logo: p.logo || '(sem logo)' }, null, 2)); break; }
-      if (cmd === 'rifiuta') { p.stato = 'rifiutato'; salvarPedido(p); console.log(`ok: ${p.id} recusado${p.pagamento === 'pagato' ? ' · ATENÇÃO: está pago, faça o reembolso na Hotmart' : ''}`); break; }
+      if (cmd === 'rifiuta') { p.stato = 'rifiutato'; salvarPedido(p); console.log(`ok: ${p.id} recusado${p.pagamento === 'pagato' ? ' · ATENÇÃO: está pago, faça o reembolso na Stripe' : ''}`); break; }
       // approva: confere vagas, publica o logo e acrescenta em config/commerci.json
       const cfgNeg = ler(path.join(RAIZ, 'sito', 'data', 'negozio.json'), {}), com = r.comuni.get(p.istat);
       if (!com) throw new Error(`comune ${p.istat} não existe`);
@@ -164,7 +165,8 @@ try {
       const piano = cfgNeg.piani.find(x => com.pop >= x.da) ?? cfgNeg.piani.at(-1);
       const ativos = lista.filter(x => x.istat === p.istat && (x.prodotto ?? 'negozio') === p.prodotto && Date.parse(x.fino) > Date.now()).length;
       if (ativos >= piano.posti[p.prodotto]) throw new Error(`${com.nome} já tem ${ativos}/${piano.posti[p.prodotto]} ${p.prodotto} ativos`);
-      if (p.pagamento !== 'pagato') console.log('aviso: a Hotmart ainda não confirmou o pagamento deste pedido');
+      if (p.pagamento !== 'pagato' && !args.includes('gratis')) throw new Error(`${p.id} ainda não foi pago (${fase(p)}): só aprove depois do pagamento (ou "approva ${p.id} gratis")`);
+      if (p.test) console.log('aviso: pagamento de TESTE da Stripe');
       if (p.su_misura && p.pagamento_su_misura !== 'pagato') console.log('aviso: o adicional «su misura» ainda não foi pago (a loja entra com a personalização mesmo assim; use rimuovi/approva de novo se preciso)');
       let logo = '';
       if (p.logo) {
@@ -172,7 +174,7 @@ try {
         if (ftp.baixar(`${remoto}${p.logo}`, arq)) { ftp.enviar([{ local: arq, remoto: `${ftp.web}data/loghi/${p.logo}` }]); logo = `data/loghi/${p.logo}`; }
         else console.log('aviso: não consegui baixar o logo; vai sem logo');
       }
-      const giorni = +(args[1] ?? cfgNeg.durata_giorni ?? 30), agora = new Date();
+      const giorni = +(args.slice(1).find(a => /^\d+$/.test(a)) ?? cfgNeg.durata_giorni ?? 30), agora = new Date();
       lista.push({
         id: p.id, istat: p.istat, approvato: agora.toISOString(), fino: new Date(agora.getTime() + giorni * 86400e3).toISOString(),
         prodotto: p.prodotto, nome: p.nome, tipo: p.tipo, colore: p.colore, whatsapp: p.whatsapp, instagram: p.instagram,

@@ -4,62 +4,476 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Your shop on the map · UK House by House</title>
-<meta name="description" content="Put your business on the 3D map of the UK: a shop on the high street with your name, logo and WhatsApp. Coming soon.">
+<meta name="description" content="Put your business on the 3D map of the UK: a shop on the high street or a giant billboard in your town, with your name, colours, logo and WhatsApp.">
 <meta name="theme-color" content="#86AFC4">
 <link rel="icon" type="image/png" href="favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
-<!-- página provisória: a loja de verdade (modelli-it/negozio.html, a traduzir) entra na fase de vendas -->
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
+<!-- página da loja (comércios e outdoors): adaptada de modelli-it/negozio.html; paga pela Stripe (api/negozio.php) -->
 <style>
-  body { margin: 0; background: #86AFC4; font-family: 'Nunito', system-ui, sans-serif; color: #152033; }
-  main { max-width: 560px; margin: 24px auto; background: #fff; border: 4px solid #152033; border-radius: 24px; padding: 24px 22px; box-sizing: border-box; width: calc(100% - 24px); }
-  h1 { font-size: 28px; font-weight: 900; margin: 8px 0 6px; }
-  p, li { font-weight: 700; font-size: 15px; line-height: 1.55; }
-  .sub { color: #5B6475; }
-  .sign { display: inline-block; background: #1F3A6B; color: #fff; border: 3px solid #152033; border-radius: 6px; padding: 4px 12px; font-weight: 900; letter-spacing: .5px; }
-  label { display: block; font-weight: 800; margin: 12px 0 4px; }
-  input { width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; padding: 10px 12px; border: 3px solid #152033; border-radius: 12px; }
-  button { margin-top: 14px; width: 100%; font: inherit; font-size: 17px; font-weight: 900; padding: 12px; border: 3px solid #152033; border-radius: 14px; background: #C8102E; color: #fff; cursor: pointer; }
-  button:disabled { opacity: .6; }
-  .ok { background: #F7F2E8; border: 3px solid #152033; border-radius: 14px; padding: 12px 14px; }
-  a { color: #152033; }
+  :root { --ink: #152033; --giallo: #FFC93C; --crema: #FFF6E5; --grigio: #5B6475; --rosso: #C8102E; --blu: #1F3A6B; }
+  body { margin: 0; background: #86AFC4; font-family: 'Nunito', system-ui, sans-serif; color: var(--ink); }
+  main { max-width: 560px; margin: 24px auto; background: #fff; border: 4px solid var(--ink); border-radius: 24px; padding: 22px 20px; box-sizing: border-box; width: calc(100% - 24px); }
+  h1 { font-size: 26px; font-weight: 900; margin: 8px 0 6px; }
+  h2 { font-size: 19px; font-weight: 900; margin: 18px 0 6px; }
+  p { font-weight: 700; font-size: 15px; line-height: 1.5; }
+  .sign { display: inline-block; background: var(--blu); color: #fff; border: 3px solid var(--ink); border-radius: 6px; padding: 4px 12px; font-weight: 900; letter-spacing: .5px; }
+  .sign b { color: var(--giallo); }
+  .sub, .aiuto { color: var(--grigio); }
+  .aiuto { font-size: 12.5px; font-weight: 700; }
+  .passi { display: flex; gap: 6px; margin: 12px 0 4px; }
+  .passi span { flex: 1; text-align: center; font-weight: 900; font-size: 13px; padding: 6px 4px; border: 3px solid var(--ink); border-radius: 99px; background: #fff; color: var(--grigio); }
+  .passi span.on { background: var(--giallo); color: var(--ink); }
+  form, .blocco { display: grid; gap: 12px; margin-top: 12px; }
+  label { display: grid; gap: 4px; font-weight: 800; font-size: 14px; }
+  input, select, textarea { font: 700 16px 'Nunito', sans-serif; border: 3px solid var(--ink); border-radius: 12px; padding: 9px 12px; background: #fff; color: var(--ink); width: 100%; box-sizing: border-box; }
+  textarea { resize: vertical; }
+  .errore { color: var(--rosso); font-size: 13px; font-weight: 800; }
+  .prodotti { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .prodotti label { display: block; border: 3px solid var(--ink); border-radius: 16px; padding: 10px; cursor: pointer; background: #fff; }
+  .prodotti input { display: none; }
+  .prodotti label:has(input:checked) { background: var(--crema); box-shadow: inset 0 0 0 3px var(--giallo); }
+  .prodotti b { display: block; font-size: 15px; } .prodotti small { color: var(--grigio); font-weight: 700; }
+  .cerca-citta { position: relative; }
+  #citta-lista { position: absolute; z-index: 5; left: 0; right: 0; top: 100%; background: #fff; border: 3px solid var(--ink); border-radius: 12px; max-height: 240px; overflow: auto; }
+  #citta-lista button { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1.5px dashed #D9DDE3; background: #fff; padding: 9px 12px; font: 800 15px 'Nunito', sans-serif; cursor: pointer; border-radius: 0; }
+  #citta-lista small { color: var(--grigio); font-weight: 700; }
+  .piano { border: 3px solid var(--ink); border-radius: 14px; padding: 10px 12px; font-weight: 900; background: #F4FBFF; line-height: 1.5; }
+  .piano s { color: var(--grigio); font-weight: 800; } .piano .prezzo { font-size: 20px; } .piano.pieno { background: #FDE8EC; }
+  .piano .lancio { display: inline-block; background: var(--rosso); color: #fff; border-radius: 8px; padding: 0 7px; font-size: 12px; letter-spacing: .4px; }
+  .colori { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
+  .colori label { width: 38px; height: 38px; border-radius: 50%; border: 3px solid var(--ink); cursor: pointer; display: block; }
+  .colori input[type=radio] { display: none; }
+  .colori label:has(input:checked) { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--ink); }
+  .colori input[type=color] { width: 46px; height: 42px; padding: 2px; }
+  .spunta { display: flex; gap: 10px; align-items: flex-start; font-weight: 700; font-size: 14px; }
+  .spunta input { width: auto; margin-top: 3px; }
+  button, a.botao { background: var(--giallo); border: 3px solid var(--ink); border-radius: 99px; padding: 11px 18px; font: 900 16px 'Nunito', sans-serif; cursor: pointer; color: var(--ink); text-decoration: none; display: inline-block; text-align: center; }
+  button[type=submit], #vai-pagare { background: var(--rosso); color: #fff; }
+  button.sec, a.botao.sec { background: #fff; color: var(--ink); }
+  button:disabled { opacity: .5; cursor: default; }
+  .bottoni { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  #anteprima { background: var(--crema); border: 3px solid var(--ink); border-radius: 16px; padding: 12px; }
+  #anteprima canvas, #anteprima img { display: block; width: 100%; height: auto; border-radius: 12px; }
+  .linha { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1.5px dashed #D9DDE3; font-weight: 700; font-size: 14px; }
+  .linha span:last-child { text-align: right; font-weight: 900; }
+  .ok { background: var(--crema); border: 3px solid var(--ink); border-radius: 16px; padding: 14px; }
+  details { font-size: 13px; font-weight: 700; color: var(--grigio); } details summary { cursor: pointer; font-weight: 900; color: var(--ink); }
+  a { color: var(--ink); }
+  [hidden] { display: none !important; }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chips button { background: #fff; border: 3px solid var(--ink); border-radius: 99px; padding: 6px 12px; font: 800 13.5px 'Nunito', sans-serif; }
+  .chips button.on { background: var(--giallo); }
+  .misura { border: 3px solid var(--ink); border-radius: 18px; padding: 12px; background: var(--crema); }
+  .misura.on { background: #FFF1C2; }
+  .misura > label { cursor: pointer; }
+  #editor { display: grid; gap: 12px; margin-top: 10px; }
+  .anteprima3d { position: relative; border: 3px solid var(--ink); border-radius: 16px; overflow: hidden; background: linear-gradient(#BFE3F5, #EAF6FB); touch-action: none; cursor: grab; }
+  .anteprima3d canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; }
+  .anteprima3d small { position: absolute; left: 10px; bottom: 8px; font-size: 11.5px; font-weight: 800; color: var(--grigio); }
+  .gruppo b { display: block; font-size: 13.5px; margin-bottom: 5px; }
+  .gruppo.spento { opacity: .4; pointer-events: none; }
+  .tinte { display: flex; flex-wrap: wrap; gap: 7px; }
+  .tinte button { width: 32px; height: 32px; border-radius: 50%; border: 3px solid var(--ink); padding: 0; }
+  .tinte button.on { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--ink); }
+  .gruppo input[type=range] { width: 100%; border: 0; padding: 0; accent-color: var(--ink); }
+  .idea { justify-self: end; padding: 7px 14px; font-size: 14px; }
+  .vantaggi { margin: 8px 0 0; padding-left: 20px; }
+  .vantaggi li { font-weight: 700; font-size: 14.5px; line-height: 1.5; }
 </style>
+<script>try { navigator.sendBeacon && navigator.sendBeacon('api/visita.php', JSON.stringify({ t: 'v', p: 'negozio', ref: document.referrer })); } catch (e) {}</script>
 </head>
 <body>
 <main>
   <p><a href="./">← back to the map</a></p>
-  <span class="sign">THE HIGH STREET · OPENING SOON</span>
-  <h1>Your shop on the map 🏪</h1>
-  <p class="sub">A 3D shop on the high street of your town, with your name, your colours, your logo and a WhatsApp button. Everyone looking for their house in your town will see it.</p>
-  <ul>
+  <span class="sign">THE HIGH STREET · <b>NOW OPEN</b></span>
+  <h1>🏪 Your business on the map</h1>
+  <p class="sub">A 3D shop on the high street of your town, or a giant billboard, with your name, your colours and your logo. Everyone looking for their house in your town sees it, and one tap sends you a WhatsApp.</p>
+  <ul class="vantaggi">
     <li>Chippy, pub, café, barber, gym, florist, trades… any local business.</li>
-    <li>Pick the awning, the sign and a giant object for the roof (a pint, a fish supper, a cuppa…).</li>
-    <li>Or a giant billboard with your message.</li>
+    <li>Only a few spaces in each town: when they're gone, they're gone.</li>
+    <li>Checked by us before it goes live. Not approved? Full refund.</li>
   </ul>
-  <form id="lista">
-    <p><b>Want to be first on the high street?</b> Leave your email and we'll let you know the day it opens, with a launch price.</p>
-    <label for="email">Your email</label>
-    <input id="email" name="email" type="email" required placeholder="name@yourbusiness.co.uk">
-    <label for="conta">Your business Instagram (optional)</label>
-    <input id="conta" name="conta" placeholder="@yourbusiness">
-    <button type="submit">Let me know first</button>
+  <div class="passi"><span data-p="1" class="on">1 · Your business</span><span data-p="2">2 · Check</span><span data-p="3">3 · Pay</span></div>
+
+  <div id="pagato" class="ok" hidden></div>
+
+  <form id="f1" novalidate>
+    <div class="prodotti">
+      <label><input type="radio" name="prodotto" value="negozio" checked><b>🏪 Shop in town</b><small>your 3D shop, right among the houses</small></label>
+      <label><input type="radio" name="prodotto" value="cartellone"><b>📣 Billboard</b><small>a giant billboard with your message</small></label>
+    </div>
+    <label>Business name<input name="nome" maxlength="40" autocomplete="organization" placeholder="e.g. The Golden Fry"><span class="errore" data-e="nome"></span></label>
+    <label>Business Instagram (optional)<input name="instagram" maxlength="31" placeholder="@yourbusiness"><span class="errore" data-e="instagram"></span></label>
+    <div><b style="font-size:14px">What kind of business is it?</b><div class="chips" id="tipi" style="margin-top:6px"></div><input type="hidden" name="tipo" value="chippy"></div>
+    <div class="cerca-citta">
+      <label>Town<input id="citta-q" autocomplete="off" placeholder="type your town"><span class="aiuto">Only towns that already have houses on the map.</span><span class="errore" data-e="citta"></span></label>
+      <div id="citta-lista" hidden></div>
+    </div>
+    <input type="hidden" name="istat">
+    <div id="piano" class="piano" hidden></div>
+    <div><b style="font-size:14px">Your brand colour</b><div class="colori" id="colori"></div></div>
+    <label>Logo (optional)<input type="file" id="logo" accept="image/png,image/jpeg,image/webp"><span class="aiuto">PNG, JPG or WebP, up to 1 MB.</span><span class="errore" data-e="logo"></span></label>
+    <label id="l-descr">Description (optional)<textarea name="descrizione" maxlength="200" rows="3" placeholder="what you do, opening hours, what makes you special"></textarea><span class="aiuto"><span id="n-descr">0</span>/200</span><span class="errore" data-e="descrizione"></span></label>
+    <label id="l-testo" hidden>Message on the billboard<input name="testo" maxlength="60" placeholder="e.g. Best fish & chips in town"><span class="aiuto">Up to 60 characters.</span><span class="errore" data-e="testo"></span></label>
+    <label>Business WhatsApp<input name="whatsapp" type="tel" inputmode="tel" placeholder="e.g. 07700 900123"><span class="aiuto">Shown on the map: customers message you here. UK number, or with the country code.</span><span class="errore" data-e="whatsapp"></span></label>
+    <label>Your email<input name="email" type="email" autocomplete="email" placeholder="name@yourbusiness.co.uk"><span class="aiuto">For your receipt and our replies. Never shown on the map.</span><span class="errore" data-e="email"></span></label>
+    <label>🏅 Got a house in the game? Your @ (optional)<input name="giocatore" maxlength="31" placeholder="@your_account" autocomplete="off"><span class="aiuto">That house gets <b>+100 points</b> (+50 more if custom) and the <b>Patron</b> badge. They grow the house but don't count in elections.</span><span class="errore" data-e="giocatore"></span></label>
+    <div class="misura" id="box-misura" hidden>
+      <label class="spunta"><input type="checkbox" id="su-misura"><span><b>Make it custom?</b> <span id="prezzo-misura"></span><br><span class="aiuto">Design your shop: colours, awning, sign, a giant object on the roof (a pint, a fish supper, a cuppa…) and decorations.</span></span></label>
+      <div id="editor" hidden>
+        <div class="anteprima3d" id="anteprima3d"><canvas id="tela3d" width="960" height="720"></canvas><small>Drag to turn it. This is how it'll look on the map.</small></div>
+        <button type="button" class="sec idea" id="idea">💡 Another idea</button>
+        <div id="opzioni" style="display:grid;gap:12px"></div>
+      </div>
+    </div>
+    <label class="spunta"><input type="checkbox" name="regole"><span>My business isn't about betting, piracy, adult content, politics, weapons, prescription drugs, crypto/investments or loans. I understand it can be turned down, with a full refund.</span></label>
+    <span class="errore" data-e="regole"></span>
+    <label class="spunta"><input type="checkbox" name="consenso"><span>I accept the <a href="terms.html#business" target="_blank" rel="noopener">terms</a> and the <a href="privacy.html" target="_blank" rel="noopener">privacy notice</a>.</span></label>
+    <span class="errore" data-e="consenso"></span>
+    <button type="submit">Continue</button>
   </form>
-  <p class="sub" style="font-size:13px">We'll only use your email to tell you when the high street opens. <a href="privacy.html#lista">Privacy</a></p>
+
+  <section id="p2" class="blocco" hidden>
+    <h2>This is how it'll look on the map</h2>
+    <div id="anteprima"></div>
+    <div id="riepilogo"></div>
+    <div class="bottoni"><button class="sec" id="correggi" type="button">← Change something</button><button id="vai-pagare" type="button">💳 Go to payment</button></div>
+    <span class="errore" id="errore-invio"></span>
+  </section>
+
+  <section id="p3" class="blocco" hidden></section>
+
+  <details id="condizioni">
+    <summary>The short version of the terms</summary>
+    <p>Your business stays on the map for 30 days from the day we approve it. It's a one-off payment: nothing renews by itself. We check every business before it goes live, normally within 24 hours: no offensive or misleading content, politics, adult content, betting, weapons or tobacco. If we don't approve it, we refund you in full, and you can ask for a full refund within 7 days of payment if it hasn't gone live yet: email privacy@ukhousebyhouse.com. Payment is handled by Stripe: we never see your card details. A shop keeps its plot in town; a billboard goes in the next free billboard spot (the best spots go first). Full <a href="terms.html#business" target="_blank" rel="noopener">terms</a>.</p>
+  </details>
 </main>
-<script>
-  document.getElementById('lista').addEventListener('submit', async e => {
-    e.preventDefault();
-    const f = new FormData(e.target), b = e.target.querySelector('button');
-    b.disabled = true;
-    try {
-      const r = await fetch('api/lista.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: f.get('email'), conta: String(f.get('conta') || '').replace(/^@/, ''), origem: 'negozio' }) });
-      const j = await r.json().catch(() => ({}));
-      if (!j.ok) throw new Error(j.erro || "We couldn't save that. Please try again.");
-      e.target.outerHTML = '<p class="ok">Sorted! 🎉 You\'ll be the first to know when the high street opens.</p>';
-    } catch (err) {
-      b.disabled = false;
-      alert(err.message);
+
+<script type="module">
+import * as THREE from 'three';
+import { TIPI, PRODOTTI, pianoDi, sterlina } from './js/commerci.js';
+import { texturaInsegna, texturaCartellone, carregarImagem, fontePronta } from './js/insegne.js';
+import { STILE_BASE, OPZIONI_STILE } from './js/modelli.js';
+import { creaNegozio3D } from './js/negozio3d.js';
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+const f = $('#f1'), qs = new URLSearchParams(location.search);
+const COLORI = ['#C8102E', '#F28C28', '#FFC93C', '#2E5E3A', '#1F9E89', '#1F3A6B', '#6C4FD3', '#D94F8A', '#7A4B2A', '#152033'];
+// onde fica o outdoor (citta.js postiCartellone): o 1º é na piazza, os outros na beirada da cidade
+const POSTO = k => (k === 0 ? 'the town square, the best spot in town' : 'on the way into town');
+let cfg, citta = [], scelta = null, logoDato = '', logoImg = null, idPedido = null;
+
+// voltou da Stripe: obrigado
+if (qs.get('pagato')) {
+  f.hidden = true; document.querySelector('.passi').hidden = true;
+  $('#pagato').hidden = false;
+  $('#pagato').innerHTML = `<h2>Payment received, thank you! 🎉</h2>
+    <p>We'll check your business and put it on the map, normally within 24 hours. You'll get the receipt by email from Stripe.</p>
+    <p class="aiuto">Order code: <b>${esc(qs.get('pagato'))}</b>. Questions? Email privacy@ukhousebyhouse.com or DM @ukhousebyhouse on Instagram.</p>
+    <div class="bottoni"><a class="botao" href="./">Back to the map</a></div>`;
+}
+
+// tipo de negócio em botões
+$('#tipi').innerHTML = TIPI.map(([k, e, n]) => `<button type="button" data-tipo="${k}" class="${k === 'chippy' ? 'on' : ''}">${e} ${n}</button>`).join('');
+$('#tipi').addEventListener('click', e => {
+  const b = e.target.closest('[data-tipo]');
+  if (!b) return;
+  $('#tipi').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  f.tipo.value = b.dataset.tipo;
+  if (stileToccato === false) { stile = ideaPer(b.dataset.tipo, false); disegnaOpzioni(); render3d(); }
+});
+$('#colori').innerHTML = COLORI.map((c, i) => `<label style="background:${c}" title="${c}"><input type="radio" name="colore" value="${c}" ${i ? '' : 'checked'}></label>`).join('') + '<input type="color" id="colore-libero" value="#C8102E" title="another colour">';
+$('#colore-libero').addEventListener('input', e => { f.querySelectorAll('input[name=colore]').forEach(r => { r.checked = false; }); e.target.dataset.on = '1'; });
+f.querySelectorAll('input[name=colore]').forEach(r => r.addEventListener('change', () => { delete $('#colore-libero').dataset.on; }));
+const colore = () => $('#colore-libero').dataset.on ? $('#colore-libero').value.toUpperCase() : f.querySelector('input[name=colore]:checked')?.value ?? COLORI[0];
+const prodotto = () => f.querySelector('input[name=prodotto]:checked').value;
+if (qs.get('prodotto') === 'cartellone') f.querySelector('input[value=cartellone]').checked = true;
+
+const aggiornaProdotto = () => {
+  const c = prodotto() === 'cartellone';
+  $('#l-testo').hidden = !c;
+  $('#box-misura').hidden = c || !misuraAttiva();
+  mostraPiano();
+};
+
+// ---------- editor "su misura" ----------
+const misuraAttiva = () => !!(cfg?.su_misura?.attivo || qs.has('su_misura'));
+let stile = { ...STILE_BASE }, stileToccato = false, r3d = null;
+// sugestão por tipo de negócio (objeto no telhado combinando) + sorteio de cores e formas
+const OGGETTO_TIPO = { chippy: 'pesce', pub: 'pinta', cafe: 'tazza', ristorante: 'nessuno', alimentari: 'pane', abbigliamento: 'maglietta', parrucchiere: 'barbiere', estetica: 'fiore', palestra: 'manubrio', fiori: 'fiore', servizi: 'chiave', altro: 'nessuno' };
+const valoreDi = o => (Array.isArray(o) ? o[0] : o);
+// "saco" por opção: embaralha a lista e tira um por vez; só repete depois de usar todos (e nunca o mesmo duas vezes seguidas)
+const sacchi = {};
+function pesca(k, lista) {
+  let s = sacchi[k];
+  if (!s || !s.fila.length) {
+    const fila = [...lista].sort(() => Math.random() - 0.5);
+    if (s && fila.length > 1 && fila[fila.length - 1] === s.ultimo) fila.unshift(fila.pop());
+    s = sacchi[k] = { fila, ultimo: s?.ultimo };
+  }
+  return (s.ultimo = s.fila.pop());
+}
+const diversa = (k, lista, ...evita) => { for (let i = 0; i < 4; i++) { const c = pesca(k, lista); if (!evita.includes(c)) return c; } return pesca(k, lista); };
+function ideaPer(tipo, casuale = true) {
+  const O = OPZIONI_STILE, base = { ...STILE_BASE, coloreTenda: colore(), oggetto: OGGETTO_TIPO[tipo] ?? 'nessuno' };
+  if (!casuale) return base;
+  const tenda = pesca('tenda', O.tenda.map(valoreDi));
+  const coloreTenda = pesca('coloreTenda', [...O.coloreTenda, base.coloreTenda]);
+  const facciata = diversa('facciata', O.facciata, coloreTenda);
+  const oggetti = O.oggetto.map(valoreDi).filter(o => o !== 'nessuno');
+  return {
+    ...base,
+    tenda, coloreTenda, facciata,
+    coloreRighe: diversa('coloreRighe', O.coloreRighe, coloreTenda),
+    porta: diversa('porta', O.porta, facciata), bordo: diversa('bordo', O.bordo, facciata),
+    piani: pesca('piani', [1, 2]), vetrina: pesca('vetrina', O.vetrina.map(valoreDi)), serranda: pesca('serranda', [false, true]),
+    insegna: pesca('insegna', O.insegna.map(valoreDi)), tetto: pesca('tetto', [false, true]),
+    oggetto: pesca('oggetto', [...oggetti, 'nessuno']), scala: pesca('scala', [0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3]),
+    ornamenti: [...pesca('ornamenti', [[], ['vasi'], ['dehors'], ['luci'], ['bandierine'], ['vasi', 'luci'], ['dehors', 'bandierine'], ['vasi', 'dehors'],
+      ['luci', 'bandierine'], ['vasi', 'bandierine'], ['dehors', 'luci'], ['vasi', 'dehors', 'luci'], ['vasi', 'luci', 'bandierine'], ['vasi', 'dehors', 'luci', 'bandierine']])],
+  };
+}
+const ETICHETTE = { tenda: 'Awning', coloreTenda: 'Awning colour', coloreRighe: 'Stripe colour', facciata: 'Shopfront colour', porta: 'Door colour', bordo: 'Roof trim colour', piani: 'Storeys', vetrina: 'Shop window', serranda: 'Shutter', insegna: 'Sign with your name', tetto: 'Sign on the roof', oggetto: 'Giant object on the roof', ornamenti: 'Decorations' };
+function disegnaOpzioni() {
+  const O = OPZIONI_STILE, out = [];
+  for (const [k, lista] of Object.entries(O)) {
+    const spento = (k === 'coloreTenda' && stile.tenda === 'nessuna') || (k === 'coloreRighe' && stile.tenda !== 'righe');
+    let corpo;
+    if (typeof lista[0] === 'string') corpo = `<div class="tinte">${lista.map(c => `<button type="button" data-k="${k}" data-v="${c}" style="background:${c}" class="${stile[k] === c ? 'on' : ''}" title="${c}"></button>`).join('')}</div>`;
+    else if (k === 'ornamenti') corpo = `<div class="chips">${lista.map(([v, n]) => `<button type="button" data-k="${k}" data-v="${v}" class="${stile.ornamenti.includes(v) ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+    else corpo = `<div class="chips">${lista.map(([v, n]) => `<button type="button" data-k="${k}" data-v='${JSON.stringify(v)}' class="${stile[k] === v ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+    out.push(`<div class="gruppo${spento ? ' spento' : ''}"><b>${ETICHETTE[k]}</b>${corpo}</div>`);
+    if (k === 'oggetto') out.push(`<div class="gruppo${stile.oggetto === 'nessuno' ? ' spento' : ''}"><b>Size of the object</b><input type="range" id="scala" min="0.6" max="1.4" step="0.05" value="${stile.scala}"></div>`);
+  }
+  $('#opzioni').innerHTML = out.join('');
+  $('#scala').oninput = e => { stile.scala = +e.target.value; stileToccato = true; render3d(); };
+}
+$('#opzioni').addEventListener('click', e => {
+  const b = e.target.closest('[data-k]');
+  if (!b) return;
+  const k = b.dataset.k, tinta = typeof OPZIONI_STILE[k][0] === 'string';
+  if (k === 'ornamenti') stile.ornamenti = stile.ornamenti.includes(b.dataset.v) ? stile.ornamenti.filter(x => x !== b.dataset.v) : [...stile.ornamenti, b.dataset.v];
+  else stile[k] = tinta ? b.dataset.v : JSON.parse(b.dataset.v);
+  stileToccato = true;
+  disegnaOpzioni(); render3d();
+});
+$('#idea').onclick = () => { stile = ideaPer(f.tipo.value); stileToccato = true; disegnaOpzioni(); render3d(); };
+$('#su-misura').addEventListener('change', e => {
+  $('#editor').hidden = !e.target.checked;
+  $('#box-misura').classList.toggle('on', e.target.checked);
+  if (e.target.checked) { if (!stileToccato) stile = ideaPer(f.tipo.value, false); disegnaOpzioni(); iniciar3d(); render3d(); }
+  mostraPiano();
+});
+function iniciar3d() {
+  if (r3d) return;
+  const tela = $('#tela3d'), renderer = new THREE.WebGLRenderer({ canvas: tela, antialias: true, alpha: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(1);
+  const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(32, 4 / 3, 0.05, 50);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xb9c7a8, 2.3));
+  const sol = new THREE.DirectionalLight(0xfff1dc, 2.4); sol.position.set(-0.55, 1, 0.4); scene.add(sol);
+  const chao = new THREE.Mesh(new THREE.CircleGeometry(1.6, 48), new THREE.MeshLambertMaterial({ color: '#A9D58A' }));
+  chao.rotation.x = -Math.PI / 2; scene.add(chao);
+  const marciapiede = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshLambertMaterial({ color: '#E4E1DA' }));
+  marciapiede.rotation.x = -Math.PI / 2; marciapiede.position.y = 0.002; scene.add(marciapiede);
+  const perno = new THREE.Group(); scene.add(perno);
+  r3d = { renderer, scene, cam, perno, ang: -0.6, obj: null };
+  let x0 = null, a0 = 0;
+  const box = $('#anteprima3d');
+  box.addEventListener('pointerdown', e => { x0 = e.clientX; a0 = r3d.ang; box.setPointerCapture(e.pointerId); });
+  box.addEventListener('pointermove', e => { if (x0 === null) return; r3d.ang = a0 + (e.clientX - x0) * 0.012; disegna(); });
+  box.addEventListener('pointerup', () => { x0 = null; });
+}
+function disegna() {
+  if (!r3d) return;
+  const { renderer, scene, cam, perno } = r3d;
+  perno.rotation.y = r3d.ang;
+  // enquadra a loja inteira (com o objeto do telhado), com folga
+  const caixa = new THREE.Box3().setFromObject(perno), alto = Math.max(0.7, caixa.max.y), centro = alto / 2;
+  const d = (alto * 0.62) / Math.tan(cam.fov * Math.PI / 360) + 0.5;
+  cam.position.set(0, centro + d * 0.38, d); cam.lookAt(0, centro, 0);
+  renderer.render(scene, cam);
+}
+function render3d() {
+  if (!r3d) return;
+  if (r3d.obj) { r3d.perno.remove(r3d.obj); r3d.obj.userData.descartar(); }
+  const nome = f.nome.value.trim() || 'Your shop';
+  r3d.obj = creaNegozio3D({ nome, colore: colore(), logo: logoDato, stile: { ...stile, coloreTenda: stile.coloreTenda || colore() } }, { aoMudar: disegna });
+  r3d.perno.add(r3d.obj);
+  disegna();
+}
+f.nome.addEventListener('change', () => render3d());
+$('#colori').addEventListener('change', () => { if (!stileToccato) stile.coloreTenda = colore(); render3d(); });
+const suMisura = () => prodotto() === 'negozio' && misuraAttiva() && $('#su-misura').checked;
+const restantiMisura = () => scelta ? (cfg.su_misura?.posti_per_citta ?? 3) - scelta.usatiMisura : 0;
+f.querySelectorAll('input[name=prodotto]').forEach(r => r.addEventListener('change', aggiornaProdotto));
+f.descrizione.addEventListener('input', () => { $('#n-descr').textContent = f.descrizione.value.length; });
+
+// cidades com casas + quantos comércios já aprovados em cada uma (e os postos de outdoor ocupados)
+async function carregarDati() {
+  const [c, comuni, snap] = await Promise.all([
+    fetch('data/negozio.json', { cache: 'no-store' }).then(r => r.json()),
+    fetch('data/comuni.json').then(r => r.json()),
+    fetch(`data/snapshot.json?t=${Date.now()}`).then(r => r.json()),
+  ]);
+  cfg = c;
+  const usati = new Map(), misura = new Map(), posti = new Map();
+  for (const cm of snap.commerci ?? []) {
+    const p = cm.prodotto ?? 'negozio', k = `${cm.li}:${p}`; usati.set(k, (usati.get(k) ?? 0) + 1);
+    if (cm.stile) misura.set(cm.li, (misura.get(cm.li) ?? 0) + 1);
+    if (p === 'cartellone') (posti.get(cm.li) ?? posti.set(cm.li, new Set()).get(cm.li)).add(cm.posto ?? 0);
+  }
+  citta = snap.luoghi.map(([ci, n], li) => {
+    const [istat, nome, ct, , , , pop] = comuni.dados[ci];
+    let posto = 0; while (posti.get(li)?.has(posto)) posto++;
+    return { li, istat, nome, sigla: comuni.contee?.[ct] ?? '', pop, case: n, chiave: norm(nome), usati: p => usati.get(`${li}:${p}`) ?? 0, usatiMisura: misura.get(li) ?? 0, postoLibero: posto };
+  }).sort((a, b) => b.case - a.case);
+  if (qs.get('pagato')) return;
+  if (!cfg.aperto) { f.innerHTML = '<p><b>The high street isn\'t open yet.</b> Check back soon!</p>'; return; }
+  const pre = qs.get('citta') && citta.find(x => x.istat === qs.get('citta'));
+  if (pre) scegliCitta(pre);
+  aggiornaProdotto();
+}
+
+const lista = $('#citta-lista'), q = $('#citta-q');
+const nomeCitta = c => `${c.nome}${c.sigla ? `, ${c.sigla}` : ''}`;
+q.addEventListener('input', () => {
+  scelta = null; f.istat.value = ''; mostraPiano();
+  const t = norm(q.value);
+  if (t.length < 2) { lista.hidden = true; return; }
+  const r = citta.filter(x => x.chiave.startsWith(t)).slice(0, 8);
+  lista.innerHTML = r.length ? r.map(x => `<button type="button" data-istat="${x.istat}">${esc(x.nome)} <small>${x.sigla ? `(${esc(x.sigla)}) · ` : ''}${x.case} ${x.case === 1 ? 'house' : 'houses'}</small></button>`).join('') : '<button type="button" disabled>No town with houses by that name yet</button>';
+  lista.hidden = false;
+});
+lista.addEventListener('click', e => { const b = e.target.closest('[data-istat]'); if (b) scegliCitta(citta.find(x => x.istat === b.dataset.istat)); });
+document.addEventListener('pointerdown', e => { if (!e.target.closest('.cerca-citta')) lista.hidden = true; });
+function scegliCitta(c) {
+  scelta = c; f.istat.value = c.istat; q.value = nomeCitta(c); lista.hidden = true;
+  $('[data-e=citta]').textContent = '';
+  mostraPiano();
+}
+const piano = () => scelta && cfg ? pianoDi(cfg, scelta.pop) : null;
+const restanti = () => { const p = piano(); return p ? p.posti[prodotto()] - scelta.usati(prodotto()) : 0; };
+const totale = () => { const p = piano(); return p ? p.prezzo[prodotto()].lancio + (suMisura() ? cfg.su_misura.prezzo : 0) : 0; };
+function mostraPiano() {
+  const el = $('#piano'), p = piano();
+  if (!p) { el.hidden = true; return; }
+  const pr = p.prezzo[prodotto()], r = restanti(), cart = prodotto() === 'cartellone';
+  el.hidden = false;
+  el.className = `piano${r <= 0 ? ' pieno' : ''}`;
+  el.innerHTML = r <= 0
+    ? `No ${cart ? 'billboards' : 'shop spaces'} left in ${esc(scelta.nome)} right now. Try a town nearby.`
+    : `${PRODOTTI[prodotto()].emoji} ${esc(p.nome)} plan · ${pr.pieno > pr.lancio ? `<s>${sterlina(pr.pieno)}</s> ` : ''}<span class="prezzo">${sterlina(pr.lancio)}</span> for ${cfg.durata_giorni} days${pr.pieno > pr.lancio ? ' <span class="lancio">LAUNCH PRICE</span>' : ''}<br>
+       ${r === 1 ? '⚠️ Only 1 space left' : `${r} spaces left`} in ${esc(scelta.nome)}${cart ? ` · 📍 your spot: ${POSTO(scelta.postoLibero)}` : ''}${suMisura() ? `<br>+ custom design ${sterlina(cfg.su_misura.prezzo)}` : ''}<br>
+       <b>Total: ${sterlina(totale())}, VAT included</b>`;
+  const rm = restantiMisura();
+  $('#prezzo-misura').textContent = cfg?.su_misura ? `(+${sterlina(cfg.su_misura.prezzo)}${scelta ? `, ${rm <= 0 ? 'sold out' : rm === 1 ? 'only 1 left' : `${rm} left`} in ${scelta.nome}` : ''})` : '';
+}
+
+$('#logo').addEventListener('change', async e => {
+  $('[data-e=logo]').textContent = ''; logoDato = ''; logoImg = null;
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!/^image\/(png|jpeg|webp)$/.test(file.type) || file.size > 1048576) { $('[data-e=logo]').textContent = 'The logo must be PNG, JPG or WebP, up to 1 MB.'; e.target.value = ''; return; }
+  logoDato = await new Promise(ok => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(file); });
+  logoImg = await carregarImagem(logoDato);
+  render3d();
+});
+
+function dati() {
+  const d = Object.fromEntries(new FormData(f));
+  return {
+    prodotto: prodotto(), nome: d.nome.trim(), instagram: d.instagram.trim().replace(/^@/, ''), tipo: d.tipo, istat: d.istat,
+    colore: colore(), descrizione: d.descrizione.trim(), testo: prodotto() === 'cartellone' ? d.testo.trim() : '',
+    whatsapp: d.whatsapp.trim(), email: d.email.trim(), giocatore: (d.giocatore ?? '').trim().replace(/^@/, '').toLowerCase(), consenso: !!d.consenso, regole: !!d.regole, logo: logoDato, piano: piano()?.id ?? '',
+    su_misura: suMisura(), stile: suMisura() ? { ...stile, coloreTenda: stile.coloreTenda || colore() } : null,
+  };
+}
+function valida(d) {
+  const e = {};
+  if (d.nome.length < 2) e.nome = 'Type your business name (2 to 40 characters).';
+  if (d.instagram && !/^[A-Za-z0-9._]{1,30}$/.test(d.instagram)) e.instagram = 'Letters, numbers, full stops and underscores only (up to 30).';
+  if (!d.istat) e.citta = 'Pick the town from the list.';
+  else if (restanti() <= 0) e.citta = 'There are no spaces left in this town.';
+  const cifre = d.whatsapp.replace(/\D/g, '');
+  if (cifre.length < 8 || cifre.length > 15) e.whatsapp = 'Type your WhatsApp number (with the country code if it isn\'t a UK number).';
+  else if (/^(\d)\1+$/.test(cifre) || /^(\d)\1*$/.test(cifre.replace(/^0+/, '') || '0')) e.whatsapp = 'Use your real WhatsApp number: that\'s where customers will message you.';
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) e.email = 'Please check your email.';
+  else if (/^(test|prova|esempio|example|asd|aaa+|xxx+)@|@(example|test)\./i.test(d.email)) e.email = 'Use your real email: that\'s where we send the confirmation.';
+  else if (/@(gmail|hotmail|yahoo|outlook|icloud|live|btinternet|sky|virginmedia|aol)\.(con|cm|om|co|comm)$|@(gmial|gmai|gamil|hotmial|hotmal)\./i.test(d.email)) e.email = 'Please check your email: there seems to be a typo.';
+  if (d.giocatore && !/^[a-z0-9._]{1,30}$/.test(d.giocatore)) e.giocatore = 'Letters, numbers, full stops and underscores only.';
+  if (d.prodotto === 'cartellone' && !d.testo) e.testo = 'Type the message for your billboard.';
+  if (d.su_misura && restantiMisura() <= 0) e.citta = 'Custom shops are sold out in this town: untick "custom" or pick another town.';
+  if (!d.regole) e.regole = 'Please confirm your business follows the rules.';
+  if (!d.consenso) e.consenso = 'To carry on, please accept the terms.';
+  return e;
+}
+const passo = n => {
+  document.querySelectorAll('.passi span').forEach(s => s.classList.toggle('on', +s.dataset.p === n));
+  f.hidden = n !== 1; $('#p2').hidden = n !== 2; $('#p3').hidden = n !== 3;
+  scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+f.addEventListener('submit', async e => {
+  e.preventDefault();
+  const d = dati(), err = valida(d);
+  f.querySelectorAll('[data-e]').forEach(s => { s.textContent = err[s.dataset.e] ?? ''; });
+  if (Object.keys(err).length) { f.querySelector(`[data-e=${Object.keys(err)[0]}]`).scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  await fontePronta;
+  if (d.su_misura) {
+    // prévia do negócio montado no editor (com o nome já escrito)
+    render3d(); await new Promise(ok => setTimeout(ok, 300)); disegna();
+    const img = new Image(); img.src = $('#tela3d').toDataURL('image/png'); img.alt = 'Your custom shop';
+    $('#anteprima').replaceChildren(img);
+  } else {
+    const tex = d.prodotto === 'cartellone' ? texturaCartellone(d.nome, d.testo, d.colore, logoImg) : texturaInsegna(d.nome, d.colore, logoImg);
+    $('#anteprima').replaceChildren(tex.image);
+  }
+  const p = piano(), pr = p.prezzo[d.prodotto];
+  $('#riepilogo').innerHTML = [
+    ['What', `${PRODOTTI[d.prodotto].emoji} ${PRODOTTI[d.prodotto].nome}`],
+    ['Where', esc(nomeCitta(scelta)) + (d.prodotto === 'cartellone' ? `<br><small>📍 ${POSTO(scelta.postoLibero)}</small>` : '')],
+    ['Type', esc(TIPI.find(t => t[0] === d.tipo)[2])],
+    ['WhatsApp', esc(d.whatsapp)],
+    ...(d.instagram ? [['Instagram', `@${esc(d.instagram)}`]] : []),
+    ...(d.giocatore ? [['Patron', `@${esc(d.giocatore)} · +${d.su_misura ? 150 : 100} points`]] : []),
+    ['How long', `${cfg.durata_giorni} days from approval`],
+    ['Price', `${pr.pieno > pr.lancio ? `<s>${sterlina(pr.pieno)}</s> ` : ''}${sterlina(pr.lancio)}`],
+    ...(d.su_misura ? [['Custom design', `+${sterlina(cfg.su_misura.prezzo)}`]] : []),
+    ['Total', `<b>${sterlina(totale())}, VAT included</b>`],
+  ].map(([a, b]) => `<div class="linha"><span>${a}</span><span>${b}</span></div>`).join('') + (d.descrizione ? `<p class="sub">“${esc(d.descrizione)}”</p>` : '');
+  passo(2);
+});
+$('#correggi').onclick = () => passo(1);
+
+$('#vai-pagare').onclick = async () => {
+  const b = $('#vai-pagare'), d = dati();
+  b.disabled = true; $('#errore-invio').textContent = '';
+  try {
+    const r = await fetch('api/negozio.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+    const j = await r.json().catch(() => ({}));
+    if (!j.ok) throw new Error(j.erro || 'We couldn\'t send your order. Please try again.');
+    idPedido = j.id;
+    if (j.url) {
+      // pagamento na Stripe; volta para negozio.html?pagato=<id>
+      try { navigator.sendBeacon?.(`api/negozio.php?clic=${idPedido}`); } catch { /* só estatística */ }
+      location.href = j.url;
+      return;
     }
-  });
+    $('#p3').innerHTML = `
+      <div class="ok"><h2>Order received! 🎉</h2>
+      <p>We'll check your business and email you at <b>${esc(d.email)}</b> within 24 hours with the payment link. Once paid, it goes on the ${esc(scelta.nome)} map.</p>
+      <p class="aiuto">Order code: <b>${idPedido}</b></p></div>
+      <div class="bottoni"><a class="botao" href="./">Back to the map</a></div>`;
+    passo(3);
+  } catch (err) {
+    $('#errore-invio').textContent = err.message;
+  } finally { b.disabled = false; }
+};
+
+carregarDati().catch(() => { $('#piano').hidden = false; $('#piano').textContent = 'We couldn\'t load the towns. Check your connection and reload the page.'; });
 </script>
 </body>
 </html>

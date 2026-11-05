@@ -1,12 +1,13 @@
 {
-  "aperto": false,
+  "aperto": true,
+  "provedor": "stripe",
   "durata_giorni": 30,
   "decora": { "attivo": true, "prezzo": 499, "giorni": 10, "provedor": "stripe", "checkout": "https://pay.hotmart.com/L108274132O?off=udhvfctl" },
-  "su_misura": { "attivo": false, "prezzo": 999, "posti_per_citta": 3, "checkout": "" },
+  "su_misura": { "attivo": true, "prezzo": 999, "posti_per_citta": 3, "checkout": "" },
   "piani": [
-    { "id": "city", "nome": "City", "da": 250000, "posti": { "negozio": 6, "cartellone": 2 }, "prezzo": { "negozio": { "pieno": 3999, "lancio": 1999 }, "cartellone": { "pieno": 5999, "lancio": 2999 } } },
-    { "id": "town", "nome": "Town", "da": 30000, "posti": { "negozio": 4, "cartellone": 2 }, "prezzo": { "negozio": { "pieno": 2999, "lancio": 1499 }, "cartellone": { "pieno": 3999, "lancio": 1999 } } },
-    { "id": "village", "nome": "Village", "da": 0, "posti": { "negozio": 3, "cartellone": 1 }, "prezzo": { "negozio": { "pieno": 1999, "lancio": 999 }, "cartellone": { "pieno": 2999, "lancio": 1499 } } }
+    { "id": "city", "nome": "City", "da": 250000, "posti": { "negozio": 12, "cartellone": 4 }, "prezzo": { "negozio": { "pieno": 3999, "lancio": 1999 }, "cartellone": { "pieno": 5999, "lancio": 2999 } } },
+    { "id": "town", "nome": "Town", "da": 30000, "posti": { "negozio": 8, "cartellone": 4 }, "prezzo": { "negozio": { "pieno": 2999, "lancio": 1499 }, "cartellone": { "pieno": 3999, "lancio": 1999 } } },
+    { "id": "village", "nome": "Village", "da": 0, "posti": { "negozio": 6, "cartellone": 3 }, "prezzo": { "negozio": { "pieno": 1999, "lancio": 999 }, "cartellone": { "pieno": 2999, "lancio": 1499 } } }
   ],
   "checkout": {
     "city": { "negozio": "", "cartellone": "" },

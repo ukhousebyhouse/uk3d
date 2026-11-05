@@ -68,16 +68,22 @@ const s2 = calcolare({
     storie: [], bloccati: [],
     commerci: [
       { id: 'n1', istat: '058091', ts: qui + 2 * H, prodotto: 'negozio', nome: 'Pizzeria' },               // entre anna e bruno: lote 1
-      { id: 'n2', istat: '058091', ts: qui + 4 * H, fino: qui + 4.5 * H, prodotto: 'cartellone', nome: 'X' }, // expirado: lote 3 fica reservado
+      { id: 'n2', istat: '058091', ts: qui + 4 * H, fino: qui + 4.5 * H, prodotto: 'negozio', nome: 'X' }, // expirado: lote 3 fica reservado
       { id: 'n3', istat: '015146', ts: qui + 4 * H, nome: 'Milano' },                                     // cidade sem casas: ignorado
+      // outdoors: não gastam lote; ganham o 1º posto livre (o expirado libera o posto dele)
+      { id: 'b1', istat: '058091', ts: qui + 2.5 * H, fino: qui + 3.5 * H, prodotto: 'cartellone', nome: 'B1' },
+      { id: 'b2', istat: '058091', ts: qui + 3 * H, prodotto: 'cartellone', nome: 'B2' },
+      { id: 'b3', istat: '058091', ts: qui + 4 * H, prodotto: 'cartellone', nome: 'B3' },
     ],
   },
   comuni, regioni, agora,
 });
 const lote = conta => s2.case.find(x => x[0] === conta)[2];
-ok(lote('anna') === 0 && lote('bruno') === 2 && lote('carla') === 4, `casas pulam os lotes dos comércios (anna 0, bruno 2, carla 4; deu ${lote('anna')}, ${lote('bruno')}, ${lote('carla')})`);
-ok(s2.commerci.length === 1 && s2.commerci[0].id === 'n1' && s2.commerci[0].lote === 1 && s2.commerci[0].li === 0, `só o comércio ativo aparece, no lote 1 (${JSON.stringify(s2.commerci.map(n => [n.id, n.lote]))})`);
-ok(s2.luoghi[0][4] === 5, `Roma: 5 lotes ocupados (3 casas + 2 comércios; deu ${s2.luoghi[0][4]})`);
+ok(lote('anna') === 0 && lote('bruno') === 2 && lote('carla') === 4, `casas pulam os lotes das lojas (anna 0, bruno 2, carla 4; deu ${lote('anna')}, ${lote('bruno')}, ${lote('carla')})`);
+const cm2 = id => s2.commerci.find(n => n.id === id);
+ok(s2.commerci.length === 3 && cm2('n1')?.lote === 1 && cm2('n1')?.li === 0, `ativos: n1 no lote 1, b2, b3 (${JSON.stringify(s2.commerci.map(n => [n.id, n.lote ?? n.posto]))})`);
+ok(cm2('b2')?.posto === 1 && cm2('b3')?.posto === 0 && cm2('b2').lote == null, `outdoors: b2 no posto 1, b3 reaproveita o posto 0 do b1 vencido (deu ${cm2('b2')?.posto}, ${cm2('b3')?.posto})`);
+ok(s2.luoghi[0][4] === 5, `Roma: 5 lotes ocupados (3 casas + 2 lojas; deu ${s2.luoghi[0][4]})`);
 
 // mecenate (+100, +50 su misura) não conta no mandato; post no feed +20 uma vez por dia
 const s3 = calcolare({

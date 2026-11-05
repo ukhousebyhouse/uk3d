@@ -40,9 +40,38 @@ function pedidoDoPagamento(string $pasta, string $pi): string {
     return '';
 }
 
+$valor = isset($obj['amount_total']) ? $obj['amount_total'] / 100 : null;
+
+// ---------- lojas e outdoors (negozio.php): só marca o pagamento; entra no mapa com "amministra approva" ----------
+$pastaNeg = CARTELLA . '/negozi';
+$idNeg = ($obj['metadata']['tipo'] ?? '') === 'negozio' ? (string)($obj['client_reference_id'] ?? $obj['metadata']['pedido'] ?? '') : '';
+if ($idNeg === '' && in_array($tipo, ['charge.refunded', 'charge.dispute.created'], true)) $idNeg = pedidoDoPagamento($pastaNeg, (string)($obj['payment_intent'] ?? ''));
+if ($idNeg !== '' && preg_match('/^\d{6}-[0-9a-f]{8}$/', $idNeg) && is_file("$pastaNeg/$idNeg.json")) {
+    $p = json_decode((string)file_get_contents("$pastaNeg/$idNeg.json"), true) ?: [];
+    $novo = null;
+    switch ($tipo) {
+        case 'checkout.session.completed':
+        case 'checkout.session.async_payment_succeeded':
+            $novo = ($obj['payment_status'] ?? '') === 'paid' ? 'pagato' : 'in_attesa';
+            $p = array_merge($p, ['sessione' => $obj['id'] ?? '', 'payment_intent' => (string)($obj['payment_intent'] ?? ''), 'valore' => $valor, 'valuta' => strtoupper((string)($obj['currency'] ?? '')), 'test' => $teste]);
+            if ($novo === 'pagato' && !empty($p['su_misura'])) $p['pagamento_su_misura'] = 'pagato';
+            break;
+        case 'checkout.session.async_payment_failed': $novo = 'annullato'; break;
+        case 'checkout.session.expired': if (empty($p['pagamento'])) { $p['checkout'] = 'abbandonato'; $p['checkout_em'] = gmdate('c'); } break;
+        case 'charge.refunded': case 'charge.dispute.created': $novo = 'rimborsato'; $p['motivo'] = $tipo === 'charge.dispute.created' ? 'contestazione' : 'rimborso'; break;
+    }
+    // a confirmação pode chegar repetida ou atrasada: não desfaz um reembolso
+    if ($novo && !($novo === 'pagato' && ($p['pagamento'] ?? '') === 'rimborsato')) { $p['pagamento'] = $novo; $p['pagamento_em'] = gmdate('c'); }
+    file_put_contents("$pastaNeg/$idNeg.json", json_encode($p, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX);
+    if ($novo === 'pagato' && defined('EMAIL_AVVISI') && EMAIL_AVVISI) {
+        @mail(EMAIL_AVVISI, "PAGO: {$p['nome']} ({$p['prodotto']})" . ($teste ? ' [teste]' : ''), "Pedido $idNeg pago (£$valor).\nAprove: node strumenti/amministra.mjs approva $idNeg", 'From: ' . EMAIL_AVVISI);
+    }
+    fim(200);
+}
+
+// ---------- casas decoradas ----------
 // pagamento de teste (chaves sk_test_): a casa fica decorada só 10 minutos
 $minutos = $teste ? 10 : null;
-$valor = isset($obj['amount_total']) ? $obj['amount_total'] / 100 : null;
 switch ($tipo) {
     case 'checkout.session.completed':
     case 'checkout.session.async_payment_succeeded':

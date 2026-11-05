@@ -57,7 +57,12 @@ const casuale = seme => () => { seme |= 0; seme = (seme + 0x6D2B79F5) | 0; let t
 export const liberiDi = l => REGOLE.lotti_liberi;
 export const temCartellone = l => l.case >= sogliaDi('cartellone');
 const sbloccato = (l, id) => l.case >= sogliaDi(id);
-const extraLotti = l => liberiDi(l) + (temCartellone(l) ? 1 : 0);
+const extraLotti = l => liberiDi(l);   // os outdoors ficam fora dos lotes (postiCartellone)
+// outdoors: quantos por cidade, pelo plano da população (data/negozio.json; antes de carregar, o mínimo: 3)
+const nCartelloni = (cfg, l) => {
+  const pop = l.comune.pop ?? 0, p = cfg?.piani?.find(x => pop >= x.da) ?? cfg?.piani?.at(-1);
+  return Math.max(3, p?.posti?.cartellone ?? 3);
+};
 // lote livre n: "lavori in corso" em 1 de cada 3, "in vendita" nos outros (fixo enquanto o lote estiver livre)
 export const tipoLibero = (l, n) => (hash(`${l.comune.istat}:${n}`) % 3 === 0 ? 'lavori' : 'vendita');
 
@@ -199,6 +204,13 @@ export class Citta {
     this.extras = new THREE.Group();
     this.grupo.add(this.extras);
     this.chamas = [];
+    // planos dos negócios (quantos outdoors por cidade): quando chega, redesenha as cidades
+    this.negozio = null;
+    fetch(`data/negozio.json?t=${Math.floor(Date.now() / 6e5)}`).then(r => r.json()).then(j => {
+      this.negozio = j;
+      for (const l of this.D.luoghi) if (temCartellone(l) && nCartelloni(j, l) !== 3) this.cache.delete(l.id);
+      this.ultimo = null; this.atualizar(true);
+    }).catch(() => {});
     mappa.aoMover.push(() => this.atualizar());
     mappa.aoFrame.push(t => this.animar(t));
     // altura do alvo da câmera: chão da cidade quando perto
@@ -303,23 +315,54 @@ export class Citta {
         const t = tipoLibero(l, n), m = matriz(x, hc + 0.0009, z, q.rot, LOTE);
         push(t === 'lavori' ? 'liberoL' : 'liberoV', m); push(t === 'lavori' ? 'facciaL' : 'facciaV', m);
         c.alvos.push({ tipo: 'lotto', x, z, y: hc, h: 0.55, r: 0.46, luogo: l, ordem: k, stato: t });
-      } else {
-        const m = matriz(x, hc + 0.0009, z, q.rot, LOTE);
-        push('cartellone', m); push('facciaP', m);
-        c.alvos.push({ tipo: 'pubblicita', x, z, y: hc, h: 0.95, r: 0.5, luogo: l, rot: q.rot });
       }
     }
-    // comércios aprovados: cada um ocupa o lote que o motor reservou
+    // outdoors nos pontos de destaque da cidade (postiCartellone): os comprados no posto que o motor deu, à venda nos livres
+    const posti = this.postiCartellone(l, usados, hc), vendidos = new Set();
     for (const cm of l.commerci ?? []) {
-      const q = posLote(cm.lote), x = l.x + q.x, z = l.z + q.z;
-      cm.x = x; cm.z = z; cm.y = hc;
-      if (cm.prodotto === 'cartellone') push('cartellone', matriz(x, hc + 0.0009, z, q.rot, LOTE));
-      c.alvos.push({ tipo: 'commercio', x, z, y: hc, h: cm.prodotto === 'cartellone' ? 0.95 : 0.66, r: 0.5, commercio: cm, rot: q.rot });
+      let x, z, y = hc, rot;
+      if (cm.prodotto === 'cartellone') {
+        const p = posti[cm.posto ?? 0] ?? posti[0];
+        ({ x, z, y, rot } = p); vendidos.add(posti.indexOf(p));
+        push('cartellone', matriz(x, y + 0.0009, z, rot, LOTE));
+      } else {
+        // loja: ocupa o lote que o motor reservou
+        const q = posLote(cm.lote); x = l.x + q.x; z = l.z + q.z; rot = q.rot;
+      }
+      cm.x = x; cm.z = z; cm.y = y;
+      c.alvos.push({ tipo: 'commercio', x, z, y, h: cm.prodotto === 'cartellone' ? 0.95 : 0.66, r: 0.5, commercio: cm, rot });
+    }
+    if (temCartellone(l)) {
+      posti.slice(0, nCartelloni(this.negozio, l)).forEach((p, k) => {
+        if (vendidos.has(k)) return;
+        const m = matriz(p.x, p.y + 0.0009, p.z, p.rot, LOTE);
+        push('cartellone', m); push('facciaP', m);
+        c.alvos.push({ tipo: 'pubblicita', x: p.x, z: p.z, y: p.y, h: 0.95, r: 0.5, luogo: l, rot: p.rot, posto: k });
+      });
     }
     for (const k of Object.keys(c.partes)) c.partes[k] = new Float32Array(c.partes[k]);
     c.alberi = this.alberiCidade(l, usados);
     this.cache.set(l.id, c);
     return c;
+  }
+
+  // pontos dos outdoors, em ordem de destaque: na beirada de fora da cidade (a meia rua da última quadra), no meio
+  // do lado da quadra, de frente para quem olha a cidade (ui.luogo abre com a câmera do lado +x/+z).
+  // Primeiro a frente em frente à piazza, depois as colunas vizinhas e os lados. Andam para fora quando a cidade cresce.
+  postiCartellone(l, usados, hc) {
+    const bl = [...usados].map(k => k.split(',').map(Number)), dentro = 0.25 * LOTE;   // na calçada, entre a rua e os lotes
+    const ext = (eixo, v, s) => { const xs = bl.filter(b => b[1 - eixo] === v).map(b => b[eixo] * s); return xs.length ? Math.max(...xs) * s : null; };
+    const frente = i => { const j = ext(1, i, 1); return j == null ? null : { x: i * QW, z: (j + 0.5) * QH - dentro, rot: 0 }; };
+    const dir = j => { const i = ext(0, j, 1); return i == null ? null : { x: (i + 0.5) * QW - dentro, z: j * QH, rot: Math.PI / 2 }; };
+    const esq = j => { const i = ext(0, j, -1); return i == null ? null : { x: (i - 0.5) * QW + dentro, z: j * QH, rot: Math.PI / 2 }; };
+    const tras = i => { const j = ext(1, i, -1); return j == null ? null : { x: i * QW, z: (j - 0.5) * QH + dentro, rot: 0 }; };
+    // o 1º é o melhor: na piazza (onde a câmera para em toda cidade), na beirada oeste, virado para o village green
+    const piazza = { x: -QW / 2 + dentro, z: 0, rot: Math.PI / 2 };
+    const out = [];
+    for (const p of [piazza, frente(0), dir(0), frente(-1), frente(1), esq(0), frente(-2), frente(2), dir(1), dir(-1), tras(0), esq(1), tras(-1), tras(1)]) {
+      if (p && !out.some(q => Math.hypot(q.x - p.x, q.z - p.z) < 1.5 * LOTE)) out.push(p);
+    }
+    return out.map(p => ({ x: l.x + p.x, z: l.z + p.z, y: hc, rot: p.rot }));
   }
 
   // bosque em volta da cidade: começa colado nas quadras (inclusive nos cantos entre elas) e rareia para fora;
@@ -357,7 +400,7 @@ export class Citta {
   extrasCidade(l) {
     const c = this.dadosCidade(l), pub = sbloccato(l, 'chiesa');
     if (c.extras || (!l.commerci?.length && !pub)) return c.extras;
-    const g = c.extras = new THREE.Group(), y = c.hc + 0.0009;
+    const g = c.extras = new THREE.Group();
     // letreiro com o nome do pub (votado pelos moradores), na quadra da igreja
     if (pub) {
       const placa = new THREE.Mesh(geometriaFaccia(INSEGNA_PUB, 0.012), new THREE.MeshBasicMaterial());
@@ -367,7 +410,7 @@ export class Citta {
     }
     for (const a of c.alvos) {
       if (a.tipo !== 'commercio') continue;
-      const cm = a.commercio, m = new THREE.Matrix4().fromArray(matriz(a.x, y, a.z, a.rot, LOTE));
+      const cm = a.commercio, m = new THREE.Matrix4().fromArray(matriz(a.x, a.y + 0.0009, a.z, a.rot, LOTE));
       let peca;
       if (cm.prodotto === 'cartellone') {
         peca = new THREE.Mesh(geometriaFaccia(CARTELLONE, 0.02), new THREE.MeshBasicMaterial());

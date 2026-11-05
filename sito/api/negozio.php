@@ -1,8 +1,12 @@
 <?php
 // Recebe o pedido de um comércio/outdoor (negozio.html) e guarda em CARTELLA/negozi/<id>.json (+ logo).
+// Com "provedor": "stripe" em data/negozio.json, cria a Checkout Session da Stripe (preço calculado aqui, pelo
+// plano da cidade) e devolve a url; o webhook (stripe.php) marca o pedido como pago.
 // Nada vai para o mapa sem aprovação manual (node strumenti/amministra.mjs negozi / approva).
 declare(strict_types=1);
 require is_file(__DIR__ . '/../../privato/config.php') ? __DIR__ . '/../../privato/config.php' : __DIR__ . '/../privato/config.php';
+$arqStripe = is_file(__DIR__ . '/../../privato/stripe.php') ? __DIR__ . '/../../privato/stripe.php' : __DIR__ . '/../privato/stripe.php';
+if (is_file($arqStripe)) require $arqStripe;
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
@@ -109,11 +113,36 @@ if ($suMisura) {
     ];
 }
 
+// plano, preço e vagas, calculados aqui (não confia no que o navegador manda)
+$cfg = json_decode((string)@file_get_contents(__DIR__ . '/../data/negozio.json'), true) ?: [];
+if (empty($cfg['aperto'])) erro('', 'The high street isn\'t open yet.');
+$comuni = json_decode((string)@file_get_contents(__DIR__ . '/../data/comuni.json'), true)['dados'] ?? [];
+$snap = json_decode((string)@file_get_contents(__DIR__ . '/../data/snapshot.json'), true) ?: [];
+$ci = null;
+foreach ($comuni as $k => $c) if ((string)$c[0] === $istat) { $ci = $k; break; }
+$li = null;
+foreach ((array)($snap['luoghi'] ?? []) as $k => $l) if ($ci !== null && (int)$l[0] === $ci) { $li = $k; break; }
+if ($li === null) erro('citta', 'Pick a town that already has houses on the map.');
+$pop = (int)($comuni[$ci][6] ?? 0);
+$piano = null;
+foreach ((array)($cfg['piani'] ?? []) as $p) if ($pop >= (int)$p['da']) { $piano = $p; break; }
+$piano = $piano ?? end($cfg['piani']);
+$usati = 0; $usatiMisura = 0;
+foreach ((array)($snap['commerci'] ?? []) as $cm) if ((int)$cm['li'] === $li) {
+    if (($cm['prodotto'] ?? 'negozio') === $prodotto) $usati++;
+    if (!empty($cm['stile'])) $usatiMisura++;
+}
+if ($usati >= (int)$piano['posti'][$prodotto]) erro('citta', 'Sorry, there are no spaces left in this town right now. Try a town nearby.');
+if ($suMisura && (empty($cfg['su_misura']['attivo']) || $usatiMisura >= (int)($cfg['su_misura']['posti_per_citta'] ?? 3))) erro('citta', 'Custom shops are sold out in this town: untick "custom" or pick another town.');
+$prezzo = (int)$piano['prezzo'][$prodotto]['lancio'];
+$prezzoMisura = $suMisura ? (int)($cfg['su_misura']['prezzo'] ?? 0) : 0;
+
+$usaStripe = defined('STRIPE_SECRET') && STRIPE_SECRET !== '' && ($cfg['provedor'] ?? '') === 'stripe';
 $pedido = [
     'id' => $id, 'stato' => 'nuovo', 'creato' => gmdate('c'), 'prodotto' => $prodotto, 'su_misura' => $suMisura, 'stile' => $stile,
     'nome' => $nome, 'instagram' => $instagram, 'tipo' => $tipo, 'istat' => $istat, 'colore' => $colore,
     'descrizione' => $descrizione, 'testo' => $testo, 'whatsapp' => $whatsapp, 'email' => $email, 'giocatore' => $giocatore, 'logo' => $logo,
-    'piano' => preg_match('/^[a-z]{2,20}$/', (string)($d['piano'] ?? '')) ? $d['piano'] : '',
+    'piano' => (string)$piano['id'], 'prezzo' => $prezzo + $prezzoMisura, 'provedor' => $usaStripe ? 'stripe' : '',
 ];
 file_put_contents("$pasta/$id.json", json_encode($pedido, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX);
 
@@ -121,4 +150,40 @@ file_put_contents("$pasta/$id.json", json_encode($pedido, JSON_UNESCAPED_UNICODE
 if (defined('EMAIL_AVVISI') && EMAIL_AVVISI) {
     @mail(EMAIL_AVVISI, "Nuova richiesta: $nome ($prodotto)", "Pedido $id\n$nome · $prodotto · ISTAT $istat\nRode: node strumenti/amministra.mjs negozi", 'From: ' . EMAIL_AVVISI);
 }
-resposta(200, ['ok' => true, 'id' => $id]);
+if (!$usaStripe) resposta(200, ['ok' => true, 'id' => $id]);
+
+// ---------- Stripe Checkout ----------
+$cidade = (string)($comuni[$ci][1] ?? '');
+$giorni = max(1, (int)($cfg['durata_giorni'] ?? 30));
+$cosa = $prodotto === 'cartellone' ? 'Billboard' : 'Shop on the high street';
+$base = ((($_SERVER['HTTPS'] ?? '') !== '' && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'ukhousebyhouse.com');
+$itens = [['quantity' => 1, 'price_data' => ['currency' => 'gbp', 'unit_amount' => $prezzo, 'product_data' => [
+    'name' => "$cosa in $cidade · $nome",
+    'description' => "On the UK House by House map for $giorni days from approval. Checked before it goes live: full refund if we can't approve it.",
+]]]];
+if ($suMisura) $itens[] = ['quantity' => 1, 'price_data' => ['currency' => 'gbp', 'unit_amount' => $prezzoMisura, 'product_data' => ['name' => 'Custom shop design', 'description' => 'Your colours, awning, sign and a giant object on the roof.']]];
+$dados = [
+    'mode' => 'payment',
+    'locale' => 'en-GB',
+    'customer_email' => $email,
+    'client_reference_id' => $id,
+    'metadata' => ['pedido' => $id, 'tipo' => 'negozio'],
+    'payment_intent_data' => ['description' => "$cosa in $cidade · $nome", 'metadata' => ['pedido' => $id, 'tipo' => 'negozio']],
+    'line_items' => $itens,
+    'success_url' => "$base/negozio.html?pagato=$id",
+    'cancel_url' => "$base/negozio.html?citta=$istat" . ($prodotto === 'cartellone' ? '&prodotto=cartellone' : ''),
+];
+$ctx = stream_context_create(['http' => [
+    'method' => 'POST', 'timeout' => 20, 'ignore_errors' => true,
+    'header' => "Authorization: Bearer " . STRIPE_SECRET . "\r\nContent-Type: application/x-www-form-urlencoded\r\nIdempotency-Key: negozio-$id-" . ($prezzo + $prezzoMisura) . "\r\n",
+    'content' => http_build_query($dados),
+]]);
+$sessao = json_decode((string)@file_get_contents('https://api.stripe.com/v1/checkout/sessions', false, $ctx), true) ?: [];
+if (empty($sessao['url'])) {
+    file_put_contents("$pasta/$id.json", json_encode($pedido + ['erro_stripe' => $sessao['error']['message'] ?? 'sem resposta'], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX);
+    resposta(502, ['ok' => false, 'erro' => 'We couldn\'t open the payment page. Please try again in a minute.']);
+}
+$pedido['sessione'] = $sessao['id'];
+$pedido['test'] = empty($sessao['livemode']);
+file_put_contents("$pasta/$id.json", json_encode($pedido, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX);
+resposta(200, ['ok' => true, 'id' => $id, 'url' => $sessao['url']]);

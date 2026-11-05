@@ -11,7 +11,8 @@
 //   doppi:   [{ da: ms, a: ms, tipi: ['storia'] | ['tutto'] }],
 //   commerci:[{ id, istat, ts, fino: ms|null, prodotto, nome, tipo, colore, whatsapp, instagram, descrizione, testo, logo }],
 //            // aprovados: na hora "ts" reservam o próximo lote da cidade (as casas seguintes pulam esse lote);
-//            // depois de "fino" somem do mapa, mas o lote continua reservado (nenhuma casa muda de lugar)
+//            // depois de "fino" somem do mapa, mas o lote continua reservado (nenhuma casa muda de lugar).
+//            // Outdoors (prodotto 'cartellone') não gastam lote: ganham "posto", o 1º ponto de destaque livre da cidade
 // }
 import { REGOLE, livelloDi } from '../sito/js/regole.js';
 import { giornoRoma, limitiMandati, mandatoDi } from '../sito/js/tempo.js';
@@ -106,7 +107,14 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
     if (!eletti && e.ts >= G) eletti = placarNazioni(G);   // fotografia na hora da eleição
     if (e.t === 'n') {
       const ci = comIdx.get(e.n.istat), l = ci == null ? null : luoghi.get(ci);
-      if (l) commerci.push({ ...e.n, ci, lote: l.lotti++ });   // só cidades que já têm casas
+      // só cidades que já têm casas. Loja: ocupa o próximo lote. Outdoor: o primeiro ponto de destaque livre
+      // (citta.js postiCartellone), sem gastar lote
+      if (l && (e.n.prodotto ?? 'negozio') === 'cartellone') {
+        const ocupados = new Set(commerci.filter(x => x.ci === ci && x.prodotto === 'cartellone' && !(x.fino && x.fino <= e.ts)).map(x => x.posto));
+        let posto = 0;
+        while (ocupados.has(posto)) posto++;
+        commerci.push({ ...e.n, ci, posto });
+      } else if (l) commerci.push({ ...e.n, ci, lote: l.lotti++ });
     } else if (e.t === 'p') {
       // post no feed que marca o perfil: +post, 1 por dia (como a story, mas sem chamas)
       const a = contas.get(e.p.conta.toLowerCase());
@@ -276,7 +284,7 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
     // [conta, luogo, lote, ts, punti_totali, punti_settimana, fiamme_fino, [fonti], serie_giorni]
     case: saidaCasas,
     commerci: commerci.filter(n => liDe.has(n.ci) && !(n.fino && n.fino <= agora)).map(n => ({
-      li: liDe.get(n.ci), lote: n.lote, id: n.id, prodotto: n.prodotto ?? 'negozio', nome: n.nome, tipo: n.tipo ?? 'altro', colore: n.colore ?? '#E0473C',
+      li: liDe.get(n.ci), ...(n.posto != null ? { posto: n.posto } : { lote: n.lote }), id: n.id, prodotto: n.prodotto ?? 'negozio', nome: n.nome, tipo: n.tipo ?? 'altro', colore: n.colore ?? '#E0473C',
       whatsapp: n.whatsapp ?? '', instagram: n.instagram ?? '', descrizione: n.descrizione ?? '', testo: n.testo ?? '', logo: n.logo ?? '',
       ...(n.giocatore ? { giocatore: n.giocatore.toLowerCase() } : {}),
       ...(n.stile ? { stile: n.stile } : {}),   // loja "su misura" (editor)

@@ -593,8 +593,8 @@ export class Decori {
       ${p ? `<div class="regola">${p.da ? `🎁 Already has a gift from @${esc(p.da)}` : '✨ Already decorated'} until ${dataCurta(p.scade)}: buy again and ${this.cfg.giorni} more days go on top.</div>` : ''}
       ${this.cfg.prezzo_mini ? `<div class="regola">💡 1 effect: <b>${eur(this.cfg.prezzo_mini)}</b> · 2 or more, or a rare house: <b>${eur(this.cfg.prezzo)}</b></div>` : ''}
       ${regalo ? `<div class="cerca-dec"><span>from @</span><input id="dec-da" placeholder="your_account" value="${esc(ed.da ?? '')}" autocomplete="off" autocapitalize="off" spellcheck="false"></div><div class="nota" id="dec-da-nota" style="margin-top:4px"></div>` : ''}
-      <div class="gruppo-dec">🏰 Rare houses <small>· only one of each per town</small></div>
-      <div class="griglia-dec">${SPECIALI.map(m => { const p = this.occupato(casa, m.id); const cls = [p && 'preso', m.oro && 'dorato'].filter(Boolean).join(' '); return `<button data-dp="modello" data-v="${m.id}"${cls ? ` class="${cls}"` : ''}>${m.novo ? '<i class="novo">NEW</i>' : ''}<span class="em">${m.em}</span><b>${m.nome}</b>${p ? '<small>🔒 taken</small>' : ''}</button>`; }).join('')}</div>
+      <div class="gruppo-dec raro">🏰 Rare houses <small>· one of a kind in your town · ${eur(this.cfg.prezzo)}</small></div>
+      <div class="griglia-dec rare">${SPECIALI.map(m => { const p = this.occupato(casa, m.id); const cls = [p && 'preso', m.oro && 'dorato'].filter(Boolean).join(' '); return `<button data-dp="modello" data-v="${m.id}"${cls ? ` class="${cls}"` : ''}>${m.novo ? '<i class="novo">NEW</i>' : ''}<span class="em">${m.em}</span><b>${m.nome}</b>${p ? '<small>🔒 taken</small>' : ''}</button>`; }).join('')}</div>
       ${regalo ? '' : `<div class="gruppo-dec">⚽ Your team's colours</div>
       <div class="griglia-dec">${SQUADRE.map(s => `<button data-dp="squadra" data-v="${s.id}"><span class="sw" style="background:linear-gradient(90deg,${s.muro} 0 25%,${s.tetto} 25% 50%,${s.muro} 50% 75%,${s.tetto} 75%)"></span><b>${s.nome}</b></button>`).join('')}</div>`}
       <div class="gruppo-dec">${regalo ? '🎁 Pick the gift' : '✨ Effects'} <small>· pick as many as you like</small></div>
@@ -619,7 +619,12 @@ export class Decori {
     const nota = $('#dec-da-nota');
     if (nota) nota.textContent = !ed.da ? 'Your @ will show above the house: you need a house on the map.' : okDa ? `✓ It'll say “🎁 from @${ed.da}”` : ed.da === ed.casa.conta ? 'You can\'t gift yourself: use “My house”.' : 'That @ hasn\'t got a house on the map yet.';
     const n = quanti(ed.sel);
-    $('#dec-conto').innerHTML = `
+    // empurrão para o preço cheio: com 1 efeito, mostra quanto custa levar todos; com 2+ ou casa rara, "tudo incluído"
+    const mini = this.cfg.prezzo_mini, lb = c => `£${(c / 100).toFixed(2).replace(/\.00$/, '')}`;
+    const upsell = !mini || !n ? '' : n === 1 && !ed.sel.modello
+      ? `<div class="upsell-dec">✨ Add more effects for just ${lb(this.cfg.prezzo - mini)} more: as many as you like for ${lb(this.cfg.prezzo)}</div>`
+      : '<div class="upsell-dec ok">✅ Everything included: add as many effects as you like</div>';
+    $('#dec-conto').innerHTML = `${upsell}
       <button class="paga-dec" data-dp="checkout" ${n && okDa ? '' : 'disabled'}>${n ? `${regalo ? '🎁 Send the gift' : '✨ Show everyone'} · ${eur(this.prezzoDi(ed.sel))}` : 'Pick at least one effect'}
         <small>${n && !okDa ? 'type your @ above' : `VAT included · everyone sees it for ${this.cfg.giorni} days`}</small></button>`;
   }

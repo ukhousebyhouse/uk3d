@@ -287,6 +287,14 @@ body.decora-edit #pannello { max-height: 50vh; }
 .griglia-dec button.on::after { content: '✓'; position: absolute; top: -9px; right: -7px; background: var(--verde); color: #fff; border: 2px solid var(--inchiostro); border-radius: 50%; width: 22px; height: 22px; font-size: 12px; font-weight: 900; line-height: 18px; }
 .riga-vista { display: flex; gap: 8px; margin-top: 10px; }
 .riga-vista button { flex: 1; border: 3px solid var(--inchiostro); border-radius: 99px; background: #fff; padding: 6px; font-weight: 900; font-size: 13px; }
+/* casas raras em destaque (moldura dourada que pulsa) e o empurrão para o preço cheio */
+.gruppo-dec.raro { color: #A86F00; }
+.griglia-dec.rare { padding: 8px; border-radius: 16px; background: linear-gradient(135deg, #FFF6C8, #FFE3F0); animation: brilho-raro 2.2s ease-in-out infinite; }
+@keyframes brilho-raro { 0%, 100% { box-shadow: 0 0 0 3px #FFD34D, 0 0 6px 1px rgba(255, 201, 60, .45); } 50% { box-shadow: 0 0 0 3px #FFE98A, 0 0 16px 4px rgba(255, 201, 60, .85); } }
+.upsell-dec { margin: 0 0 8px; background: #FFF6C8; border: 2px dashed #E0A800; border-radius: 12px; padding: 7px 10px; font-size: 13px; font-weight: 900; text-align: center; color: var(--inchiostro); animation: pulsa-leve 1.6s ease-in-out infinite; }
+@keyframes pulsa-leve { 50% { transform: scale(1.03); } }
+.upsell-dec.ok { background: #E6F7EC; border-color: var(--verde); animation: none; }
+@media (prefers-reduced-motion: reduce) { .griglia-dec.rare, .upsell-dec { animation: none; } }
 .conto-dec { position: sticky; bottom: -18px; background: #fff; border-top: 2px solid var(--linea); padding: 10px 0 2px; margin-top: 12px; }
 button.paga-dec { display: block; width: 100%; background: var(--verde); color: #fff; border: 3px solid var(--inchiostro); border-radius: 18px; padding: 12px; font-weight: 900; font-size: 18px; box-shadow: 0 3px 0 rgba(21,32,51,.3); }
 button.paga-dec:disabled { background: #B9C0CB; }

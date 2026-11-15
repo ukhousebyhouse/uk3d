@@ -134,7 +134,9 @@ foreach ((array)($snap['commerci'] ?? []) as $cm) if ((int)$cm['li'] === $li) {
 }
 if ($usati >= (int)$piano['posti'][$prodotto]) erro('citta', 'Sorry, there are no spaces left in this town right now. Try a town nearby.');
 if ($suMisura && (empty($cfg['su_misura']['attivo']) || $usatiMisura >= (int)($cfg['su_misura']['posti_per_citta'] ?? 3))) erro('citta', 'Custom shops are sold out in this town: untick "custom" or pick another town.');
-$prezzo = (int)$piano['prezzo'][$prodotto]['lancio'];
+// preço de lançamento até "lancio_fino" (ISO); depois vale o "pieno"
+$lancioAtivo = empty($cfg['lancio_fino']) || time() < strtotime((string)$cfg['lancio_fino']);
+$prezzo = (int)$piano['prezzo'][$prodotto][$lancioAtivo ? 'lancio' : 'pieno'];
 $prezzoMisura = $suMisura ? (int)($cfg['su_misura']['prezzo'] ?? 0) : 0;
 
 $usaStripe = defined('STRIPE_SECRET') && STRIPE_SECRET !== '' && ($cfg['provedor'] ?? '') === 'stripe';

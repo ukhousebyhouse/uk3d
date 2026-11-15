@@ -2,7 +2,8 @@
   "aperto": true,
   "provedor": "stripe",
   "durata_giorni": 30,
-  "decora": { "attivo": true, "prezzo": 499, "giorni": 10, "provedor": "stripe", "checkout": "https://pay.hotmart.com/L108274132O?off=udhvfctl" },
+  "lancio_fino": "2026-12-06T00:00:00Z",
+  "decora": { "attivo": true, "prezzo": 499, "prezzo_mini": 199, "giorni": 30, "provedor": "stripe", "checkout": "https://pay.hotmart.com/L108274132O?off=udhvfctl" },
   "su_misura": { "attivo": true, "prezzo": 999, "posti_per_citta": 3, "checkout": "" },
   "piani": [
     { "id": "city", "nome": "City", "da": 250000, "posti": { "negozio": 12, "cartellone": 4 }, "prezzo": { "negozio": { "pieno": 3999, "lancio": 1999 }, "cartellone": { "pieno": 5999, "lancio": 2999 } } },

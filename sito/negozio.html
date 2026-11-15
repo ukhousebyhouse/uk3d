@@ -319,6 +319,8 @@ async function carregarDati() {
     fetch(`data/snapshot.json?t=${Date.now()}`).then(r => r.json()),
   ]);
   cfg = c;
+  // preço de lançamento até cfg.lancio_fino; depois o "lancio" passa a ser o cheio (o servidor faz o mesmo)
+  if (cfg.lancio_fino && Date.now() >= Date.parse(cfg.lancio_fino)) for (const p of cfg.piani) for (const pr of Object.values(p.prezzo)) pr.lancio = pr.pieno;
   const usati = new Map(), misura = new Map(), posti = new Map();
   for (const cm of snap.commerci ?? []) {
     const p = cm.prodotto ?? 'negozio', k = `${cm.li}:${p}`; usati.set(k, (usati.get(k) ?? 0) + 1);
@@ -365,7 +367,7 @@ function mostraPiano() {
   el.className = `piano${r <= 0 ? ' pieno' : ''}`;
   el.innerHTML = r <= 0
     ? `No ${cart ? 'billboards' : 'shop spaces'} left in ${esc(scelta.nome)} right now. Try a town nearby.`
-    : `${PRODOTTI[prodotto()].emoji} ${esc(p.nome)} plan · ${pr.pieno > pr.lancio ? `<s>${sterlina(pr.pieno)}</s> ` : ''}<span class="prezzo">${sterlina(pr.lancio)}</span> for ${cfg.durata_giorni} days${pr.pieno > pr.lancio ? ' <span class="lancio">LAUNCH PRICE</span>' : ''}<br>
+    : `${PRODOTTI[prodotto()].emoji} ${esc(p.nome)} plan · ${pr.pieno > pr.lancio ? `<s>${sterlina(pr.pieno)}</s> ` : ''}<span class="prezzo">${sterlina(pr.lancio)}</span> for ${cfg.durata_giorni} days${pr.pieno > pr.lancio ? ` <span class="lancio">LAUNCH PRICE${cfg.lancio_fino ? ` · UNTIL ${new Date(Date.parse(cfg.lancio_fino) - 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Europe/London' }).toUpperCase()}` : ''}</span>` : ''}<br>
        ${r === 1 ? '⚠️ Only 1 space left' : `${r} spaces left`} in ${esc(scelta.nome)}${cart ? ` · 📍 your spot: ${POSTO(scelta.postoLibero)}` : ''}${suMisura() ? `<br>+ custom design ${sterlina(cfg.su_misura.prezzo)}` : ''}<br>
        <b>Total: ${sterlina(totale())}, VAT included</b>`;
   const rm = restantiMisura();

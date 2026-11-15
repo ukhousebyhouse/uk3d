@@ -2,7 +2,8 @@
 export const REGOLE = {
   versao: 'rule-1.0',
   // mecenate/misura: quem compra um negócio no mapa; só fazem a casa crescer, NÃO contam no mandato (eleições)
-  punti: { casa: 10, commento: 5, extra: 1, tag: 3, recluta: 25, invitato: 25, voto: 5, storia: 20, post: 20, mecenate: 100, misura: 50 },
+  // decoro: casa decorada (paga) enquanto a decoração está no mapa; igual ao mecenate, NÃO conta no mandato e some quando vence
+  punti: { casa: 10, commento: 5, extra: 1, tag: 3, recluta: 25, invitato: 25, voto: 5, storia: 20, post: 20, mecenate: 100, misura: 50, decoro: 50 },
   // boas-vindas de quem entra porque um amigo marcou: só para casas criadas nesta janela (promoção do dia; não muda o passado)
   invitato_da: '2026-11-03T12:00:00Z', invitato_a: '2026-11-04T00:00:00Z',
   // extra e tag: por post; storia e post (no feed, marcando o perfil): por dia (fuso de Londres)
@@ -76,6 +77,12 @@ export const REGOLE = {
   // nome do pub: os moradores votam comentando "pub Red Lion"; sem votos, um nome fixo da lista
   pub_nomi: ['The Red Lion', 'The Royal Oak', 'The Crown', 'The White Hart', 'The Rose & Crown', "The King's Head", "The Queen's Head",
     'The Swan', 'The Plough', 'The Bell', 'The Black Horse', 'The Fox & Hounds', 'The George', 'The Railway', 'The Ship', 'The Wheatsheaf'],
+  // pubs premiados (concurso "Name your pub", reel 19, 7–9 nov 2026): nome fixo e pub construído mesmo abaixo das 30 casas
+  pub_premio: {
+    '2653281': { nome: 'The White Hart', da: 'freddieisc00l' },    // Cheddar
+    '2643923': { nome: 'The Greenhouse', da: 'tomjam00' },         // Llantarnam
+    '2633691': { nome: 'The Red Lion', da: 'tonitaggart' },        // Wolverhampton
+  },
   // lotes livres desenhados depois da última casa (só desenho: convite para marcar amigos)
   lotti_liberi: 3,
   // Christmas no village green (mês-dia, hora de Londres): árvore e luzes até a Twelfth Night
@@ -111,6 +118,7 @@ export function estrairPub(testo) {
 }
 // nome do pub de uma cidade: o mais votado ou, sem votos, um nome fixo escolhido pelo id da cidade
 export function nomePub(istat, voti) {
+  if (REGOLE.pub_premio?.[istat]) return REGOLE.pub_premio[istat].nome;
   if (voti?.length) return REGOLE.pub_nomi[voti[0][0]];
   let h = 0;
   for (const ch of String(istat)) h = (h * 31 + ch.charCodeAt(0)) | 0;
@@ -187,6 +195,7 @@ export const FONTI = [
   ['post', 'Posts tagging us', '#D94F8A'],
   ['mecenate', 'Business on the map', '#6C4FD3'],
   ['invitato', 'Welcome bonus (a mate brought you)', '#9B5DE5'],
+  ['decoro', 'Decorated house', '#FF7EB6'],
 ];
 
 // o bônus de boas-vindas só aparece enquanto a promoção vale
@@ -201,6 +210,7 @@ export const COME_GUADAGNARE = p => [
   ['storia', 'Story tagging @ukhousebyhouse', `+${p.storia} (1 a day) and your house is on fire for 24 h`],
   ['post', 'Feed post tagging us', `+${p.post} (1 a day): tag @ukhousebyhouse in the photo`],
   ['mecenate', 'Put your business on the map', `+${p.mecenate} (+${p.misura} custom) and a Patron badge: they grow your house but don't count in elections`],
+  ['decoro', 'Decorate your house', `+${p.decoro} while it's decorated: your house grows, but they don't count in elections`],
   ['casa', 'Having a house', `+${p.casa}, once`],
 ];
 

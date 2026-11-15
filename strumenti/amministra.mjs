@@ -196,7 +196,12 @@ try {
       const rigenera = lista => {
         const por = new Map();
         for (const p of lista.filter(ativa)) if (!por.has(p.conta) || p.attivo_da > por.get(p.conta).attivo_da) por.set(p.conta, p);
-        const pub = { agg: new Date().toISOString(), decori: [...por.values()].map(p => ({ id: p.id, conta: p.conta, da: p.da ?? '', squadra: p.squadra ?? '', modello: p.modello ?? '', extra: p.extra ?? [], scade: p.scade })) };
+        // recentes (pagas que vencem ou venceram nos últimos 30 dias): o site oferece renovar (mesma regra de api/_decori.php)
+        const rec = new Map();
+        for (const p of lista.filter(p => p.pagamento === 'pagato' && p.stato !== 'rimosso' && Date.parse(p.scade) > Date.now() - 30 * 86400e3))
+          if (!rec.has(p.conta) || p.scade > rec.get(p.conta).scade) rec.set(p.conta, p);
+        const pub = { agg: new Date().toISOString(), decori: [...por.values()].map(p => ({ id: p.id, conta: p.conta, da: p.da ?? '', squadra: p.squadra ?? '', modello: p.modello ?? '', extra: p.extra ?? [], scade: p.scade })),
+          recenti: [...rec.values()].map(p => ({ conta: p.conta, squadra: p.squadra ?? '', modello: p.modello ?? '', extra: p.extra ?? [], scade: p.scade })) };
         const arq = path.join(local, 'decori-pubblico.json');
         fs.writeFileSync(arq, JSON.stringify(pub));
         ftp.enviar([{ local: arq, remoto: `${ftp.web}data/decori.json` }]);
@@ -204,6 +209,7 @@ try {
       };
       const quando = s => new Date(s).toLocaleString('en-GB', { timeZone: 'Europe/London', dateStyle: 'short', timeStyle: 'short' });
       const linha = p => `${p.id}  ${(ativa(p) ? `✨ até ${quando(p.scade)}` : p.stato === 'rimosso' ? '✖ removida' : p.scade ? '⌛ vencida' : `${p.pagamento ?? 'não pagou'}`).padEnd(24)} @${p.conta}${p.da ? ` 🎁 da @${p.da}` : ''} · ${[p.modello && `🏰 ${p.modello}`, p.squadra, ...(p.extra ?? [])].filter(Boolean).join(', ')}${p.checkout === 'abbandonato' ? ' · saiu do checkout' : ''}`;
+      if (args[0] === 'rigenera') { rigenera(ids().map(baixar).filter(Boolean)); break; }   // refaz data/decori.json (com "recenti")
       if (args[0] === 'rimuovi') {
         const p = baixar(args[1] ?? '');
         if (!p) throw new Error(`decoração ${args[1]} não encontrada no servidor`);

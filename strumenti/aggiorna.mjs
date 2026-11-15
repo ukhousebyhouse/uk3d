@@ -103,6 +103,12 @@ export async function aggiornare({ completo = false, senzaInstagram = false, log
   const estado = ler(path.join(PASTA_IG, 'stato.json'), {});
   cfg.username ??= estado.username;
   const eventi = montarEventi({ ...dados, cfg, log });
+  // casas decoradas ativas (lista pública do site): +pontos enquanto a decoração está no mapa
+  try {
+    const r = await fetch(`https://ukhousebyhouse.com/data/decori.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (r.ok) eventi.decori = ((await r.json()).decori ?? []).map(d => ({ conta: d.conta, scade: Date.parse(d.scade) }));
+    log(`casas decoradas ativas: ${(eventi.decori ?? []).filter(d => d.scade > Date.now()).length}`);
+  } catch (e) { log(`aviso: não li data/decori.json (${e.message}); sem pontos de decoração nesta rodada`); }
   return gerarSnapshot(eventi, { agora: Date.now(), demo: false, follower: estado.follower ?? 0 });
 }
 

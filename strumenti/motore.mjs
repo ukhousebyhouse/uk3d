@@ -17,7 +17,7 @@
 import { REGOLE, livelloDi } from '../sito/js/regole.js';
 import { giornoRoma, limitiMandati, mandatoDi } from '../sito/js/tempo.js';
 
-const F = { casa: 0, commento: 1, extra: 2, tag: 3, recluta: 4, voto: 5, storia: 6, post: 7, mecenate: 8, invitato: 9 };
+const F = { casa: 0, commento: 1, extra: 2, tag: 3, recluta: 4, voto: 5, storia: 6, post: 7, mecenate: 8, invitato: 9, decoro: 10 };
 const NOMES_F = Object.keys(F);
 const dia = 86400e3;
 const ontem = d => new Date(Date.parse(`${d}T12:00:00Z`) - dia).toISOString().slice(0, 10);
@@ -96,7 +96,7 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
     const out = {};
     for (const r of regioni) {
       out[r.cod] = [...contas.values()].filter(a => a.casa && !a.bloc && a.casa.ts <= ate && comuni[a.casa.ci][3] === r.cod)
-        .map(a => ({ conta: a.conta, pts: a.tot - a.fonti[F.mecenate], ts: a.casa.ts }))
+        .map(a => ({ conta: a.conta, pts: a.tot - a.fonti[F.mecenate] - a.fonti[F.decoro], ts: a.casa.ts }))
         .filter(x => x.pts > 0).sort((x, y) => y.pts - x.pts || x.ts - y.ts).slice(0, 5).map(({ conta, pts }) => ({ conta, pts }));
     }
     return out;
@@ -184,6 +184,16 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
     const a = n.giocatore && contas.get(n.giocatore.toLowerCase());
     if (!a?.casa || n.ts > agora) continue;
     add(a, F.mecenate, P.mecenate + (n.stile ? P.misura : 0), Math.max(n.ts, a.casa.ts), false);
+  }
+
+  // ---------- casas decoradas: +decoro enquanto a decoração paga está no mapa (some quando vence) ----------
+  // eventi.decori = [{ conta, scade: ms }] (data/decori.json do site); uma vez por conta, não conta no mandato
+  const decorate = new Set();
+  for (const d of eventi.decori ?? []) {
+    const a = d.conta && contas.get(d.conta.toLowerCase());
+    if (!a?.casa || !(d.scade > agora) || decorate.has(a.conta)) continue;
+    decorate.add(a.conta);
+    add(a, F.decoro, P.decoro ?? 0, agora, false);
   }
 
   // ---------- casas visíveis ----------

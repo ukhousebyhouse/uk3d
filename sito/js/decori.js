@@ -7,6 +7,7 @@ import { geometriaCasa, ALTURA_NIVEL, stileRegione, aspetto, CORI_CASA } from '.
 import { SPECIALI, costruisciSpeciale, altezzaSpeciale } from './speciali.js';
 import { LOTE, posLote } from './citta.js';
 import { PERFIL } from './storie.js';
+import { REGOLE } from './regole.js';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -334,7 +335,8 @@ export class Decori {
     this.attive = new Map();     // conta -> { casa, sel, da, g, anima, pilha } (desenhadas agora: pagas + prévia)
     this.ed = null;              // edição aberta: { modo, casa, sel, da }
     this.giro = null;            // câmera girando em volta da casa
-    this.cfg = { attivo: false, prezzo: 499, giorni: 10, checkout: '', provedor: 'hotmart' };
+    this.cfg = { attivo: false, prezzo: 499, prezzo_mini: 0, giorni: 10, checkout: '', provedor: 'hotmart' };
+    this.recenti = new Map();    // conta -> { sel, scade } (compras pagas dos últimos 30 dias: oferecer renovar)
     // teste da Stripe antes da troca: ?stripe=<código> fica guardado neste aparelho até pagar
     const q = new URLSearchParams(location.search).get('stripe');
     if (q) gravar('stripe_prova', q);
@@ -348,6 +350,9 @@ export class Decori {
 
   get aperto() { return this.cfg.attivo || new URLSearchParams(location.search).has('decora'); }
   get stripe() { return this.cfg.provedor === 'stripe' || !!this.prova; }
+  // preço: 1 efeito só (sem casa rara) = prezzo_mini; mais efeitos ou casa rara = prezzo (mesma regra de api/decora.php)
+  prezzoDi(sel) { return quanti(sel) === 1 && !sel.modello && this.cfg.prezzo_mini ? this.cfg.prezzo_mini : this.cfg.prezzo; }
+  get prezzoMin() { return this.cfg.prezzo_mini || this.cfg.prezzo; }
 
   async iniciar() {
     try { Object.assign(this.cfg, (await (await fetch(`data/negozio.json?t=${Date.now()}`)).json()).decora ?? {}); } catch { /* sem config: fica desligado */ }
@@ -364,7 +369,7 @@ export class Decori {
   // ---------- compras pagas (data/decori.json) ----------
   async ricarica() {
     let lista = [];
-    try { const r = await fetch(`data/decori.json?t=${Date.now()}`, { cache: 'no-store' }); if (r.ok) lista = (await r.json()).decori ?? []; } catch { /* sem arquivo ainda */ }
+    try { const r = await fetch(`data/decori.json?t=${Date.now()}`, { cache: 'no-store' }); if (r.ok) { const j = await r.json(); lista = j.decori ?? []; this.recenti = new Map((j.recenti ?? []).map(x => [x.conta, { scade: Date.parse(x.scade), sel: { squadra: x.squadra || null, modello: x.modello || null, extra: new Set(x.extra ?? []) } }])); } } catch { /* sem arquivo ainda */ }
     const agora = Date.now(), novas = new Map();
     for (const x of lista) {
       if (Date.parse(x.scade) <= agora || !this.D.porConta.has(x.conta)) continue;
@@ -441,9 +446,16 @@ export class Decori {
 
   // ---------- painel da casa (ui.js) ----------
   badge(casa) {
-    const p = this.pagata(casa.conta);
+    const p = this.pagata(casa.conta), r = this.recenti.get(casa.conta), agora = Date.now();
+    // renovar: acaba em menos de 2 dias, ou acabou nos últimos 30 dias (as mesmas escolhas já vêm marcadas no editor)
+    if (this.aperto && p && !p.da && p.scade - agora < 2 * 86400e3) {
+      const h = Math.max(1, Math.round((p.scade - agora) / 3600e3));
+      return `<span class="badge regalo">✨ Special house · ends in ${h} h</span><button class="decora-btn" data-decora="${esc(casa.conta)}" data-modo="mia">⏳ Keep it shining · from ${eur(this.prezzoMin)}<small>buy again now and ${this.cfg.giorni} more days go on top</small></button>`;
+    }
+    if (this.aperto && !p && r && r.scade < agora && agora - r.scade < 30 * 86400e3)
+      return `<span class="badge">💤 The sparkle ended on ${dataCurta(r.scade)}</span><button class="decora-btn" data-decora="${esc(casa.conta)}" data-modo="mia">✨ Bring it back · ${eur(this.prezzoDi(r.sel))}<small>same look as before, for ${this.cfg.giorni} days</small></button>`;
     if (!p) return '';
-    return p.da ? `<span class="badge regalo">🎁 Gift from @${esc(p.da)} · until ${dataCurta(p.scade)}</span>` : `<span class="badge regalo">✨ Special house until ${dataCurta(p.scade)}</span>`;
+    return p.da ? `<span class="badge regalo">🎁 Gift from @${esc(p.da)} · until ${dataCurta(p.scade)}</span>` : `<span class="badge regalo">✨ Special house until ${dataCurta(p.scade)} · +${REGOLE.punti.decoro} pts</span>`;
   }
   bottone(casa, eMinha) {
     if (!this.aperto) return '';
@@ -496,7 +508,7 @@ export class Decori {
     if (!b) return;
     b.hidden = false;
     if (velho) velho.hidden = true;
-    const testo = b.querySelector('.testo'), frasi = ['✨ Decorate your house', '🏰 Get a rare house', '🎁 Send a mate a gift'];
+    const testo = b.querySelector('.testo'), frasi = ['✨ Decorate your house', '🏆 +' + REGOLE.punti.decoro + ' points while it shines', '📅 Now ' + this.cfg.giorni + ' days', '🏰 Get a rare house', '🎁 Send a mate a gift'];
     let i = 0;
     setInterval(() => { testo.classList.add('via'); setTimeout(() => { i = (i + 1) % frasi.length; testo.textContent = frasi[i]; testo.classList.remove('via'); }, 250); }, 3200);
     b.onclick = () => this.home();
@@ -530,12 +542,12 @@ export class Decori {
     this.annulla(); this.ferma(); document.body.classList.remove('decora-edit');
     this.ui.abrir(`
       <h2>Make a house special ✨</h2>
-      <div class="sub">Try it <b>free</b> here on the map. Only pay if you love it: <b>${eur(this.cfg.prezzo)}</b>, VAT included, for ${this.cfg.giorni} days.</div>
+      <div class="sub">Try it <b>free</b> here on the map. Only pay if you love it: <b>from ${eur(this.prezzoMin)}</b>, VAT included, for ${this.cfg.giorni} days.</div>
       <div class="scelta2">
         <button data-dp="mia"><span class="em">🏠</span><span><b>My house</b><small>A rare house (castle, lighthouse, windmill…), your team's colours, golden house, crown…</small></span></button>
         <button data-dp="regalo"><span class="em">🎁</span><span><b>Send a mate a gift</b><small>A surprise on their house, with your name on it</small></span></button>
       </div>
-      <div class="regola">✅ Looks only: no points and no change to the league table. The players always win.</div>`);
+      <div class="regola">🏆 <b>+${REGOLE.punti.decoro} points</b> for the decorated house while it's on the map: it grows a level. They don't count in elections, so the race stays fair.</div>`);
   }
   // botão do painel da casa: casa de outra pessoa = presente; a sua = decorar
   apri(conta, modo) {
@@ -567,7 +579,8 @@ export class Decori {
     if (!manter || !this.ed) {
       this.annulla();
       const p = this.pagata(casa.conta);
-      this.ed = { modo, casa, sel: p && !p.da && modo === 'mia' ? copia(p.sel) : vuota(), da: modo === 'regalo' ? (this.ui.minha ?? '') : null };
+      const r = this.recenti.get(casa.conta);
+      this.ed = { modo, casa, sel: p && !p.da && modo === 'mia' ? copia(p.sel) : !p && r && modo === 'mia' ? copia(r.sel) : vuota(), da: modo === 'regalo' ? (this.ui.minha ?? '') : null };
     }
     const ed = this.ed;
     this.vaiACasa(casa);
@@ -577,7 +590,8 @@ export class Decori {
       <div class="tag-luogo">📍 ${esc(l.nome)}</div>
       <h2 class="conta">${regalo ? '🎁 ' : ''}@${esc(casa.conta)}</h2>
       <div class="sub">${regalo ? 'Tap a gift: you\'ll see it on their house straight away.' : 'Tap and watch your house change. It\'s just a preview.'}</div>
-      ${p ? `<div class="regola">${p.da ? `🎁 Already has a gift from @${esc(p.da)}` : '✨ Already decorated'} until ${dataCurta(p.scade)}: a new purchase replaces it.</div>` : ''}
+      ${p ? `<div class="regola">${p.da ? `🎁 Already has a gift from @${esc(p.da)}` : '✨ Already decorated'} until ${dataCurta(p.scade)}: buy again and ${this.cfg.giorni} more days go on top.</div>` : ''}
+      ${this.cfg.prezzo_mini ? `<div class="regola">💡 1 effect: <b>${eur(this.cfg.prezzo_mini)}</b> · 2 or more, or a rare house: <b>${eur(this.cfg.prezzo)}</b></div>` : ''}
       ${regalo ? `<div class="cerca-dec"><span>from @</span><input id="dec-da" placeholder="your_account" value="${esc(ed.da ?? '')}" autocomplete="off" autocapitalize="off" spellcheck="false"></div><div class="nota" id="dec-da-nota" style="margin-top:4px"></div>` : ''}
       <div class="gruppo-dec">🏰 Rare houses <small>· only one of each per town</small></div>
       <div class="griglia-dec">${SPECIALI.map(m => { const p = this.occupato(casa, m.id); const cls = [p && 'preso', m.oro && 'dorato'].filter(Boolean).join(' '); return `<button data-dp="modello" data-v="${m.id}"${cls ? ` class="${cls}"` : ''}>${m.novo ? '<i class="novo">NEW</i>' : ''}<span class="em">${m.em}</span><b>${m.nome}</b>${p ? '<small>🔒 taken</small>' : ''}</button>`; }).join('')}</div>
@@ -606,7 +620,7 @@ export class Decori {
     if (nota) nota.textContent = !ed.da ? 'Your @ will show above the house: you need a house on the map.' : okDa ? `✓ It'll say “🎁 from @${ed.da}”` : ed.da === ed.casa.conta ? 'You can\'t gift yourself: use “My house”.' : 'That @ hasn\'t got a house on the map yet.';
     const n = quanti(ed.sel);
     $('#dec-conto').innerHTML = `
-      <button class="paga-dec" data-dp="checkout" ${n && okDa ? '' : 'disabled'}>${n ? `${regalo ? '🎁 Send the gift' : '✨ Show everyone'} · ${eur(this.cfg.prezzo)}` : 'Pick at least one effect'}
+      <button class="paga-dec" data-dp="checkout" ${n && okDa ? '' : 'disabled'}>${n ? `${regalo ? '🎁 Send the gift' : '✨ Show everyone'} · ${eur(this.prezzoDi(ed.sel))}` : 'Pick at least one effect'}
         <small>${n && !okDa ? 'type your @ above' : `VAT included · everyone sees it for ${this.cfg.giorni} days`}</small></button>`;
   }
 
@@ -615,10 +629,10 @@ export class Decori {
     this.ferma();
     this.ui.abrir(`
       <h2>Nearly there! 🔒</h2>
-      <div class="sub">${ed.modo === 'regalo' ? `Gift for @${esc(ed.casa.conta)} from @${esc(ed.da)}` : `@${esc(ed.casa.conta)}'s house`} · ${n} ${n === 1 ? 'effect' : 'effects'} · ${this.cfg.giorni} days · <b>${eur(this.cfg.prezzo)}</b> (VAT included)</div>
+      <div class="sub">${ed.modo === 'regalo' ? `Gift for @${esc(ed.casa.conta)} from @${esc(ed.da)}` : `@${esc(ed.casa.conta)}'s house`} · ${n} ${n === 1 ? 'effect' : 'effects'} · ${this.cfg.giorni} days · <b>${eur(this.prezzoDi(ed.sel))}</b> (VAT included)</div>
       <label class="consenso-dec"><input type="checkbox" id="dec-ok"><span>I want the decoration to start straight after payment, and I understand I lose my 14-day right to cancel once it starts. I've read the <a href="terms.html#purchases" target="_blank" rel="noopener">terms</a> and the <a href="privacy.html#decorazioni" target="_blank" rel="noopener">privacy notice</a>.</span></label>
       <div class="regola">👨‍👩‍👧 Under 18? Ask a parent or carer before paying.</div>
-      <button class="paga-dec" data-dp="paga" style="margin-top:12px">Go to secure checkout · ${eur(this.cfg.prezzo)}<small>${this.stripe ? 'card, Apple Pay, Google Pay · secure checkout by Stripe' : 'card, PayPal, Google Pay · via Hotmart'}</small></button>
+      <button class="paga-dec" data-dp="paga" style="margin-top:12px">Go to secure checkout · ${eur(this.prezzoDi(ed.sel))}<small>${this.stripe ? 'card, Apple Pay, Google Pay · secure checkout by Stripe' : 'card, PayPal, Google Pay · via Hotmart'}</small></button>
       <div class="bottoni"><button class="sec" data-dp="indietro">← back</button></div>`);
   }
 

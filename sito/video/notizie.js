@@ -79,14 +79,14 @@ function quadro(t) {
   U.pulso.value = Math.abs(Math.sin(t * 5));
   C.punti.visible = dist > 8;
 
-  K.pop($('#titolo'), t, E.nonmappa, E.nuove - 0.05, { base: 'rotate(-3deg)' });
+  K.pop($('#titolo'), t, E.nonmappa, E[R.dati?.titoloFim ?? 'nuove'] - 0.05, { base: 'rotate(-3deg)' });
   // número grande: +344 (novas) e depois o total
   const nb = $('#numero');
   if (t >= E.nuove && t < E.crescita - 0.05) {
-    const total = t >= E.totale, ini = total ? E.totale : E.nuove, alvo = total ? C.totale : C.nuove;
+    const total = t >= E.totale, ini = total ? E.totale : E.nuove, alvo = total ? (R.dati?.totaleN ?? C.totale) : C.nuove;
     K.pop(nb, t, ini, total ? E.crescita - 0.05 : E.totale - 0.05);
     nb.querySelector('b').textContent = `${total ? '' : '+'}${num(Math.round(alvo * suave(fase(t, ini, 0.8))))}`;
-    nb.querySelector('span').textContent = total ? 'houses on the map' : 'new houses today';
+    nb.querySelector('span').textContent = total ? (R.dati?.totaleTxt ?? 'houses on the map') : (R.dati?.nuoveTxt ?? 'new houses today');
   } else nb.style.opacity = '0';
   // duelos
   const d = C.duelli.find(x => t >= x.ini && t < x.fim);
@@ -113,9 +113,13 @@ function suoni() {
   add(E.missing, 'notifica', { tono: 1 });
   add(E.nuove - 0.2, 'silenzio', { dur: 0.18 }); add(E.nuove, 'boom', { vol: 0.6 }); add(E.nuove + 0.05, 'rullo', { dur: 0.75, vol: 0.4 }); add(E.nuove + 0.8, 'ding', { tono: 1.2 });
   add(E.totale - 0.1, 'whoosh', { dur: 0.3, vol: 0.55 }); add(E.totale + 0.05, 'rullo', { dur: 0.75, vol: 0.4 }); add(E.totale + 0.8, 'campana', { vol: 0.6 });
-  add(E.crescita - 0.1, 'whoosh', { dur: 0.3, giu: true, vol: 0.55 }); add(E.crescita + 0.1, 'pop', { tono: 1.1 });
-  add(E.leader - 0.1, 'whoosh', { dur: 0.3, vol: 0.55 }); add(E.leader + 0.1, 'stamp', { vol: 0.7 });
-  add(E.fm - 0.1, 'whoosh', { dur: 0.3, giu: true, vol: 0.55 }); add(E.lozza, 'select', { tono: 1.1 }); add(E.miles, 'stamp');
+  if (!R.dati?.salta?.length) {
+    add(E.crescita - 0.1, 'whoosh', { dur: 0.3, giu: true, vol: 0.55 }); add(E.crescita + 0.1, 'pop', { tono: 1.1 });
+    add(E.leader - 0.1, 'whoosh', { dur: 0.3, vol: 0.55 }); add(E.leader + 0.1, 'stamp', { vol: 0.7 });
+  }
+  add(E.fm - 0.1, 'whoosh', { dur: 0.3, giu: true, vol: 0.55 });
+  if (E.loja != null) { add(E.loja + 0.1, 'stamp'); add(E.loja + 0.13, 'campana', { tono: 1.3, vol: 0.6 }); add(E.gym, 'pop', { tono: 1.1 }); add(E.bolton, 'ding', { tono: 1.2 }); }
+  else { add(E.lozza, 'select', { tono: 1.1 }); add(E.miles, 'stamp'); }
   add(E.stretta - 0.1, 'whoosh', { dur: 0.3, vol: 0.55 }); add(E.tight, 'tasto', { vol: 0.6 }); add(E.gap, 'stamp'); add(E.gap + 0.03, 'campana', { vol: 0.5 });
   add(E.derby - 0.1, 'whoosh', { dur: 0.3, giu: true, vol: 0.55 }); add(E.liverpool, 'pop', { tono: 1 }); add(E.manchester, 'pop', { tono: 0.85 }); add(E.thrash, 'boom', { vol: 0.5 });
   add(E.cta - 0.2, 'silenzio', { dur: 0.18 }); add(E.cta, 'whoosh', { dur: 0.3, vol: 0.5 });
@@ -134,6 +138,7 @@ async function preparar(roteiro) {
   citta = new Citta(mappa, D);
   cena = {}; K = kit(mappa, cena); K.roteiro = R;
   const C = cena, dP = mappa.distPais(), dati = R.dati ?? {};
+  if (R.titolo) $('#titolo').innerHTML = R.titolo;
   // últimas 24 h até a hora do snapshot
   const agora = Date.parse(D.snap.gerado_em), desde = agora - 86400e3;
   C.punti = criarPunti(desde);
@@ -149,38 +154,56 @@ async function preparar(roteiro) {
   const cods = Object.keys(NOMI).filter(c => ge[c]?.length >= 2);
   const fm = dati.fm ?? cods.sort((a, b) => gap(b) - gap(a))[0], stretta = dati.stretta ?? [...cods].sort((a, b) => gap(a) - gap(b))[0];
   const lider = D.porConta.get(ge[fm][0].conta);
+  // modo loja (Reel 14): o trecho do First Minister vira "a 1ª loja da High Street" (eventos loja, gym, bolton)
+  const loja = E.loja != null ? D.commerci.find(c => c.prodotto !== 'cartellone' && (!dati.lojaId || c.id === dati.lojaId)) : null;
+  // dati.salta: ['crescita', 'leader'] tira os trechos "cidade que mais cresceu" e "maior cidade" (a voz não fala deles)
+  const salta = new Set(dati.salta ?? []);
+  let lojaP = null;
+  if (loja) {
+    Object.assign(E, { fm: E.loja, lozza: E.gym, miles: E.bolton });
+    lojaP = citta.dadosCidade(loja.luogo).alvos.find(a => a.tipo === 'commercio' && a.commercio.id === loja.id);
+  }
+  for (const k of salta) E[k] = E.fm;
   const der = D.snap.derby, cA = D.comunePorIstat.get(der.a), cB = D.comunePorIstat.get(der.b);
   const [vince, perde] = der.pts_a >= der.pts_b ? [[cA, der.pts_a], [cB, der.pts_b]] : [[cB, der.pts_b], [cA, der.pts_a]];
   const cor = cod => NAZIONI[cod].cor;
   C.duelli = [
     { k: 'fm', ini: E.lozza, fim: E.stretta - 0.05, titolo: `${NAZIONI[fm].emoji} First Minister`, sub: `${NOMI[fm].toUpperCase()} · RIGHT NOW`, unita: 'pts',
       righe: ge[fm].slice(0, 2).map((x, i) => ({ nome: `${i ? '2.' : '1.'} @${esc(x.conta)}`, n: x.pts, cor: i ? '#9AA3AE' : cor(fm) })) },
-    { k: 'stretta', ini: E.stretta + 0.1, fim: E.derby - 0.05, titolo: `${NAZIONI[stretta].emoji} ${NOMI[stretta]}`, sub: 'FIRST MINISTER · SO CLOSE', unita: 'pts',
-      righe: ge[stretta].slice(0, 2).map((x, i) => ({ nome: `${i ? '2.' : '1.'} @${esc(x.conta)}`, n: x.pts, cor: i ? '#9AA3AE' : cor(stretta) })) },
+    { k: 'stretta', ini: E.stretta + 0.1, fim: E.derby - 0.05, titolo: dati.strettaTitolo ?? `${NAZIONI[stretta].emoji} ${NOMI[stretta]}`, sub: dati.subStretta ?? 'FIRST MINISTER · SO CLOSE', unita: 'pts',
+      // dati.strettaRighe: [[conta, pts, nação], ...] troca o duelo da nação por outro (ex.: nº 1 do UK × Prime Minister)
+      righe: dati.strettaRighe ? dati.strettaRighe.map(([c, n, cod], i) => ({ nome: `${i + 1}. @${esc(c)}`, n, cor: i ? '#9AA3AE' : cor(cod) }))
+        : ge[stretta].slice(0, 2).map((x, i) => ({ nome: `${i ? '2.' : '1.'} @${esc(x.conta)}`, n: x.pts, cor: i ? '#9AA3AE' : cor(stretta) })) },
     { k: 'derby', ini: E.liverpool, fim: E.cta - 0.05, titolo: '⚔️ The derby', sub: 'POINTS FROM EACH TOWN', unita: 'pts',
       righe: [vince, perde].map(([c, n], i) => ({ nome: `${i ? '' : '🏆 '}${esc(c.nome)}`, n, cor: i ? '#6CABDD' : '#C8102E' })) },
-  ];
+  ].filter(d => !((loja || dati.fmPanel === false) && d.k === 'fm'));
   const sobre = (l, h = 0.6) => () => K.projetar(l.x, mappa.altura(l.x, l.z) + h, l.z);
   const topo = c => () => { const p = citta.posCasa(c); return K.projetar(p.x, p.y + ALTURA_NIVEL[c.livello] * LOTE * 1.05 + 0.002, p.z); };
+  const casaS = dati.strettaCasa ? D.porConta.get(dati.strettaCasa) : null;
   C.cartoes = [
-    { el: K.cartao(`📈 ${esc(cresce.nome)}`, `+${nCresce} HOUSES TODAY`, 'verde'), p: sobre(cresce, 0.15), ini: E.crescita + 0.1, fim: E.leader - 0.05 },
-    { el: K.cartao(`👑 ${esc(grande.nome)}`, `${num(grande.case)} HOUSES · No.1`, 'oro'), p: sobre(grande, 0.25), ini: E.leader + 0.1, fim: E.fm - 0.05 },
-    { el: K.cartao(`🏛️ @${esc(lider.conta)}`, `LEADS ${NOMI[fm].toUpperCase()}`, 'oro'), p: topo(lider), ini: E.fm + 0.1, fim: E.lozza - 0.05 },
-  ];
+    salta.has('crescita') ? null : { el: K.cartao(`📈 ${esc(cresce.nome)}`, `+${nCresce} HOUSES TODAY`, 'verde'), p: sobre(cresce, 0.15), ini: E.crescita + 0.1, fim: E.leader - 0.05 },
+    salta.has('leader') ? null : { el: K.cartao(`👑 ${esc(grande.nome)}`, `${num(grande.case)} HOUSES · No.1`, 'oro'), p: sobre(grande, 0.25), ini: E.leader + 0.1, fim: E.fm - 0.05 },
+    casaS ? { el: K.cartao(`👑 @${esc(casaS.conta)}`, dati.strettaCard ?? 'No.1', 'oro'), p: topo(casaS), ini: E.stretta + 0.1, fim: E.derby - 0.05 } : null,
+    loja ? { el: K.cartao(`${dati.lojaEmoji ?? '🏪'} ${esc(loja.nome)}`, dati.lojaSub ?? `FIRST SHOP · ${esc(loja.luogo.nome).toUpperCase()}`, 'rosa'), p: () => K.projetar(lojaP.x, lojaP.y + 1.25 * LOTE, lojaP.z), ini: E.gym, fim: E.stretta - 0.05 }
+      : { el: K.cartao(`🏛️ @${esc(lider.conta)}`, dati.fmSub ?? `LEADS ${NOMI[fm].toUpperCase()}`, 'oro'), p: topo(lider), ini: E.fm + 0.1, fim: dati.fmPanel === false ? E.stretta - 0.05 : E.lozza - 0.05 },
+  ].filter(Boolean);
   C.timbri = [
     K.timbro(`📰 Daily update · ${new Date(agora).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Europe/London' })}`, '#1E5AA8', 300, E.missing, E.nuove - 0.05, -3, 72),
-    K.timbro('🚀 Miles ahead', '#2FB36A', 1120, E.miles, E.stretta - 0.05, 3, 84),
-    K.timbro(`👀 Just ${num(dati.gap ?? gap(stretta))} in it`, '#E0473C', 1120, E.gap, E.derby - 0.05, -3, 84),
-    K.timbro('🔥 Thrashing', '#E0473C', 1120, E.thrash, E.cta - 0.05, 3, 84),
+    loja ? K.timbro(dati.lojaTimbro ?? '🎉 First shop!', '#E0306E', 300, E.loja + 0.1, E.stretta - 0.05, -3, 90)
+      : K.timbro(dati.fmTimbro ?? '🚀 Miles ahead', '#2FB36A', 1120, E.miles, E.stretta - 0.05, 3, 84),
+    K.timbro(dati.timbroGap ?? `👀 Just ${num(dati.gap ?? gap(stretta))} in it`, '#E0473C', 1120, E.gap, E.derby - 0.05, -3, 84),
+    K.timbro(dati.timbroThrash ?? '🔥 Thrashing', '#E0473C', 1120, E.thrash, (E.nuovoderby ?? E.cta) - 0.05, 3, 84),
     K.timbro('🆓 It\'s free', '#2FB36A', 1120, E.free, E.like - 0.05, -3, 90),
     K.timbro('❤️ Like this', '#E0306E', 1120, E.like, Infinity, 3, 100),
+    // selos extras do roteiro: [texto, cor, top, evento início, evento fim, rot, tamanho]
+    ...(R.timbri_extra ?? []).map(([txt, cor, top, a, b, rot, size]) => K.timbro(txt, cor, top, E[a], E[b] - 0.05, rot, size)),
   ];
   // comentários de quem está chegando (cidades reais que cresceram hoje)
   const cidades = [...porL.entries()].sort((a, b) => b[1] - a[1]).slice(1, 5).map(([li]) => D.luoghi[li]);
   const cores = ['#FFC93C', '#9FD3E6', '#F2B8C6', '#A8E0C2'], pos = [[60, 780, -3], [200, 940, 2], [50, 1100, -2], [220, 1260, 3]];
   C.bolle = cidades.map((l, i) => ({ el: K.bolla(`${esc(l.nome)}, ${NOMI[l.regione.cod]} 🏠`, cores[i], '+1 🏠'), t: E.comment + 0.5 + i * 0.25, x: pos[i][0], y: pos[i][1], rot: pos[i][2] }));
   C.impatti = [[E.nuove, 0.6], [E.totale, 0.5], [E.miles, 0.4], [E.gap, 0.5], [E.thrash, 0.6], [E.comment, 0.5]];
-  C.flash = [[0, 0.5], [E.nuove, 0.5], [E.crescita, 0.4], [E.leader, 0.3], [E.fm, 0.4], [E.stretta, 0.3], [E.derby, 0.4], [E.cta, 0.3], [E.like, 0.3]];
+  C.flash = [[0, 0.5], [E.nuove, 0.5], ...(salta.size ? [] : [[E.crescita, 0.4], [E.leader, 0.3]]), [E.fm, 0.4], [E.stretta, 0.3], [E.derby, 0.4], [E.cta, 0.3], [E.like, 0.3]];
   // câmera
   const centro = cod => { const cs = D.luoghi.filter(l => l.regione.cod === cod); return { x: cs.reduce((s, c) => s + c.x, 0) / cs.length, z: cs.reduce((s, c) => s + c.z, 0) / cs.length }; };
   const nz = centro(stretta), meioD = { x: (cA.x + cB.x) / 2, z: (cA.z + cB.z) / 2 }, dD = Math.hypot(cA.x - cB.x, cA.z - cB.z);
@@ -188,21 +211,24 @@ async function preparar(roteiro) {
     [0, K.uk({ dist: dP * 1.1, az: -0.06 })],
     [E.nuove - 0.05, K.uk({ dist: dP * 1.02, az: 0.0 })],
     [E.totale, K.uk({ dist: dP * 0.98, az: 0.03 })],
+    ...(salta.has('crescita') && salta.has('leader') ? [[E.fm - 0.05, K.uk({ dist: dP * 0.95, az: 0.05 })]] : [
     [E.crescita - 0.05, K.uk({ dist: dP * 0.95, az: 0.05 })],
     [E.crescita, { x: cresce.x, z: cresce.z, dist: 3.2, az: 0.4, el: 34, giu: 0, dy: 0, cut: true }],
     [E.leader - 0.05, K.deriva(2.6, 0.2)],
     [E.leader, { x: grande.x, z: grande.z, dist: 5, az: -0.2, el: 36, giu: 0, dy: 0, cut: true }],
-    [E.fm - 0.05, K.deriva(4.2, 0.2)],
-    [E.fm, K.casa(citta, lider, { dist: 0.55, az: 0.35, el: 22, cut: true })],
+    [E.fm - 0.05, K.deriva(4.2, 0.2)]]),
+    [E.fm, loja ? { x: lojaP.x, z: lojaP.z, dist: 0.5, az: lojaP.rot + 0.3, el: 18, giu: 0, dy: 0.5 * LOTE, cut: true }
+      : K.casa(citta, lider, { dist: 0.55, az: 0.35, el: 22, cut: true })],
     [E.stretta - 0.05, K.deriva(0.45, 0.3)],
+    ...(casaS ? [[E.stretta, K.casa(citta, casaS, { dist: 0.55, az: -0.35, el: 22, su: 420, cut: true })], [E.derby - 0.05, K.deriva(0.42, 0.3)]] : [
     [E.stretta, { ...nz, dist: dP * 0.3, az: 0, el: null, giu: 0, dy: 0, cut: true }],
-    [E.derby - 0.05, K.deriva(dP * 0.27, 0.06)],
+    [E.derby - 0.05, K.deriva(dP * 0.27, 0.06)]]),
     [E.derby, { ...meioD, dist: Math.max(40, dD * 2.2), az: 0.1, el: 45, giu: 0, dy: 0, cut: true }],
     [E.cta - 0.05, K.deriva(Math.max(34, dD * 1.9), 0.1)],
     [E.cta, K.uk({ dist: dP * 1.0, az: -0.02, cut: true })],
     [R.durata, K.uk({ dist: dP * 1.06, az: 0.04 })],
   ]);
-  C.cartoes.push(
+  if (dati.derbyCards !== false) C.cartoes.push(
     { el: K.cartao(`🏆 ${esc(vince[0].nome)}`, `${num(vince[1])} PTS`, 'oro'), p: sobre(vince[0], 0.3), ini: E.liverpool + 0.1, fim: E.cta - 0.05 },
     { el: K.cartao(esc(perde[0].nome), `${num(perde[1])} PTS`, ''), p: sobre(perde[0], 0.3), ini: E.manchester + 0.1, fim: E.cta - 0.05 },
   );

@@ -351,6 +351,10 @@ export class UI {
   // nome do pub votado pelos moradores
   pubCitta(l) {
     const nome = nomePub(l.comune.istat, l.pub), aperto = l.case >= sogliaDi('chiesa'), v = l.pub ?? [];
+    const premio = REGOLE.pub_premio?.[l.comune.istat];
+    if (premio) return `
+      <h3>🍺 ${esc(nome)}, the town pub</h3>
+      <p class="nota">🏆 Named by @${esc(premio.da)}: one of the 3 most-liked names in our Name Your Pub contest. Built for free, cheers!</p>`;
     return `
       <h3>🍺 ${aperto ? `${esc(nome)}, the town pub` : 'Name the town pub'}</h3>
       ${v.length ? `<div class="sblocchi">${v.slice(0, 3).map(([i, n], k) => `<div class="sblocco ${k ? '' : 'attuale'}"><span>${k ? '' : '👑 '}${esc(REGOLE.pub_nomi[i])}</span><b>${num(n)} ${n === 1 ? 'vote' : 'votes'}</b></div>`).join('')}</div>` : ''}

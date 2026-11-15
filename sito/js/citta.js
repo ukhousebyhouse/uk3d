@@ -56,7 +56,7 @@ const casuale = seme => () => { seme |= 0; seme = (seme + 0x6D2B79F5) | 0; let t
 // lotes desenhados depois da última casa: livres (convite) e, nas cidades maiores, o outdoor
 export const liberiDi = l => REGOLE.lotti_liberi;
 export const temCartellone = l => l.case >= sogliaDi('cartellone');
-const sbloccato = (l, id) => l.case >= sogliaDi(id);
+const sbloccato = (l, id) => l.case >= sogliaDi(id) || (id === 'chiesa' && REGOLE.pub_premio?.[l.comune?.istat] != null);
 const extraLotti = l => liberiDi(l);   // os outdoors ficam fora dos lotes (postiCartellone)
 // outdoors: quantos por cidade, pelo plano da população (data/negozio.json; antes de carregar, o mínimo: 3)
 const nCartelloni = (cfg, l) => {

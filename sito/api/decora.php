@@ -78,6 +78,9 @@ if (!$usaStripe) resposta(200, ['ok' => true, 'id' => $id]);
 
 // ---------- Stripe Checkout ----------
 $giorni = max(1, (int)($cfg['giorni'] ?? 10));
+// preço: 1 efeito só (sem casa rara) = prezzo_mini; mais efeitos ou casa rara = prezzo (mesma regra de decori.js prezzoDi)
+$nEff = count($extra) + ($squadra !== '' ? 1 : 0);
+$valore = ($modello === '' && $nEff === 1 && !empty($cfg['prezzo_mini'])) ? (int)$cfg['prezzo_mini'] : (int)($cfg['prezzo'] ?? 499);
 $NOMI = ['castello_oro' => 'Golden castle', 'faro' => 'Lighthouse', 'castello' => 'Castle', 'mulino' => 'Windmill', 'barca' => 'Narrowboat', 'bus' => 'Double-decker', 'albero' => 'Treehouse', 'capanne' => 'Beach huts', 'pastore' => "Shepherd's hut", 'collina' => 'Hillside house', 'stregata' => 'Haunted manor', 'osservatorio' => 'Observatory', 'zenzero' => 'Gingerbread house', 'cabina' => 'Giant phone box', 'teiera' => 'Teapot cottage', 'razzo' => 'Rocket'];
 $nome = $modello !== '' ? "Rare house: {$NOMI[$modello]} · @$conta" : ($modo === 'regalo' ? "Gift for @$conta" : "House decoration · @$conta");
 $base = ((($_SERVER['HTTPS'] ?? '') !== '' && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'ukhousebyhouse.com');
@@ -88,7 +91,7 @@ $dados = [
     'metadata' => ['pedido' => $id, 'conta' => $conta],
     'payment_intent_data' => ['description' => $nome, 'metadata' => ['pedido' => $id, 'conta' => $conta]],
     'line_items' => [['quantity' => 1, 'price_data' => [
-        'currency' => 'gbp', 'unit_amount' => (int)($cfg['prezzo'] ?? 499),
+        'currency' => 'gbp', 'unit_amount' => $valore,
         'product_data' => ['name' => $nome, 'description' => "Shown on the UK House by House map for $giorni days" . ($modo === 'regalo' ? ", with \"from @$da\" above the house" : '') . '. Looks only: no points.'],
     ]]],
     'success_url' => "$base/?pagato=1",

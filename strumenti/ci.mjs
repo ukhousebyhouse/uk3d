@@ -39,9 +39,17 @@ try {
     if (n) console.log(`${n} loja(s)/outdoor(s) pago(s) aprovado(s) automaticamente`);
   } catch (e) { console.log(`aviso: aprovação automática das lojas falhou (${e.message})`); }
 
+  // missioni (games do site): partidas e códigos de vínculo gravados pelo api/missioni.php
+  const ms = ['giocate.jsonl', 'codici.json'].filter(n => ftp.baixar(`${ftp.priv}dati/missioni/${n}`, arq('dati-grezzi', 'missioni', n)));
+  console.log(`missioni: ${ms.join(', ') || 'nada no servidor ainda'}`);
+
   const { aggiornare } = await import('./aggiorna.mjs');
   await aggiornare({ completo: process.argv.includes('--completo') });
   pubblicare();
+  // celulares vinculados (o código foi comentado): de volta ao servidor, que mostra "phone linked"
+  try {
+    if (fs.existsSync(arq('dati-grezzi', 'missioni', 'vincolati.json'))) ftp.enviar([{ local: arq('dati-grezzi', 'missioni', 'vincolati.json'), remoto: `${ftp.priv}dati/missioni/vincolati.json` }]);
+  } catch (e) { console.log(`missioni: envio dos vinculados falhou: ${e.message}`); }
 
   // token renovado nesta execução: guarda no servidor para as próximas
   const novo = lerJson(arq('config', 'instagram.json'), {}).token;

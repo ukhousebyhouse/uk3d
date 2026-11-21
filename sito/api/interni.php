@@ -1,0 +1,70 @@
+<?php
+// Interiors of the houses (js/interni.js). Dados em CARTELLA/conti/interni/<conta>.json + _elenco.json (contas que têm interior).
+//   GET  ?elenco=1           lista dos @ com casa arredata (botão «👀 Look inside» nos cartões)
+//   GET  ?conta=<@>          o interior de uma casa (público: qualquer um pode visitar)
+//   POST {a:'salva', interno} salva o interior da PRÓPRIA casa (sessão; precisa ter comprado "interni" e saldo >= 0)
+// interno = {pav: id do piso, par: índice da cor das paredes, ogg: [[tipo, x, z, rot], ...]} (x/z em casas da grade, rot 0..3)
+declare(strict_types=1);
+require __DIR__ . '/_conti.php';
+header('Content-Type: application/json; charset=utf-8');
+function resposta(array $d, int $c = 200): void { http_response_code($c); echo json_encode(['ok' => true] + $d, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); exit; }
+function erro(string $msg, int $c = 400): void { http_response_code($c); echo json_encode(['ok' => false, 'erro' => $msg], JSON_UNESCAPED_UNICODE); exit; }
+$pasta = conti_dir('interni');
+$valida = fn(string $c) => preg_match('/^[a-z0-9._]{1,30}$/', $c) === 1;
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    header('Cache-Control: public, max-age=60');
+    if (isset($_GET['elenco'])) resposta(['conte' => array_values(json_decode((string)@file_get_contents("$pasta/_elenco.json"), true) ?: [])]);
+    $conta = strtolower((string)($_GET['conta'] ?? ''));
+    // dono do jogo testando: lê a versão de prova dele (a casa do jogador fica intacta)
+    if ($valida($conta) && isset($_GET['prova'])) {
+        header('Cache-Control: no-store');
+        $sid = conti_sessione_id(); $su = $sid ? conti_leggi($sid) : null;
+        if (!empty($su['proprietario']) && is_file("$pasta/_prova/$conta.json")) resposta(['conta' => $conta, 'interno' => json_decode((string)file_get_contents("$pasta/_prova/$conta.json"), true)]);
+        // sem versão de prova ainda: começa do interior real do jogador (só leitura), se existir
+    }
+    if (!$valida($conta) || !is_file("$pasta/$conta.json")) erro('This house hasn\'t been furnished yet.', 404);
+    resposta(['conta' => $conta, 'interno' => json_decode((string)file_get_contents("$pasta/$conta.json"), true)]);
+}
+
+header('Cache-Control: no-store');
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !str_contains((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'json')) erro('Invalid method.', 405);
+if (!conti_limite('interni|' . ($_SERVER['REMOTE_ADDR'] ?? ''), 120, 3600)) erro('Too many requests. Please try again in a bit.', 429);
+$id = conti_sessione_id();
+if (!$id) erro('Sign in to your account to carry on.', 401);
+$u = conti_leggi($id);
+$d = json_decode((string)file_get_contents('php://input', false, null, 0, 20000), true);
+if (!is_array($d) || ($d['a'] ?? '') !== 'salva') erro('Invalid request.');
+$conta = (string)($u['conta'] ?? '');
+if ($conta === '') erro('Link your Instagram first.');
+$own = (array)($u['oggetti'] ?? []);
+if (!in_array('interni', $own, true)) erro('You need your home with an inside.');
+if ((int)$u['saldo'] < 0) erro('Your balance is negative after a refund: your home stays locked until it\'s back above zero.');
+
+$cfg = conti_cfg();
+$pav = array_column((array)($cfg['interni']['pavimenti'] ?? []), 0);
+$mob = [];
+foreach ((array)($cfg['mobili'] ?? []) as $m) $mob[$m['id']] = (int)$m['prezzo'] === 0 || in_array('mob_' . $m['id'], $own, true);
+$i = is_array($d['interno'] ?? null) ? $d['interno'] : [];
+$ogg = [];
+foreach (array_slice((array)($i['ogg'] ?? []), 0, 80) as $o) {
+    if (!is_array($o) || count($o) < 4) continue;
+    [$t, $x, $z, $r] = $o;
+    if (!is_string($t) || empty($mob[$t]) || !is_int($x) || !is_int($z) || !is_int($r) || $x < 0 || $x > 9 || $z < 0 || $z > 9 || $r < 0 || $r > 3) continue;
+    $ogg[] = [$t, $x, $z, $r];
+}
+$interno = ['pav' => in_array($i['pav'] ?? '', $pav, true) ? $i['pav'] : ($pav[0] ?? 'legno'), 'par' => (is_int($i['par'] ?? null) && $i['par'] >= 0 && $i['par'] < 8) ? $i['par'] : 0, 'ogg' => $ogg, 'agg' => gmdate('c')];
+if (!empty($u['proprietario'])) {   // dono testando: pasta de prova, fora da lista pública
+    if (!is_dir("$pasta/_prova")) mkdir("$pasta/_prova", 0750, true);
+    file_put_contents("$pasta/_prova/$conta.json", json_encode($interno, JSON_UNESCAPED_SLASHES), LOCK_EX);
+    resposta(['interno' => $interno]);
+}
+file_put_contents("$pasta/$conta.json", json_encode($interno, JSON_UNESCAPED_SLASHES), LOCK_EX);
+// lista dos @ arredati
+$f = fopen("$pasta/_elenco.json", 'c+');
+if ($f && flock($f, LOCK_EX)) {
+    $el = json_decode((string)stream_get_contents($f), true) ?: [];
+    if (!in_array($conta, $el, true)) { $el[] = $conta; ftruncate($f, 0); rewind($f); fwrite($f, json_encode($el, JSON_UNESCAPED_SLASHES)); }
+    flock($f, LOCK_UN); fclose($f);
+}
+resposta(['interno' => $interno]);

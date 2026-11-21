@@ -346,3 +346,203 @@ button.decora-btn small { display: block; font-size: 12px; font-weight: 700; opa
   #schede button i { display: none; }
   #schede.fine { -webkit-mask-image: none; mask-image: none; }
 }
+
+/* pílula do decorador: borda brilhante de tempos em tempos (decori.js ligarPillola) */
+#decora.brilha { animation: arcobaleno 6s linear infinite, decora-brilha 2.4s ease-out 1, decora-pulo .6s ease-out 2; }
+@keyframes decora-brilha {
+  0% { box-shadow: 0 0 0 0 rgba(255,201,60,.95), 0 0 0 0 rgba(255,95,200,.7); }
+  35% { box-shadow: 0 0 0 6px rgba(255,201,60,.95), 0 0 26px 12px rgba(255,95,200,.75); }
+  100% { box-shadow: 0 0 0 12px rgba(255,201,60,0), 0 0 30px 16px rgba(255,95,200,0); }
+}
+@keyframes decora-pulo { 0%, 100% { transform: translateY(0) rotate(0); } 30% { transform: translateY(-4px) rotate(-2deg); } 60% { transform: translateY(0) rotate(2deg); } }
+@keyframes decora-pulso { 50% { transform: scale(1.03); box-shadow: 0 0 0 4px rgba(255,176,32,.45); } }
+@media (prefers-reduced-motion: reduce) { #decora.brilha, button.decora-btn.rinnova.urgente { animation: none; } }
+
+/* ---------- giochi (missioni.js) ---------- */
+#schede button[hidden] { display: none; }
+#schede button.novita::after { content: 'NEW'; display: inline-block; margin-left: 4px; vertical-align: 1px; background: var(--rosso); color: #fff; font-size: 9px; font-weight: 900; padding: 1px 5px; border-radius: 99px; animation: pulsa 1.4s ease-in-out infinite; }
+.badge.ms { background: #D5F7EF; }
+.ms-io { margin: 10px 0 2px; font-weight: 800; font-size: 14px; }
+.link { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 2px; cursor: pointer; }
+.ms-chi { margin: 12px 0 4px; }
+.ms-chi label { display: block; font-weight: 900; font-size: 14px; margin-bottom: 6px; }
+.ms-campo { display: flex; align-items: center; gap: 6px; border: 3px solid var(--inchiostro); border-radius: 14px; padding: 4px 10px; background: #fff; }
+.ms-campo span { font-weight: 900; color: var(--grigio); }
+.ms-campo input { flex: 1; min-width: 0; border: 0; outline: 0; font: inherit; font-weight: 800; font-size: 17px; padding: 6px 0; background: none; }
+.ms-sug { margin-top: 6px; }
+.ms-sug button { display: block; width: 100%; text-align: left; background: var(--crema); border: 2px solid var(--inchiostro); border-radius: 12px; padding: 8px 12px; margin-bottom: 6px; font-weight: 900; font-size: 15px; }
+.ms-sug small { color: var(--grigio); font-weight: 700; margin-left: 4px; }
+.ms-sug .vuoto { color: var(--grigio); font-weight: 700; font-size: 13px; padding: 4px 2px; }
+.ms-card { display: flex; align-items: center; gap: 10px; border: 3px solid var(--inchiostro); border-radius: 18px; background: linear-gradient(135deg, #D5F7EF, #FFF6E6); padding: 12px; margin: 12px 0 8px; box-shadow: 0 3px 0 rgba(21,32,51,.2); }
+.ms-ic { font-size: 34px; line-height: 1; }
+.ms-tx { flex: 1; min-width: 0; }
+.ms-tx b { display: block; font-size: 16px; font-weight: 900; }
+.ms-tx small { display: block; color: var(--grigio); font-weight: 700; font-size: 12px; line-height: 1.3; }
+.ms-card button, button.ms-invia { background: var(--giallo); border: 3px solid var(--inchiostro); border-radius: 99px; padding: 8px 14px; font-weight: 900; font-size: 14px; white-space: nowrap; box-shadow: 0 2px 0 rgba(21,32,51,.25); }
+.ms-card button.sec { background: #fff; }
+.casa-card { align-items: flex-start; }
+.casa-duo { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.casa-duo button { flex: 1 1 0; min-width: 0; }
+.casa-duo.piu button { font-size: 12.5px; padding: 6px 10px; }
+button.regalo-btn { display: block; width: 100%; margin: 4px 0 8px; background: #fff; border: 2.5px dashed var(--inchiostro); border-radius: 14px; padding: 9px; font: 900 14px 'Nunito', sans-serif; color: var(--inchiostro); }
+.ms-card button:disabled, button.ms-invia:disabled { opacity: .45; }
+button.ms-invia { display: block; width: 100%; margin-top: 10px; font-size: 17px; padding: 11px; background: var(--verde); color: #fff; }
+.ms-codice, .ms-ok, .ms-avviso, .ms-serie { border-radius: 14px; padding: 9px 12px; margin: 8px 0; font-size: 13.5px; font-weight: 800; line-height: 1.35; }
+.ms-codice { background: #FFF1C9; border: 2px dashed var(--inchiostro); }
+.ms-codice .cod { background: #fff; border: 2px solid var(--inchiostro); border-radius: 8px; padding: 0 6px; font-size: 15px; letter-spacing: 1px; white-space: nowrap; }
+.ms-codice button { display: block; margin-top: 8px; background: #C13584; color: #fff; border: 2.5px solid var(--inchiostro); border-radius: 99px; padding: 7px 14px; font-weight: 900; font-size: 13.5px; }
+.ms-ok { background: #E8F6EC; border: 2px solid var(--verde); }
+.ms-avviso { background: #FFE5E2; border: 2px solid var(--rosso); }
+.ms-serie { background: #FFE9D6; border: 2px solid #F08A3E; }
+.ms-rank { list-style: none; margin: 6px 0 0; padding: 0; }
+.ms-rank li { display: flex; align-items: center; gap: 8px; padding: 7px 4px; border-bottom: 1.5px dashed var(--linea); font-weight: 800; font-size: 14px; }
+.ms-rank li.io { background: #FFF6CC; border-radius: 10px; }
+.ms-rank .pos { width: 28px; text-align: center; }
+.ms-rank .chi { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ms-camp { background: #D5F7EF; border: 2px solid #14B8A6; border-radius: 14px; padding: 8px 12px; font-weight: 800; font-size: 13.5px; margin-top: 10px; }
+.ms-regole { margin: 0; padding-left: 18px; font-size: 13.5px; font-weight: 700; line-height: 1.4; }
+.ms-regole li { margin-bottom: 5px; }
+.ms-tempo { display: inline-block; margin: 6px 0 4px; background: var(--crema); border: 2px solid var(--inchiostro); border-radius: 99px; padding: 2px 12px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.ms-indizi { list-style: none; margin: 8px 0; padding: 0; }
+.ms-indizi li { border: 3px solid var(--inchiostro); border-radius: 14px; background: #fff; padding: 8px 12px; margin-bottom: 8px; font-weight: 800; font-size: 15px; line-height: 1.35; animation: ms-entra .35s ease-out; }
+.ms-indizi li small { display: block; color: #0E7490; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
+@keyframes ms-entra { from { opacity: 0; transform: translateY(6px); } }
+button.ms-altro { display: block; width: 100%; background: #fff; border: 2.5px dashed var(--inchiostro); border-radius: 14px; padding: 8px; font-weight: 900; font-size: 14px; margin-bottom: 10px; }
+button.ms-altro small { color: var(--grigio); font-weight: 700; }
+.ms-esito { font-size: 17px; font-weight: 800; margin: 8px 0; }
+.ms-esito small { color: var(--grigio); font-weight: 700; font-size: 13px; }
+.ms-quadri { font-size: 30px; letter-spacing: 4px; margin: 4px 0; }
+.ms-pt { margin: 6px 0 10px; }
+.ms-pt b { font-size: 30px; font-weight: 900; }
+.ms-pt small { display: block; color: var(--grigio); font-weight: 800; font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { #schede button.novita::after, .ms-indizi li { animation: none; } }
+
+/* abas que chamam atenção: Giochi (verde-água) e Vetrina (coral); ativa = borda escura */
+#schede button[data-aba="giochi"], #schede button[data-aba="negozi"] { color: #fff; margin: 0 2px; text-shadow: 0 1px 0 rgba(21,32,51,.35); }
+#schede button[data-aba="giochi"] { background: linear-gradient(180deg, #2DD4BF, #0F9F8F); }
+#schede button[data-aba="negozi"] { background: linear-gradient(180deg, #FF8A5C, #E8553A); }
+#schede button[data-aba="giochi"].attiva, #schede button[data-aba="negozi"].attiva { box-shadow: inset 0 0 0 3px var(--inchiostro); }
+
+/* ---------- conta + crediti (js/conto.js) ---------- */
+#mio-conto { position: absolute; left: 0; top: 0; height: 40px; border-radius: 99px; border: 3px solid var(--inchiostro); background: #fff; font: 900 14px 'Nunito', sans-serif; color: var(--inchiostro); padding: 0 12px; box-shadow: 0 3px 0 rgba(21,32,51,.25); white-space: nowrap; }
+#mio-conto b { font-weight: 900; }
+#mio-conto.dentro { background: var(--giallo); }
+#mio-conto.novita::after { content: 'NEW'; position: absolute; top: -9px; right: -10px; background: var(--rosso); color: #fff; font-size: 10px; font-weight: 900; padding: 1px 6px; border-radius: 99px; border: 2px solid var(--inchiostro); }
+.ct-vantaggi { border: 3px solid var(--inchiostro); border-radius: 16px; background: var(--crema); padding: 10px 12px; margin: 10px 0 12px; font-size: 14px; font-weight: 700; line-height: 1.5; }
+.ct-cod input { font-size: 26px !important; letter-spacing: 8px; text-align: center; }
+.ct-link { background: none; border: 0; padding: 0; font: inherit; font-weight: 900; color: var(--inchiostro); text-decoration: underline; cursor: pointer; }
+.ct-saldo { display: flex; align-items: baseline; justify-content: center; gap: 8px; border: 3px solid var(--inchiostro); border-radius: 18px; background: linear-gradient(135deg, #FFF1C9, #FFE08A); padding: 10px; margin: 10px 0; box-shadow: 0 3px 0 rgba(21,32,51,.2); }
+.ct-saldo b { font-size: 40px; font-weight: 900; line-height: 1; }
+.ct-saldo span { font-weight: 900; font-size: 15px; color: var(--grigio); }
+.ct-h { margin: 16px 0 4px; font-size: 16px; font-weight: 900; }
+.ct-mini { display: block; color: var(--grigio); font-size: 12.5px; font-weight: 700; margin: 2px 0 6px; }
+.ct-cat { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.ct-item { border: 2px solid var(--inchiostro); border-radius: 12px; background: #fff; padding: 6px 8px; display: grid; grid-template-columns: auto 1fr; column-gap: 6px; align-items: center; opacity: .92; }
+.ct-item span { grid-row: span 2; font-size: 22px; }
+.ct-item b { font-size: 12.5px; font-weight: 900; line-height: 1.15; }
+.ct-item em { font-style: normal; font-size: 12px; font-weight: 900; color: #B7791F; }
+.ct-item small { grid-column: 1 / -1; color: var(--grigio); font-size: 10.5px; font-weight: 700; line-height: 1.2; margin-top: 2px; }
+.ct-pacchi { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.ct-pacchi button { position: relative; border: 3px solid var(--inchiostro); border-radius: 14px; background: #fff; padding: 12px 4px 8px; font: inherit; text-align: center; }
+.ct-pacchi button b { display: block; font-size: 15px; font-weight: 900; }
+.ct-pacchi button span { display: block; font-size: 13px; font-weight: 800; color: var(--grigio); }
+.ct-pacchi button small { display: inline-block; margin-top: 3px; background: var(--verde); color: #fff; font-size: 11px; font-weight: 900; border-radius: 99px; padding: 0 6px; }
+.ct-pacchi button i { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-style: normal; background: var(--rosso); color: #fff; font-size: 10px; font-weight: 900; border-radius: 99px; padding: 1px 6px; border: 2px solid var(--inchiostro); }
+.ct-mov { list-style: none; margin: 4px 0 0; padding: 0; }
+.ct-mov li { display: flex; align-items: center; gap: 8px; padding: 6px 2px; border-bottom: 1.5px dashed var(--linea); font-size: 13.5px; font-weight: 800; }
+.ct-mov li span { flex: 1; min-width: 0; }
+.ct-mov li small { color: var(--grigio); font-weight: 700; }
+.ct-mov li b { min-width: 52px; text-align: right; color: var(--verde); }
+.ct-mov li b.neg { color: var(--rosso); }
+@media (max-width: 420px) { #mio-conto { height: 34px; font-size: 12.5px; padding: 0 9px; } }
+.ct-sicuro { background: #E8F6EC; border: 2px solid var(--verde); border-radius: 14px; padding: 8px 12px; margin: 10px 0 4px; font-size: 13px; font-weight: 700; line-height: 1.4; }
+
+/* ---------- passeggiata (js/passeggio.js) ---------- */
+body.passeggio #testa, body.passeggio #controlli, body.passeggio #pillole, body.passeggio #schede, body.passeggio #piede, body.passeggio #etichette, body.passeggio #avviso-demo { display: none !important; }
+#passeggio { position: fixed; inset: 0; pointer-events: none; z-index: 22; font-family: 'Nunito', sans-serif; }
+#passeggio button { pointer-events: auto; }
+.ps-topo { position: absolute; top: calc(var(--sat) + 10px); left: 10px; right: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ps-titolo { background: #fff; border: 3px solid var(--inchiostro); border-radius: 99px; padding: 6px 14px; font-weight: 900; font-size: 15px; box-shadow: 0 3px 0 rgba(21,32,51,.25); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ps-esci { background: var(--giallo); border: 3px solid var(--inchiostro); border-radius: 99px; padding: 7px 14px; font: 900 15px 'Nunito', sans-serif; box-shadow: 0 3px 0 rgba(21,32,51,.25); }
+.ps-joy { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 3px solid rgba(255,255,255,.85); background: rgba(21,32,51,.18); opacity: 0; transition: opacity .15s; }
+.ps-joy.on { opacity: 1; }
+.ps-joy i { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%; background: #fff; border: 3px solid var(--inchiostro); box-shadow: 0 3px 0 rgba(21,32,51,.3); }
+.ps-dica, .ps-bordo { position: absolute; left: 50%; transform: translate(-50%, 10px); max-width: calc(100% - 32px); text-align: center; background: var(--inchiostro); color: #fff; font-weight: 800; font-size: 14px; padding: 10px 16px; border-radius: 16px; opacity: 0; transition: .3s; }
+.ps-dica { bottom: calc(var(--sab) + 90px); }
+.ps-bordo { top: 40%; background: #fff; color: var(--inchiostro); border: 3px solid var(--inchiostro); font-size: 16px; }
+.ps-bordo small { font-size: 13px; color: var(--grigio); }
+.ps-dica.on, .ps-bordo.on { opacity: 1; transform: translate(-50%, 0); }
+.ps-azioni { position: absolute; right: 12px; bottom: calc(var(--sab) + 24px); display: flex; flex-direction: column; gap: 8px; }
+.ps-azioni button { background: #fff; border: 3px solid var(--inchiostro); border-radius: 99px; padding: 9px 14px; font: 900 14px 'Nunito', sans-serif; box-shadow: 0 3px 0 rgba(21,32,51,.25); }
+.ps-menu { position: absolute; left: 50%; top: calc(var(--sat) + 96px); transform: translate(-50%, 10px); width: min(340px, calc(100% - 24px)); max-height: calc(100% - 200px); overflow: auto; background: #fff; border: 3px solid var(--inchiostro); border-radius: 20px; padding: 12px; box-shadow: 0 5px 0 rgba(21,32,51,.25); opacity: 0; pointer-events: none; transition: .25s; }
+.pi-info { display: flex; justify-content: space-between; font-weight: 800; font-size: 15px; margin: 4px 2px 8px; }
+.pi-tela { position: relative; border: 3px solid var(--inchiostro); border-radius: 18px; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+.pi-tela canvas { display: block; width: 100%; height: auto; touch-action: none; }
+.pi-msg { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); background: rgba(255,255,255,.92); border: 2.5px solid var(--inchiostro); border-radius: 99px; padding: 5px 14px; font-weight: 900; font-size: 14px; white-space: nowrap; pointer-events: none; transition: opacity .3s; }
+.ps-bussola { position: absolute; left: 50%; top: calc(var(--sat) + 58px); transform: translateX(-50%); display: flex; align-items: center; gap: 6px; max-width: calc(100% - 24px); background: rgba(255,255,255,.95); border: 2.5px solid var(--inchiostro); border-radius: 99px; padding: 4px 12px 4px 6px; font: 800 13px 'Nunito', sans-serif; color: var(--inchiostro); white-space: nowrap; box-shadow: 0 3px 0 rgba(21,32,51,.2); }
+.ps-bussola i { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--giallo); font-style: normal; font-size: 13px; transition: transform .2s; }
+.ps-bussola span { overflow: hidden; text-overflow: ellipsis; }
+#passeggio.viaggio .ps-bussola,
+#passeggio.viaggio .ps-azioni, #passeggio.viaggio .ps-joy, #passeggio.viaggio .ps-et { display: none; }
+.ps-menu.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.ps-menu.basso { top: auto; bottom: calc(var(--sab) + 24px); width: min(300px, calc(100% - 24px)); }
+.ps-menu h4 { margin: 0 30px 8px 2px; font-size: 17px; font-weight: 900; }
+.ps-menu p { margin: 8px 2px 0; font-size: 13px; font-weight: 700; color: var(--grigio); line-height: 1.35; }
+.ps-menu-x { position: absolute; right: 8px; top: 8px; width: 30px; height: 30px; border-radius: 50%; border: 2.5px solid var(--inchiostro); background: #fff; font: 900 14px 'Nunito', sans-serif; }
+.ps-opz { display: grid; grid-template-columns: 34px 1fr; grid-template-rows: auto auto; align-items: center; width: 100%; text-align: left; background: #F6F7FA; border: 2.5px solid var(--inchiostro); border-radius: 14px; padding: 6px 10px; margin-top: 6px; font-family: 'Nunito', sans-serif; color: var(--inchiostro); }
+.ps-opz span { grid-row: span 2; font-size: 24px; }
+.ps-opz b { font-size: 15px; font-weight: 900; }
+.ps-opz small { font-size: 12px; font-weight: 800; color: var(--grigio); }
+.ps-opz.on { background: var(--giallo); }
+.ps-opz:disabled { opacity: .55; }
+.ps-cta { width: 100%; margin-top: 10px; background: var(--giallo); border: 3px solid var(--inchiostro); border-radius: 99px; padding: 9px; font: 900 15px 'Nunito', sans-serif; box-shadow: 0 3px 0 rgba(21,32,51,.25); }
+.ps-tag { position: absolute; transform: translate(-50%, -100%); background: #fff; border: 2.5px solid var(--inchiostro); border-radius: 99px; padding: 3px 10px; font: 900 13px 'Nunito', sans-serif; color: var(--inchiostro); white-space: nowrap; box-shadow: 0 2px 0 rgba(21,32,51,.25); }
+.ps-tag.mia { background: var(--giallo); }
+.ps-tag.neg { background: #FFE3D6; }
+.ps-card { background: linear-gradient(135deg, #DCEBFF, #FFF6E6); }
+.ps-new { display: inline-block; vertical-align: 2px; background: var(--rosso); color: #fff; font-size: 10px; font-weight: 900; border-radius: 99px; padding: 1px 6px; margin-left: 4px; }
+
+/* ---------- editor do personagem (js/personaggio.js) ---------- */
+.pg-anteprima { display: flex; justify-content: center; margin: 6px 0; }
+.pg-anteprima canvas { width: 180px; height: 195px; border: 3px solid var(--inchiostro); border-radius: 18px; background: radial-gradient(circle at 50% 40%, #FFFFFF, #DCEBFF); }
+.pg-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 4px; }
+.pg-seg button, .pg-opz button { border: 3px solid var(--inchiostro); border-radius: 14px; background: #fff; padding: 9px 8px; font: 900 14px 'Nunito', sans-serif; color: var(--inchiostro); }
+.pg-seg button.on, .pg-opz button.on { background: var(--giallo); box-shadow: 0 3px 0 rgba(21,32,51,.25); }
+.pg-opz { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
+.pg-opz button { padding: 6px 12px; font-size: 13px; }
+.pg-sw { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 6px; }
+.pg-sw button { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--inchiostro); padding: 0; }
+.pg-sw button.on { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--inchiostro); }
+.pg-lock { opacity: .75; }
+
+/* ---------- casa con interni (js/interni.js) ---------- */
+#interni { position: fixed; inset: 0; z-index: 40; background: #DCEBFF; font-family: 'Nunito', sans-serif; }
+#interni canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+body.interni-on #pannello { z-index: 45; }
+.in-topo { position: absolute; top: calc(var(--sat) + 10px); left: 10px; right: 10px; display: flex; align-items: center; gap: 8px; }
+.in-titolo { flex: 1; min-width: 0; background: #fff; border: 3px solid var(--inchiostro); border-radius: 99px; padding: 7px 14px; font-weight: 900; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 3px 0 rgba(21,32,51,.25); }
+.in-topo button { background: #fff; border: 3px solid var(--inchiostro); border-radius: 99px; padding: 7px 14px; font: 900 15px 'Nunito', sans-serif; box-shadow: 0 3px 0 rgba(21,32,51,.25); }
+.in-salva.on { background: var(--giallo); }
+.in-sel { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--sab) + 190px); display: flex; gap: 8px; }
+.in-sel button { background: #fff; border: 3px solid var(--inchiostro); border-radius: 99px; padding: 8px 14px; font: 900 14px 'Nunito', sans-serif; box-shadow: 0 3px 0 rgba(21,32,51,.25); }
+.in-dica { position: absolute; top: calc(var(--sat) + 62px); left: 50%; transform: translateX(-50%); max-width: calc(100% - 32px); text-align: center; color: var(--inchiostro); font-weight: 800; font-size: 12.5px; background: rgba(255,255,255,.8); border-radius: 99px; padding: 4px 12px; }
+.in-barra { position: absolute; left: 8px; right: 8px; bottom: calc(var(--sab) + 10px); background: #fff; border: 4px solid var(--inchiostro); border-radius: 22px; padding: 8px; box-shadow: 0 5px 0 rgba(21,32,51,.25); }
+.in-tabs { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.in-tabs button { border: 2.5px solid var(--inchiostro); border-radius: 99px; background: #fff; padding: 5px 10px; font: 900 13px 'Nunito', sans-serif; }
+.in-tabs button.on { background: var(--giallo); }
+.in-saldo { margin-left: auto; font-weight: 900; font-size: 14px; }
+.in-lista { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.in-mob { flex: none; width: 82px; border: 2.5px solid var(--inchiostro); border-radius: 14px; background: var(--crema); padding: 6px 4px; font: inherit; text-align: center; }
+.in-mob span { display: block; font-size: 26px; line-height: 1.1; }
+.in-mob b { display: block; font-size: 11px; font-weight: 900; line-height: 1.15; }
+.in-mob em { display: block; font-style: normal; font-size: 10.5px; font-weight: 900; color: #B7791F; margin-top: 2px; }
+.in-mob.lock { background: #F1F3F6; }
+.in-col small { display: block; font-weight: 900; font-size: 12px; color: var(--grigio); margin: 2px 0 4px; }
+.in-col div { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+.in-sw { width: 34px; height: 34px; border-radius: 10px; border: 3px solid var(--inchiostro); padding: 0; }
+.in-sw.on { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--inchiostro); }
+.in-visita { font-weight: 800; font-size: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: center; text-align: center; }
+.in-visita button { background: var(--giallo); border: 3px solid var(--inchiostro); border-radius: 99px; padding: 7px 14px; font: 900 13.5px 'Nunito', sans-serif; }
+.in-card { background: linear-gradient(135deg, #FFF1C9, #FFF6E6); }
+.in-card.nuova { box-shadow: 0 0 0 3px var(--giallo), 0 3px 0 rgba(21,32,51,.2); }
+.ct-item.ora { opacity: 1; background: #FFF6CC; box-shadow: 0 0 0 2px var(--giallo); }

@@ -13,11 +13,14 @@
 //            // aprovados: na hora "ts" reservam o próximo lote da cidade (as casas seguintes pulam esse lote);
 //            // depois de "fino" somem do mapa, mas o lote continua reservado (nenhuma casa muda de lugar).
 //            // Outdoors (prodotto 'cartellone') não gastam lote: ganham "posto", o 1º ponto de destaque livre da cidade
+//   missioni:[{ gioco, conta, giorno: 'AAAA-MM-DD', ts, ok, p }],
+//            // partidas dos games do site já confirmadas (celular vinculado; 1 por conta, jogo e dia — aggiorna.mjs filtra):
+//            // ok = +missione (até tetto_mandato por dia no mandato); p = pontos do ranking da semana
 // }
 import { REGOLE, livelloDi } from '../sito/js/regole.js';
 import { giornoRoma, limitiMandati, mandatoDi } from '../sito/js/tempo.js';
 
-const F = { casa: 0, commento: 1, extra: 2, tag: 3, recluta: 4, voto: 5, storia: 6, post: 7, mecenate: 8, invitato: 9, decoro: 10 };
+const F = { casa: 0, commento: 1, extra: 2, tag: 3, recluta: 4, voto: 5, storia: 6, post: 7, mecenate: 8, invitato: 9, decoro: 10, missione: 11, missione_top: 12 };
 const NOMES_F = Object.keys(F);
 const dia = 86400e3;
 const ontem = d => new Date(Date.parse(`${d}T12:00:00Z`) - dia).toISOString().slice(0, 10);
@@ -30,7 +33,8 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
   const lim = limitiMandati(eventi.inizio, agora);
   const kc = mandatoDi(lim, agora);
   const sfidaAtiva = ts => (R.sfide ?? []).find(s => ts >= Date.parse(s.inizio) && ts < Date.parse(s.fine)) ?? null;
-  const fator = (f, ts) =>(doppi.some(d => ts >= d.da && ts < d.a && (d.tipi.includes('tutto') || d.tipi.includes(NOMES_F[f]))) ? 2 : 1);
+  // missioni não dobram (o teto do dia nas eleições é fixo)
+  const fator = (f, ts) =>(f < F.missione && doppi.some(d => ts >= d.da && ts < d.a && (d.tipi.includes('tutto') || d.tipi.includes(NOMES_F[f]))) ? 2 : 1);
 
   const contas = new Map(), luoghi = new Map(), postEst = new Map(), votos = new Set(), eventos = [];
   const cont = { commenti: 0, validi: 0, pendenti: 0, rifiutati: 0, storie: 0 };
@@ -196,6 +200,37 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
     add(a, F.decoro, P.decoro ?? 0, agora, false);
   }
 
+  // ---------- missioni (games do site) ----------
+  // acertou: +missione; no mandato só até tetto_mandato por dia (o resto só faz a casa crescer)
+  // ranking da semana = soma dos "p" no mandato; fechou o mandato: top 3 ganham premi (só casa) e o 1º é o Campione
+  const MS = R.missioni ?? { tetto_mandato: 0, premi: [], serie: [] };
+  const rankMs = new Map();   // mandato -> Map(conta -> { p, n, ts })
+  for (const g of [...(eventi.missioni ?? [])].sort((x, y) => x.ts - y.ts)) {
+    const a = g.conta && contas.get(g.conta.toLowerCase());
+    if (!a?.casa || a.bloc || g.ts > agora || g.ts < a.casa.ts) continue;
+    (a.giorniMs ??= new Set()).add(g.giorno);
+    const k = mandatoDi(lim, g.ts);
+    const m = rankMs.get(k) ?? rankMs.set(k, new Map()).get(k);
+    const r = m.get(a.conta) ?? { p: 0, n: 0, ts: 0 };
+    r.p += g.p ?? 0; r.n++; r.ts = g.ts;
+    m.set(a.conta, r);
+    if (!g.ok) continue;
+    const usado = (a.msDia ??= new Map()).get(g.giorno) ?? 0, dentro = Math.max(0, Math.min(P.missione, MS.tetto_mandato - usado));
+    a.msDia.set(g.giorno, usado + P.missione);
+    if (dentro) add(a, F.missione, dentro, g.ts, true);
+    if (P.missione > dentro) add(a, F.missione, P.missione - dentro, g.ts, false);
+  }
+  const ordemMs = m => [...m].filter(([, r]) => r.p > 0).sort((x, y) => y[1].p - x[1].p || x[1].ts - y[1].ts);
+  let campioneMs = null;
+  for (let k = 1; k < kc; k++) {
+    const top = ordemMs(rankMs.get(k) ?? new Map()).slice(0, MS.premi.length);
+    top.forEach(([c, r], i) => add(contas.get(c), F.missione_top, MS.premi[i], lim[k], false));
+    if (top[0]) {
+      campioneMs = { conta: top[0][0], punti: top[0][1].p, mandato: k };
+      eventos.push({ tipo: 'campione_giochi', conta: top[0][0], pts: top[0][1].p, ts: lim[k] });
+    } else campioneMs = null;   // semana sem jogadores: ninguém fica com o título
+  }
+
   // ---------- casas visíveis ----------
   const casas = [...contas.values()].filter(a => a.casa && !a.bloc);
   const sett = a => a.perM[kc] ?? 0;
@@ -264,6 +299,20 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
     for (const a of l.visiveis) if (a.pub) { const x = v.get(a.pub.i) ?? { n: 0, ts: Infinity }; x.n++; x.ts = Math.min(x.ts, a.pub.ts); v.set(a.pub.i, x); }
     return [...v].sort((a, b) => b[1].n - a[1].n || a[1].ts - b[1].ts).map(([i, x]) => [i, x.n]);
   };
+  // série dos games: dias seguidos com partida (hoje ainda não jogou = conta até ontem)
+  const serieMs = {};
+  for (const a of casas) {
+    if (!a.giorniMs) continue;
+    let d = a.giorniMs.has(hoje) ? hoje : ontem(hoje), n = 0;
+    while (a.giorniMs.has(d)) { n++; d = ontem(d); }
+    if (n) serieMs[a.conta] = n;
+  }
+  const missioni = {
+    classifica: ordemMs(rankMs.get(kc) ?? new Map()).slice(0, 20).map(([conta, r]) => ({ conta, p: r.p, n: r.n })),
+    giocatori: (rankMs.get(kc) ?? new Map()).size,
+    campione: campioneMs && contas.get(campioneMs.conta)?.casa && !contas.get(campioneMs.conta).bloc ? campioneMs : null,
+    serie: serieMs,
+  };
   const saidaCasas = casas.sort((a, b) => a.casa.ts - b.casa.ts).map(a => [
     a.conta, liDe.get(a.casa.ci), a.casa.lote, Math.round(a.casa.ts / 1000), a.tot, sett(a),
     a.fiamme > agora ? Math.round(a.fiamme / 1000) : 0, a.fonti, serie(a),
@@ -301,6 +350,7 @@ export function calcolare({ eventi, comuni, regioni, agora, versao = 'snap', dem
     })),
     cariche,
     derby,
+    missioni,
     // antes da data: os 5 primeiros de cada nação agora; depois: o resultado congelado (o 1º de cada nação é o eleito)
     ...(R.gran_elezione ? { gran_elezione: { data: R.gran_elezione.data, conclusa: !!eletti, nazioni: eletti ?? placarNazioni() } } : {}),
     ...(sfidaSnap ? { sfida: sfidaSnap } : {}),

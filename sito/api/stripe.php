@@ -42,6 +42,26 @@ function pedidoDoPagamento(string $pasta, string $pi): string {
 
 $valor = isset($obj['amount_total']) ? $obj['amount_total'] / 100 : null;
 
+// ---------- recargas de créditos (conto.php "ricarica"): credita na conta; reembolso/contestação tira de volta ----------
+// a transação é o payment_intent (o reembolso chega pela cobrança, que só traz o payment_intent)
+$ehCrediti = ($obj['metadata']['tipo'] ?? '') === 'crediti';
+if (!$ehCrediti && in_array($tipo, ['charge.refunded', 'charge.dispute.created'], true) && ($obj['payment_intent'] ?? '') !== '') {
+    $T = json_decode((string)@file_get_contents(CARTELLA . '/conti/transazioni.json'), true) ?: [];
+    $ehCrediti = isset($T[(string)$obj['payment_intent']]);
+}
+if ($ehCrediti) {
+    require_once __DIR__ . '/_conti.php';
+    $pi = (string)($obj['payment_intent'] ?? '');
+    $m = (array)($obj['metadata'] ?? []);
+    $esito = 'nulla';
+    if (in_array($tipo, ['checkout.session.completed', 'checkout.session.async_payment_succeeded'], true) && ($obj['payment_status'] ?? '') === 'paid' && $pi !== '')
+        $esito = conti_ricarica((string)($obj['customer_details']['email'] ?? $obj['customer_email'] ?? ''), (string)($m['conto'] ?? ''), (string)($m['pacco'] ?? ''), $pi, 'pagato', $valor);
+    elseif (in_array($tipo, ['charge.refunded', 'charge.dispute.created'], true) && $pi !== '')
+        $esito = conti_ricarica('', '', '', $pi, 'rimborsato', null);
+    file_put_contents(conti_dir() . '/ricariche.log', gmdate('c') . " $tipo $pi " . ($m['pacco'] ?? '') . " £$valor " . ($teste ? '[teste] ' : '') . "=> $esito\n", FILE_APPEND | LOCK_EX);
+    fim(200);
+}
+
 // ---------- lojas e outdoors (negozio.php): só marca o pagamento; entra no mapa com "amministra approva" ----------
 $pastaNeg = CARTELLA . '/negozi';
 $idNeg = ($obj['metadata']['tipo'] ?? '') === 'negozio' ? (string)($obj['client_reference_id'] ?? $obj['metadata']['pedido'] ?? '') : '';

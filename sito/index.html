@@ -27,7 +27,16 @@
     }
     window.__relata = relata;
     // contador anônimo (sem cookies): uma visita por carregamento; main.js manda 'ok' quando a mapa abre
-    window.__conta = function (t) { try { navigator.sendBeacon && navigator.sendBeacon('api/visita.php', JSON.stringify({ t: t, p: 'mappa', ref: document.referrer })); } catch (e) {} };
+    // ?da=bio (link da bio), ?da=gioco (botões de compartilhar)...: conta o canal e tira as etiquetas do endereço
+    var da = '';
+    try {
+      var u = new URL(location.href);
+      da = (u.searchParams.get('da') || '').toLowerCase().slice(0, 20);
+      var sujo = false;
+      ['da', 'fbclid', 'igshid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content'].forEach(function (k) { if (u.searchParams.has(k)) { u.searchParams.delete(k); sujo = true; } });
+      if (sujo) history.replaceState(null, '', u.pathname + u.search + u.hash);
+    } catch (e) {}
+    window.__conta = function (t) { try { navigator.sendBeacon && navigator.sendBeacon('api/visita.php', JSON.stringify({ t: t, p: 'mappa', ref: document.referrer, da: da })); } catch (e) {} };
     window.__conta('v');
     window.addEventListener('error', function (e) {
       // ruído do navegador do app do Instagram (scripts dele, iabjs://) e erros opacos: não são nossos
@@ -57,6 +66,7 @@
   <div class="marchio">UK <b>House by House</b></div>
   <h1 class="titolo">Find <b>your house</b></h1>
   <button id="aiuto" type="button" aria-label="How does it work?">?</button>
+  <button id="mio-conto" type="button" aria-label="Sign in to your account">👤 <b>Sign in</b></button>
   <form id="cerca" autocomplete="off">
     <span class="chiocciola" aria-hidden="true">@</span>
     <input id="q" type="search" placeholder="your_account, town or nation" aria-label="Search" enterkeyhint="search">
@@ -87,6 +97,7 @@
 
 <nav id="schede">
   <button data-aba="mappa" class="attiva" type="button">map</button>
+  <button data-aba="giochi" type="button"><i>🎮 </i>Games</button>
   <button data-aba="palazzo" type="button"><i>🚪 </i>No. 10</button>
   <button data-aba="classifica" type="button"><i>🏆 </i>League Table</button>
   <button data-aba="negozi" type="button"><i>🏪 </i>High Street</button>
@@ -94,7 +105,7 @@
   <button data-aba="senzapadrone" type="button">up for grabs</button>
 </nav>
 
-<footer id="piede"><span id="versione">loading…</span> · <a href="privacy.html">privacy</a></footer>
+<footer id="piede"><span id="versione">loading…</span> · <a href="privacy.html">privacy</a> · <a href="terms.html#credits">credits</a></footer>
 
 <div id="caricamento"><div class="palla"></div><p>Laying the bricks…</p></div>
 <script type="module" src="js/main.js"></script>

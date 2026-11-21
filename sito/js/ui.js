@@ -53,6 +53,8 @@ export class UI {
 
   // ---------- painel ----------
   abrir(html, aba = null) {
+    this.selez = null;          // outro painel: casa deixa de estar selecionada (casa() regrava depois)
+    this.botaoCasa();
     this.conteudo.innerHTML = html;
     this.painel.hidden = false;
     this.painel.classList.remove('mini');
@@ -66,6 +68,8 @@ export class UI {
     this.decori?.chiudi();
     this.painel.hidden = true;
     this.citta.evidenzia(null);
+    this.selez = null;
+    this.botaoCasa();
     document.querySelectorAll('#schede button').forEach(b => b.classList.toggle('attiva', b.dataset.aba === 'mappa'));
     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   }
@@ -88,6 +92,10 @@ export class UI {
       else if ('condividi' in d) this.condividir(d.condividi);
       else if ('copia' in d) this.copiarConvite(t);
       else if (d.dp) this.decori?.azione(t);
+      else if (d.ms) this.missioni?.azione(t);
+      else if (d.ct) this.conto?.azione(t);
+      else if (d.passeggia) this.passeggio?.avvia(d.passeggia);
+      else if (d.interni) { const [a, conta] = [d.interni.slice(0, d.interni.indexOf(':')), d.interni.slice(d.interni.indexOf(':') + 1)]; if (a === 'compra') this.interni?.compraCasa(conta); else this.interni?.apri(conta); }
       else if (d.decora) this.decori?.apri(d.decora, d.modo);
       else if (d.ir) this.rota(d.ir);
     });
@@ -120,7 +128,7 @@ export class UI {
   }
 
   rota(r) {
-    const mapa = { palazzo: () => this.palazzo(), classifica: () => this.classifica(), tabellone: () => this.tabellone(), negozi: () => this.negozi(), senzapadrone: () => this.senzaPadrone(), fiamme: () => this.fiamme(), 'come-funziona': () => this.comeFunziona(), video: () => this.video(), decora: () => this.decori?.aperto && this.decori.home(), derby: () => this.derby(), meta: () => this.meta(), gran: () => this.granElezione(), sfida: () => this.sfida() };
+    const mapa = { palazzo: () => this.palazzo(), classifica: () => this.classifica(), tabellone: () => this.tabellone(), negozi: () => this.negozi(), senzapadrone: () => this.senzaPadrone(), fiamme: () => this.fiamme(), 'come-funziona': () => this.comeFunziona(), video: () => this.video(), decora: () => this.decori?.aperto && this.decori.home(), derby: () => this.derby(), meta: () => this.meta(), gran: () => this.granElezione(), sfida: () => this.sfida(), giochi: () => this.missioni?.home(), conto: () => this.conto?.apri() };
     if (mapa[r]) mapa[r]();
   }
 
@@ -178,6 +186,7 @@ export class UI {
     const ge = D.snap.gran_elezione;
     if (ge) add('chip-gran', ge.conclusa ? '🏛️ <b>The first First Ministers</b> are in' : `🏛️ <b>Grand Election</b> · ${dataBreve(Date.parse(ge.data))}, ${ora(Date.parse(ge.data))}`, () => this.granElezione());
     const meta = this.metaCase();
+    if (REGOLE.missioni?.attive) add('chip-giochi', `🎮 <b>New game</b>: guess the town of the day`, () => this.rota('giochi'));
     add('chip-meta', `🎯 <b>${num(D.casas.length)}</b> / ${num(meta)} houses`, () => this.meta());
     // celular: um chip por vez, em rodízio; tela larga: até 3 juntos (rodando os seguintes)
     let i = 0;
@@ -195,9 +204,21 @@ export class UI {
     $('#zoom-piu').onclick = () => this.mappa.zoom(0.45);
     $('#zoom-meno').onclick = () => this.mappa.zoom(2.2);
     $('#vedi-paese').onclick = () => { this.mappa.verPais(); };
-    const ir = $('#vai-casa');
-    ir.hidden = !this.minha;
-    ir.onclick = () => this.minha && this.casa(this.D.porConta.get(this.minha));
+    // 🏠: volta à casa selecionada (qualquer uma); sem seleção, à minha casa
+    $('#vai-casa').onclick = () => {
+      if (this.selez) { const p = this.citta.posCasa(this.selez); this.focar(p.x, p.z, 0.6, 0.62); }
+      else if (this.minha) this.casa(this.D.porConta.get(this.minha));
+    };
+    this.botaoCasa();
+  }
+  botaoCasa() {
+    const b = $('#vai-casa');
+    if (!b) return;
+    const alvo = this.selez?.conta ?? this.minha;
+    b.hidden = !alvo;
+    const txt = !alvo ? 'Go to my house' : alvo === this.minha ? 'Back to my house' : `Back to ${alvo}'s house`;
+    b.title = txt;
+    b.setAttribute('aria-label', txt);
   }
   rodape() {
     const s = this.D.snap, t = Date.parse(s.dati_fino);
@@ -300,8 +321,10 @@ export class UI {
         ${c.fonti[8] > 0 ? '<span class="badge mec">🏅 Patron · has a business on the map</span>' : ''}
         ${c.carica ? `<span class="badge car c-${c.carica.tipo}">🏛 ${esc(this.cargoTexto(c))}</span>` : ''}
         ${fogo ? `<span class="badge fuoco">🔥 on fire until ${ora(c.fiamme * 1000)}</span>` : ''}
-        ${this.decori?.badge(c) ?? ''}
+        ${this.decori?.badge(c) ?? ''}${this.missioni?.badge(c) ?? ''}
       </div>
+      ${this.cartaCasa(c)}
+      ${this.cartaPasseggia(`casa:${c.conta}`, `Walk around ${l.nome} starting from this house`)}
       <div class="cresce">
         <div class="cresce-topo"><b>Your house · level ${c.livello + 1} of ${niv.length}</b><span>${esc(niv[c.livello].nome)}</span></div>
         <div class="scala">${niv.map((n, i) => `<div class="gradino ${i < c.livello ? 'passato' : i === c.livello ? 'attuale' : 'futuro'}">${iconaLivello(i)}<small>${esc(n.nome)}</small></div>`).join('')}</div>
@@ -322,12 +345,46 @@ export class UI {
         ${eMinha ? '<button class="sec" data-minha="">not my house</button>' : `<button data-minha="${esc(c.conta)}">this is my house 🏠</button>`}
       </div>
       ${this.decori?.bottone(c, eMinha) ?? ''}`);
+    this.selez = c;
+    this.botaoCasa();
+  }
+  // cartão "Your home" (um só, limpo): a própria casa = 🎨 Outside + 🛋️ Inside (990 💰 uma vez, para sempre) e, discreto,
+  // villa/castelo; casa de outra pessoa = 👀 Look inside (se mobiliada) + 🎁 Gift a decoration (490/990 💰)
+  cartaCasa(c) {
+    const it = this.interni, ct = this.conto, dec = this.decori; if (!it) return '';
+    const p = ct?.p, cfg = ct?.cfg, mio = p?.conta === c.conta, haCasa = (p?.oggetti ?? []).includes('interni');
+    const k = esc(c.conta);
+    if (p?.proprietario && !mio) return `<div class="ms-card in-card nuova"><span class="ms-ic">🛠️</span><div class="ms-tx"><b>Try this house</b><small>Owner only: test inside, outside, villa and castle. @${k}'s house doesn't change.</small></div><button data-ct="prova" data-v="${k}">Try</button></div>`;
+    if (mio || (!p && this.minha === c.conta)) {
+      const prezzo = num(cfg?.interni?.prezzo ?? 990);
+      const corpo = !p ? `<small>Decorate it inside and out · ${prezzo} 💰 · forever</small><div class="casa-duo"><button data-ct="accedi">👤 Sign in</button></div>`
+        : haCasa ? `<small>It's yours forever: change it whenever you like.</small><div class="casa-duo"><button data-dp="fuori" data-v="${k}">🎨 Outside</button><button data-interni="entra:${k}">🛋️ Inside</button></div>`
+        : `<small>Decorate it inside and out, forever · 5 pieces of furniture free</small><div class="casa-duo"><button data-dp="fuori" data-v="${k}">🎨 Try outside</button><button data-interni="compra:${k}">🔑 ${prezzo} 💰</button></div>`;
+      let extra = '';
+      if (p && cfg) {
+        const own = new Set(p.oggetti ?? []), cat = id => cfg.catalogo?.find(x => x.id === id && x.vendita), cm = ct.castelloMio(), chip = [];
+        if (cat('villa') && !own.has('villa') && !own.has('castello')) chip.push(`<button class="sec" data-ct="compra" data-item="villa">🏡 Villa · ${num(cat('villa').prezzo)}</button>`);
+        if (cat('castello') && !own.has('castello') && cm && !cm.chi) chip.push(`<button class="sec" data-ct="compra" data-item="castello">🏰 Castle · free!</button>`);
+        if (chip.length) extra = `<div class="casa-duo piu">${chip.join('')}</div>`;
+      }
+      return `<div class="ms-card in-card casa-card"><span class="ms-ic">🏠</span><div class="ms-tx"><b>Your home</b>${corpo}${extra}</div></div>`;
+    }
+    let out = '';
+    if (it.ha(c.conta)) out += `<div class="ms-card in-card"><span class="ms-ic">👀</span><div class="ms-tx"><b>Look inside</b><small>@${k}'s house is furnished</small></div><button data-interni="vedi:${k}">Go in</button></div>`;
+    if (dec && !dec.prop.case.has(c.conta)) out += `<button class="regalo-btn" data-decora="${k}">🎁 Gift a decoration · ${num(dec.prezzoRegalo())} 💰</button>`;
+    return out;
+  }
+  // cartão "🚶 Go for a walk" (passeggio.js); grátis com conta
+  cartaPasseggia(alvo, txt) {
+    if (!this.passeggio) return '';
+    const dentro = !!this.conto?.p;
+    return `<div class="ms-card ps-card"><span class="ms-ic">🚶</span><div class="ms-tx"><b>Go for a walk <span class="ps-new">NEW</span></b><small>${esc(txt)}${dentro ? '' : ' · you need an account (free)'}</small></div><button data-passeggia="${esc(alvo)}">${this.passeggio.ativo ? 'Go here' : 'Start'}</button></div>`;
   }
   definirMinha(conta) {
     this.minha = conta || null;
     gravar('minha_casa', conta || '');
     this.et.destaque = this.minha;
-    $('#vai-casa').hidden = !this.minha;
+    this.botaoCasa();
     if (conta) { this.aviso('Sorted! The 🏠 button brings you back here.'); this.casa(this.D.porConta.get(conta), false); }
     else this.fechar();
   }
@@ -370,6 +427,7 @@ export class UI {
     this.abrir(`
       <h2>${esc(l.nome)}${l.comune.bil ? ` <small class="bil">${esc(l.comune.bil)}</small>` : ''}</h2>
       <div class="sub">${l.comune.sigla ? `${esc(l.comune.sigla)}, ` : ''}<span data-regione="${reg}" class="link">${nacao(l.regione)}</span> · ${num(l.case)} ${l.case === 1 ? 'house' : 'houses'}${l.comune.pop ? ` · pop. ${num(l.comune.pop)}` : ''}</div>
+      ${this.cartaPasseggia(`luogo:${l.id}`, `Walk the streets of ${l.nome}, past houses and shops`)}
       <div class="carta plaque" data-casa="${esc(l.fondatore)}"><b>@${esc(l.fondatore)}</b><span>founded ${esc(l.nome)}</span><small>first house · ${dataBreve(l.fondatore_ts)} ${new Date(l.fondatore_ts).getFullYear()} · forever</small></div>
       <h3>Running ${esc(l.nome)}</h3>
       <div class="linha"><span>${nomeCarica('sindaco', reg)}</span><span>${sindaco ? `<a data-casa="${esc(sindaco.conta)}">@${esc(sindaco.conta)}</a> · elected on Sunday · ${num(sindaco.pts)} pts` : 'elected on Sunday at 9pm'}</span></div>
@@ -405,7 +463,7 @@ export class UI {
 
   // ---------- lote livre, outdoor e comércios ----------
   convite(l) {
-    const url = `${location.origin}${location.pathname}?luogo=${encodeURIComponent(l.nome)}`;
+    const url = `${location.origin}${location.pathname}?luogo=${encodeURIComponent(l.nome)}&da=invito`;
     return `Come and live in ${l.nome}! 🏠 Comment "${l.nome}, ${l.regione.nome}" on the latest post by @${PERFIL} and get a house with your @ on the 3D map of the UK: ${url}`;
   }
   lotto(a) {
@@ -790,10 +848,10 @@ export class UI {
   condividir(o) {
     if (o.startsWith('luogo:')) {
       const l = this.D.luoghi[+o.split(':')[1]];
-      return this.mostrarImagem(`Share ${l.nome}`, `town-${l.nome}.png`, () => immagineCitta(this.fot, this.citta, this.D, l), `Look at ${l.nome} on UK House by House! @${PERFIL}`);
+      return this.mostrarImagem(`Share ${l.nome}`, `town-${l.nome}.png`, () => immagineCitta(this.fot, this.citta, this.D, l), `Look at ${l.nome} on UK House by House! @${PERFIL} ${location.origin}${location.pathname}?da=citta`);
     }
     const url = location.origin + location.pathname;
-    const txt = o === 'tabellone' ? `The towns with the most houses on UK House by House. Where's yours? ${url}#tabellone` : `Look at ${this.D.luoghi[+o.split(':')[1]].nome} on UK House by House: ${url}`;
+    const txt = o === 'tabellone' ? `The towns with the most houses on UK House by House. Where's yours? ${url}?da=tabellone#tabellone` : `Look at ${this.D.luoghi[+o.split(':')[1]].nome} on UK House by House: ${url}?da=citta`;
     if (navigator.share) navigator.share({ text: txt }).catch(() => {});
     else navigator.clipboard?.writeText(txt).then(() => this.aviso('Link copied!'), () => this.aviso(txt));
   }

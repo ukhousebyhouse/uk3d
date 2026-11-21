@@ -3,7 +3,17 @@ export const REGOLE = {
   versao: 'rule-1.0',
   // mecenate/misura: quem compra um negócio no mapa; só fazem a casa crescer, NÃO contam no mandato (eleições)
   // decoro: casa decorada (paga) enquanto a decoração está no mapa; igual ao mecenate, NÃO conta no mandato e some quando vence
-  punti: { casa: 10, commento: 5, extra: 1, tag: 3, recluta: 25, invitato: 25, voto: 5, storia: 20, post: 20, mecenate: 100, misura: 50, decoro: 50 },
+  punti: { casa: 10, commento: 5, extra: 1, tag: 3, recluta: 25, invitato: 25, voto: 5, storia: 20, post: 20, mecenate: 100, misura: 50, decoro: 50, missione: 5 },
+  // missioni (games do site, missioni.js + api/missioni.php): +missione por partida acertada; só os primeiros
+  // "tetto_mandato" pontos do dia contam nas eleições (o resto só faz a casa crescer). Ranking da semana (fecha com o
+  // mandato): top 3 ganham "premi" (só casa). Série de dias seguidos jogando: enfeites na casa enquanto dura.
+  missioni: {
+    attive: true,
+    tetto_mandato: 15,
+    premi: [50, 30, 15],
+    serie: [[7, 'bandierina', '🚩', 'Games flag'], [14, 'stella', '⭐', 'Gold star'], [30, 'medaglia', '🏅', 'Gold medal']],
+    giochi: [['indovina', 'Guess the Town', '🗺️'], ['pisa', 'Big Ben', '🕰️']],
+  },
   // boas-vindas de quem entra porque um amigo marcou: só para casas criadas nesta janela (promoção do dia; não muda o passado)
   invitato_da: '2026-11-03T12:00:00Z', invitato_a: '2026-11-04T00:00:00Z',
   // extra e tag: por post; storia e post (no feed, marcando o perfil): por dia (fuso de Londres)
@@ -196,6 +206,8 @@ export const FONTI = [
   ['mecenate', 'Business on the map', '#6C4FD3'],
   ['invitato', 'Welcome bonus (a mate brought you)', '#9B5DE5'],
   ['decoro', 'Decorated house', '#FF7EB6'],
+  ['missione', 'Games', '#14B8A6'],
+  ['missione_top', 'Games prizes', '#0E7490'],
 ];
 
 // o bônus de boas-vindas só aparece enquanto a promoção vale
@@ -211,6 +223,8 @@ export const COME_GUADAGNARE = p => [
   ['post', 'Feed post tagging us', `+${p.post} (1 a day): tag @ukhousebyhouse in the photo`],
   ['mecenate', 'Put your business on the map', `+${p.mecenate} (+${p.misura} custom) and a Patron badge: they grow your house but don't count in elections`],
   ['decoro', 'Decorate your house', `+${p.decoro} while it's decorated: your house grows, but they don't count in elections`],
+  ['missione', 'Games: Guess the Town and Big Ben', `+${p.missione} when you win (1 a day each) · tap 🎮 Games`],
+  ['missione_top', 'Games leaderboard', `top 3 of the week: +${REGOLE.missioni.premi.join('/+')} and the Champion title`],
   ['casa', 'Having a house', `+${p.casa}, once`],
 ];
 

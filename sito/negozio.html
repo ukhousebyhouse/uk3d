@@ -81,7 +81,7 @@
   .vantaggi { margin: 8px 0 0; padding-left: 20px; }
   .vantaggi li { font-weight: 700; font-size: 14.5px; line-height: 1.5; }
 </style>
-<script>try { navigator.sendBeacon && navigator.sendBeacon('api/visita.php', JSON.stringify({ t: 'v', p: 'negozio', ref: document.referrer })); } catch (e) {}</script>
+<script>try { var da = (new URLSearchParams(location.search).get('da') || '').toLowerCase().slice(0, 20); navigator.sendBeacon && navigator.sendBeacon('api/visita.php', JSON.stringify({ t: 'v', p: 'negozio', ref: document.referrer, da: da })); } catch (e) {}</script>
 </head>
 <body>
 <main>

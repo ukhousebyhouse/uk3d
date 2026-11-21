@@ -46,6 +46,7 @@ Comandos (depois de mudar algo, rode "node strumenti/aggiorna.mjs --senza-instag
 
   lista                                  inscritos na lista de espera do "Crea video così"
   visite [dias]                          visitas do site por dia (contador anônimo; padrão: 7 dias)
+  conti                                  contas do site e créditos 💰 (prêmios do dia, recargas, saldo total)
 `;
 
 function comune(arg) {
@@ -272,7 +273,37 @@ try {
         const pico = Object.entries(s.ore ?? {}).sort((a, b) => b[1] - a[1])[0];
         console.log(`${n.slice(0, 10)}  ${String(s.visite).padStart(6)} visitas · ${String(s.unici).padStart(6)} únicos · mapa abriu em ${pct}% · pico ${pico ? `${pico[0]}h (${pico[1]})` : '—'}`);
         console.log(`            páginas: ${top(s.pagine)}\n            origem: ${top(s.fonti)}\n            aparelho: ${top(s.dispositivi)}`);
+        if (s.canali) {
+          // ?da= do link: bio = link da bio; compartilhado = botões de compartilhar do site (pessoas = únicas do dia)
+          const COMP = ['gioco', 'invito', 'citta', 'tabellone'];
+          const soma = (o, ks) => ks.reduce((t, k) => t + (o?.[k] ?? 0), 0);
+          const ks = Object.keys(s.canali), u = s.canali_unici ?? {};
+          const comp = ks.filter(k => COMP.includes(k));
+          console.log(`            🔗 bio: ${s.canali.bio ?? 0} visitas (${u.bio ?? 0} pessoas) · compartilhado: ${soma(s.canali, comp)} visitas (${soma(u, comp)} pessoas)${comp.length ? ` [${comp.map(k => `${k} ${u[k] ?? 0}`).join(' · ')}]` : ''}`);
+          const resto = ks.filter(k => k !== 'bio' && !COMP.includes(k));
+          if (resto.length) console.log(`               outros: ${resto.map(k => `${k} ${s.canali[k]} (${u[k] ?? 0} pessoas)`).join(' · ')}`);
+        }
       }
+      break;
+    }
+    case 'conti': {
+      // contas do site e créditos (privato/dati/conti no servidor): quantas contas, prêmios do dia, recargas
+      const { conectar } = await import('./pubblica.mjs');
+      const ftp = conectar(() => {}), local = path.join(RAIZ, 'dati-grezzi', 'conti');
+      fs.mkdirSync(local, { recursive: true });
+      const utenti = ftp.listar(`${ftp.priv}dati/conti/utenti/`).filter(n => n.endsWith('.json'));
+      const ok = ftp.baixar(`${ftp.priv}dati/conti/movimenti.jsonl`, path.join(local, 'movimenti.jsonl'));
+      // movimentos "prova_*" = conta do dono testando: fora das contas
+      const mov = ok ? fs.readFileSync(path.join(local, 'movimenti.jsonl'), 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l)).filter(m => !String(m.tipo).startsWith('prova_')) : [];
+      const dia = d => d.slice(0, 10), hoje = new Date().toISOString().slice(0, 10);
+      const porTipo = {}; for (const m of mov) { porTipo[m.tipo] ??= { n: 0, soma: 0 }; porTipo[m.tipo].n++; porTipo[m.tipo].soma += m.delta; }
+      const premiadas = new Set(mov.filter(m => ['giornaliero', 'serie'].includes(m.tipo)).map(m => m.id));
+      console.log(`${utenti.length} contas · ${premiadas.size} já pegaram crédito do dia (= @ ligado)`);
+      console.log(`hoje (UTC): ${mov.filter(m => dia(m.em) === hoje && ['giornaliero', 'serie'].includes(m.tipo)).length} prêmios do dia`);
+      for (const [t, v] of Object.entries(porTipo)) console.log(`  ${t.padEnd(12)} ${String(v.n).padStart(6)} movimentos · ${v.soma > 0 ? '+' : ''}${v.soma} 💰`);
+      const saldo = mov.reduce((s, m) => s + m.delta, 0);
+      console.log(`créditos em circulação: ${saldo} 💰 (= £${(saldo / 100).toFixed(2)})`);
+      if (ftp.baixar(`${ftp.priv}dati/conti/ricariche.log`, path.join(local, 'ricariche.log'))) console.log(`recargas (Stripe):\n${fs.readFileSync(path.join(local, 'ricariche.log'), 'utf8').trim().split('\n').slice(-10).join('\n')}`);
       break;
     }
     case 'commerci': {

@@ -1,0 +1,79 @@
+{
+  "euro": 100,
+  "giornaliero": { "base": 2, "serie": [[30, 100], [7, 20]] },
+  "decora": { "regalo_con_casa": 490, "regalo": 990 },
+  "tesori": { "citta": 2, "negozio": 3, "max": 5, "negozi": "tutti" },
+  "ricarica_aperta": true,
+  "limite_mese_euro": 150,
+  "email_giorno_max": 3000,
+  "pacchi": [
+    { "id": "p5", "prezzo": 4.99, "crediti": 500, "bonus": 0 },
+    { "id": "p10", "prezzo": 9.99, "crediti": 1100, "bonus": 10, "etichetta": "most popular" },
+    { "id": "p20", "prezzo": 19.99, "crediti": 2400, "bonus": 20 },
+    { "id": "p30", "prezzo": 29.99, "crediti": 3750, "bonus": 25 },
+    { "id": "p60", "prezzo": 59.99, "crediti": 7800, "bonus": 30 },
+    { "id": "p100", "prezzo": 99.99, "crediti": 15000, "bonus": 50, "etichetta": "best value" }
+  ],
+  "interni": {
+    "prezzo": 990,
+    "regalo": ["divano", "tavolo", "sedia", "letto", "pianta"],
+    "pavimenti": [["legno", "Wood", "#C8955C"], ["noce", "Walnut", "#7B5233"], ["piastrelle", "Tiles", "#E8E2D6"], ["marmo", "Marble", "#F3F1EC"], ["cotto", "Terracotta", "#C9714A"], ["moquette", "Carpet", "#7C8DB5"]],
+    "pareti": ["#FFF6E6", "#F5DDAE", "#F2C27B", "#E8836B", "#9ED1F2", "#A7D98B", "#C9A7F2", "#FFFFFF"]
+  },
+  "mobili": [
+    { "id": "divano", "icona": "🛋️", "nome": "Sofa", "prezzo": 0 },
+    { "id": "tavolo", "icona": "🍽️", "nome": "Table", "prezzo": 0 },
+    { "id": "sedia", "icona": "🪑", "nome": "Chair", "prezzo": 0 },
+    { "id": "letto", "icona": "🛏️", "nome": "Bed", "prezzo": 0 },
+    { "id": "pianta", "icona": "🪴", "nome": "Plant", "prezzo": 0 },
+    { "id": "tappeto", "icona": "🟥", "nome": "Rug", "prezzo": 20 },
+    { "id": "comodino", "icona": "🗄️", "nome": "Bedside table", "prezzo": 20 },
+    { "id": "quadro", "icona": "🖼️", "nome": "Picture", "prezzo": 20 },
+    { "id": "lampada", "icona": "💡", "nome": "Lamp", "prezzo": 25 },
+    { "id": "tavolino", "icona": "☕", "nome": "Coffee table", "prezzo": 25 },
+    { "id": "poltrona", "icona": "💺", "nome": "Armchair", "prezzo": 30 },
+    { "id": "orologio", "icona": "🕰️", "nome": "Grandfather clock", "prezzo": 30 },
+    { "id": "armadio", "icona": "🚪", "nome": "Wardrobe", "prezzo": 40 },
+    { "id": "libreria", "icona": "📚", "nome": "Bookcase", "prezzo": 40 },
+    { "id": "scrivania", "icona": "🖥️", "nome": "Desk with PC", "prezzo": 60 },
+    { "id": "tv", "icona": "📺", "nome": "TV", "prezzo": 60 },
+    { "id": "frigo", "icona": "🧊", "nome": "Fridge", "prezzo": 50 },
+    { "id": "chitarra", "icona": "🎸", "nome": "Guitar", "prezzo": 50 },
+    { "id": "cucina", "icona": "🍳", "nome": "Cooker", "prezzo": 90 },
+    { "id": "camino", "icona": "🔥", "nome": "Fireplace", "prezzo": 90 },
+    { "id": "acquario", "icona": "🐠", "nome": "Fish tank", "prezzo": 120 },
+    { "id": "pianoforte", "icona": "🎹", "nome": "Piano", "prezzo": 150 }
+  ],
+  "personaggio": [
+    { "id": "cappello", "icona": "🧢", "nome": "Cap", "prezzo": 50 },
+    { "id": "borsalino", "icona": "🎩", "nome": "Top hat", "prezzo": 90 },
+    { "id": "occhiali", "icona": "🕶️", "nome": "Sunglasses", "prezzo": 40 },
+    { "id": "tifoso", "icona": "⚽", "nome": "Football shirt in your team's colours", "prezzo": 90 },
+    { "id": "elegante", "icona": "🤵", "nome": "Smart suit", "prezzo": 120 },
+    { "id": "carnevale", "icona": "🎭", "nome": "Fancy dress costume", "prezzo": 150 },
+    { "id": "natale", "icona": "🎅", "nome": "Christmas outfit", "prezzo": 120 },
+    { "id": "cane", "icona": "🐕", "nome": "Puppy that follows you", "prezzo": 290 },
+    { "id": "aura", "icona": "✨", "nome": "Trail of stars", "prezzo": 190 }
+  ],
+  "pacchetti": [
+    { "id": "soggiorno", "icona": "🛋️", "nome": "Living Room Pack", "mobili": ["tappeto", "lampada", "tavolino", "poltrona", "tv", "quadro"], "prezzo": 139 },
+    { "id": "cucina", "icona": "🍳", "nome": "Kitchen Pack", "mobili": ["frigo", "cucina", "lampada"], "prezzo": 129 },
+    { "id": "camera", "icona": "🛏️", "nome": "Bedroom Pack", "mobili": ["armadio", "comodino", "tappeto", "lampada", "quadro"], "prezzo": 99 },
+    { "id": "studio", "icona": "🖥️", "nome": "Study Pack", "mobili": ["scrivania", "libreria", "chitarra", "lampada"], "prezzo": 135 },
+    { "id": "lusso", "icona": "💎", "nome": "Luxury Pack", "mobili": ["camino", "acquario", "pianoforte", "orologio"], "prezzo": 299 }
+  ],
+  "catalogo": [
+    { "id": "interni", "icona": "🏠", "nome": "Your home", "prezzo": 990, "nota": "decorate it inside and out, forever · 5 pieces of furniture free", "vendita": true },
+    { "id": "villa", "icona": "🏡", "nome": "Villa", "prezzo": 2990, "nota": "your house becomes a villa with a pool, forever", "vendita": true },
+    { "id": "castello", "icona": "🏰", "nome": "Castle", "prezzo": 14990, "nota": "only 1 per county: first come, first served, forever", "vendita": true },
+    { "id": "bici", "icona": "🚲", "nome": "Bike", "prezzo": 190, "nota": "2× faster · takes the road to nearby towns", "vendita": true, "velocita": 2 },
+    { "id": "vespa", "icona": "🛵", "nome": "Scooter", "prezzo": 490, "nota": "3× faster · takes the road to nearby towns", "vendita": true, "velocita": 3 },
+    { "id": "auto", "icona": "🚗", "nome": "Hatchback", "prezzo": 990, "nota": "3.5× faster · takes the road to nearby towns", "vendita": true, "velocita": 3.5 },
+    { "id": "sportiva", "icona": "🏎️", "nome": "Red sports car", "prezzo": 2990, "nota": "4× faster · takes the road to nearby towns", "vendita": true, "velocita": 4 },
+    { "id": "yacht", "icona": "🛥️", "nome": "Yacht", "prezzo": 4990, "nota": "seaside towns only" },
+    { "id": "elicottero", "icona": "🚁", "nome": "Helicopter", "prezzo": 9990, "nota": "flies to any town" },
+    { "id": "fuochi", "icona": "🎆", "nome": "Fireworks on your house (24 h)", "prezzo": 150 },
+    { "id": "festa", "icona": "🎉", "nome": "House party (24 h)", "prezzo": 190 },
+    { "id": "vetrina", "icona": "⭐", "nome": "Featured house (24 h)", "prezzo": 290 }
+  ]
+}

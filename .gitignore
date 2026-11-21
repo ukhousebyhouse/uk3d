@@ -34,3 +34,11 @@ video/audio/
 # dados de demonstração (só testes locais, nunca no site)
 sito/data/demo/
 sito/data/loghi/
+
+# respostas do Guess the Town e conta do dono: só no servidor (privato/), nunca no GitHub
+privato/enigmi.json
+privato/proprietario.json
+# backup diário das contas (tem e-mails)
+backup/
+# gerado no servidor pelo api/conto.php (villa/castelo/decoração)
+sito/data/proprieta.json

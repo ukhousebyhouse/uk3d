@@ -7,6 +7,10 @@ import { Etichette } from './etichette.js';
 import { UI } from './ui.js';
 import { Festa } from './festa.js';
 import { Decori } from './decori.js';
+import { Missioni } from './missioni.js';
+import { Conto } from './conto.js';
+import { Passeggio } from './passeggio.js';
+import { Interni } from './interni.js';
 
 const VERSAO = document.querySelector('meta[name="versione"]')?.content ?? 'dev';
 const DEMO = new URLSearchParams(location.search).has('demo');   // ?demo=1: mapa de demonstração
@@ -44,6 +48,12 @@ async function iniciar() {
   ui = new UI(D, mappa, citta, et, festa, decori);
   decori.ui = ui;
   decori.iniciar();
+  ui.missioni = new Missioni(D, ui);
+  if (location.hash === '#giochi') ui.missioni.home();   // link da bio / do "Challenge a mate"
+  if (!DEMO) ui.conto = new Conto(D, ui);                // conta + créditos (abre sozinha com #conto)
+  if (!DEMO) ui.passeggio = new Passeggio(D, mappa, citta, ui);   // andar a pé pela cidade (grátis com conta)
+  if (!DEMO) ui.interni = new Interni(D, ui);                     // casa com interior (loja de créditos)
+  else document.getElementById('mio-conto').hidden = true;
   mappa.aoClique = (x, y) => {
     const rotulo = et.emPonto(x, y);   // toque em cima de um rótulo (@, cidade, região, presidente)
     if (rotulo) return abrirRotulo(rotulo);

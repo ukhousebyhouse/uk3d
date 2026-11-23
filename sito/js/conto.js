@@ -11,7 +11,7 @@ const libra = v => `£${Number(v).toFixed(2)}`;
 const ler = k => { try { return localStorage.getItem(k); } catch { return null; } };
 const gravar = (k, v) => { try { localStorage.setItem(k, v); } catch { /* sem storage */ } };
 const NOVITA = 'conto-v1';
-const TIPI = { giornaliero: '🎁 Daily credits', serie: '🔥 Streak bonus', ricarica: '💳 Top-up', rimborso: '↩️ Refund', regalo: '🎁 Gift', acquisto: '🛍️ Purchase', tesoro: '🧭 Treasure found', regalo_deco: '🎁 Decoration gift' };
+const TIPI = { giornaliero: '🎁 Daily credits', serie: '🔥 Streak bonus', ricarica: '💳 Top-up', bonus_ricarica: '🎁 First top-up bonus', rimborso: '↩️ Refund', regalo: '🎁 Gift', acquisto: '🛍️ Purchase', tesoro: '🧭 Treasure found', regalo_deco: '🎁 Decoration gift' };
 
 export class Conto {
   constructor(D, ui) {
@@ -152,7 +152,24 @@ export class Conto {
       const pieno = (this.cfg?.mobili ?? []).filter(m => x.mobili.includes(m.id)).reduce((s, m) => s + m.prezzo, 0), tutti = x.mobili.every(m => own.has(`mob_${m}`));
       return `<div class="ct-item ora${tutti ? ' tua' : ''}"><span>${x.icona}</span><b>${esc(x.nome)}</b><em>${tutti ? '✅ Yours' : `<s>${n(pieno)}</s> ${n(x.prezzo)} 💰`}</em><small>${x.mobili.length} pieces of furniture · for your home with an inside</small>${tutti ? '' : `<button data-ct="compra" data-item="pac_${x.id}">Buy</button>`}</div>`;
     }).join('');
-    const pacchi = p.ricarica && !p.proprietario ? `<h3 class="ct-h" id="ct-ricarica">💳 Top up credits</h3><div class="ct-pacchi">${(this.cfg?.pacchi ?? []).map(x => `<button data-ct="ricarica" data-pacco="${x.id}">${x.etichetta ? `<i>${esc(x.etichetta)}</i>` : ''}<b>${n(x.crediti)} 💰</b><span>${libra(x.prezzo)}</span>${x.bonus ? `<small>+${x.bonus}%</small>` : ''}</button>`).join('')}</div><p class="ct-mini">Secure checkout by Stripe · card, Apple Pay, Google Pay · VAT included</p>` : '';
+    // primeira recarga: créditos em dobro (até o teto) — mostra quanto vem de presente em cada pacote
+    const pr = p.prima_ricarica ? this.cfg?.prima_ricarica : null, regalo = x => (pr ? Math.min(pr.max ?? Infinity, Math.round(x.crediti * pr.bonus / 100)) : 0);
+    const banner = pr ? `<div class="ct-prima">🎁 <b>First top-up: DOUBLE credits</b><small>First time only · up to +${n(pr.max)} 💰 free</small></div>` : '';
+    // o que cada pacote compra (com o bônus): até 3 coisas que a pessoa ainda não tem, das mais caras para as mais baratas
+    const VALE = [['castello', '🏰', 'Castle'], ['villa', '🏡', 'Villa'], ['interni', '🏠', 'Your home'], ['sportiva', '🏎️', 'Sports car'], ['auto', '🚗', 'Car'], ['vespa', '🛵', 'Scooter'], ['bici', '🚲', 'Bike']];
+    const prezzoDi = id => this.cfg?.catalogo?.find(c => c.id === id)?.prezzo ?? Infinity;
+    const vale = tot => { const out = []; let resto = tot + (p.saldo ?? 0); for (const [id, ic, nome] of VALE) { if (own.has(id) || out.length >= 3) continue; const pz = prezzoDi(id); if (pz <= resto) { out.push(`${ic} ${nome}`); resto -= pz; } } return out.join(' + '); };
+    // veio de "you need X 💰": destaca o menor pacote que resolve aquela compra
+    const serve = this._serve, pacchiOk = this.cfg?.pacchi ?? [];
+    const giusto = serve ? pacchiOk.find(x => x.crediti + regalo(x) >= serve.manca) : null;
+    const tastoPacco = x => {
+      const tot = x.crediti + regalo(x), cosa = giusto === x ? `✅ Enough for: ${esc(serve.nome)}` : vale(tot);
+      return `<button data-ct="ricarica" data-pacco="${x.id}" class="${giusto === x ? 'giusto' : ''}">${x.etichetta ? `<i>${esc(x.etichetta)}</i>` : ''}<b>${n(x.crediti)} 💰</b>${regalo(x) ? `<em class="dono">+${n(regalo(x))} 🎁</em>` : ''}<span>${libra(x.prezzo)}</span>${x.bonus ? `<small>+${x.bonus}%</small>` : ''}${cosa ? `<u>= ${cosa}</u>` : ''}</button>`;
+    };
+    const fiducia = `<div class="ct-fiducia">🔒 Secure checkout by Stripe · 💳 Card, Apple Pay, Google Pay<br>⚡ Credits arrive straight away · 🧾 Receipt by email · VAT included</div>
+      ${p.conta ? `<label class="ct-grazie"><input type="checkbox" id="ct-grazie"${this._grazie ? ' checked' : ''}> 🙏 Thank me in your reel with my @${esc(p.conta)}</label>` : ''}
+      <p class="ct-mini">Under 18? Ask a parent or carer first. Credits can't buy points, votes or roles.</p>`;
+    const pacchi = p.ricarica && !p.proprietario ? `<h3 class="ct-h" id="ct-ricarica">💳 Top up credits</h3>${banner}${giusto ? `<div class="ct-serve">You need <b>${n(serve.manca)} 💰</b> for ${esc(serve.nome)}</div>` : ''}<div class="ct-pacchi">${pacchiOk.map(tastoPacco).join('')}</div>${fiducia}` : '';
     const mov = (p.ultimi ?? []).map(m => `<li><span>${TIPI[m.tipo] ?? (TIPI[String(m.tipo).replace('prova_', '')] ? `🛠️ ${TIPI[m.tipo.replace('prova_', '')]}` : esc(m.tipo))}</span><small>${new Date(m.em).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' })}</small><b class="${m.delta < 0 ? 'neg' : ''}">${m.delta > 0 ? '+' : ''}${n(m.delta)}</b></li>`).join('');
     return `<h2>💰 Your account</h2><div class="sub">${esc(p.email)}</div>
       <div class="ct-saldo"><b>${n(p.saldo)}</b><span>💰 credits</span></div>
@@ -175,18 +192,23 @@ export class Conto {
     return { regione: cod, chi: x?.conta && x.conta !== this.p.conta ? x.conta : null };
   }
   // abre a conta já na parte da recarga (pílula do mapa, "you need N 💰")
-  apriRicarica(msg = '') {
+  apriRicarica(msg = '', da = 'altro', serve = null) {
+    this._da = da; this._serve = serve; this.traccia('apre', '', da);
     if (!this.p) { this.ui.aviso(msg || '💰 Sign in to your account to top up your credits.'); this.apri(); return; }
     this.apri();
     setTimeout(() => $('#ct-ricarica')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
     if (msg) this.ui.aviso(msg);
+  }
+  // contador do funil da recarga (api/conto.php "traccia"): nunca atrapalha o jogo se falhar
+  traccia(ev, pacco = '', da = '') {
+    try { fetch('api/conto.php', { method: 'POST', credentials: 'same-origin', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ a: 'traccia', ev, pacco, da }) }).catch(() => {}); } catch { /* sem rede */ }
   }
   // compra com créditos (todas as lojas passam por aqui): confirma, compra e, se faltar saldo, oferece a recarga. true = comprou
   async compra(item, nome, prezzo, dopo = '') {
     if (!this.p) { this.ui.aviso('Sign in to your account to buy.'); this.apri(); return false; }
     const manca = prezzo - (this.p.saldo ?? 0);
     if (manca > 0) {
-      if (this.p.ricarica && confirm(`${nome} costs ${n(prezzo)} 💰: you need ${n(manca)} 💰 more.\n\nWould you like to top up your credits?`)) this.apriRicarica();
+      if (this.p.ricarica && confirm(`${nome} costs ${n(prezzo)} 💰: you need ${n(manca)} 💰 more.\n\nWould you like to top up your credits?`)) this.apriRicarica('', `manca_${String(item).slice(0, 8)}`, { nome, manca });
       else if (!this.p.ricarica) this.ui.aviso(`You need ${n(manca)} 💰 more for ${nome}.`);
       return false;
     }
@@ -267,9 +289,12 @@ export class Conto {
       }
       else if (a === 'ricarica') {
         // consentimento para entrega imediata (Consumer Contracts Regulations): sem ele não abre o pagamento
-        if (!confirm('Your credits arrive in your account straight away.\n\nBy carrying on you ask for them to be delivered now and you understand that once you get them you lose your 14-day right to cancel. If the payment is refunded, the credits are taken back.\n\nUnder 18? Ask a parent or carer first.\n\nGo to payment?')) return;
+        const pacco = t.dataset.pacco, da = this._da ?? 'conto';
+        this.traccia('pacco', pacco, da);
+        if (!confirm('Your credits arrive in your account straight away.\n\nBy carrying on you ask for them to be delivered now and you understand that once you get them you lose your 14-day right to cancel. If the payment is refunded, the credits are taken back.\n\nUnder 18? Ask a parent or carer first.\n\nGo to payment?')) { this.traccia('annulla', pacco, da); return; }
+        const grazie = !!$('#ct-grazie')?.checked; this._grazie = grazie;
         t.disabled = true;
-        try { const j = await this.api('ricarica', { pacco: t.dataset.pacco }); location.href = j.url; } finally { t.disabled = false; }
+        try { const j = await this.api('ricarica', { pacco, da, grazie }); location.href = j.url; } finally { t.disabled = false; }
       }
       else if (a === 'esci_tutti') {
         if (!confirm('Sign out of your account on every phone and computer? To get back in you\'ll need a new code by email.')) return;

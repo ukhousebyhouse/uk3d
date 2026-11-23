@@ -4,6 +4,7 @@
   "decora": { "regalo_con_casa": 490, "regalo": 990 },
   "tesori": { "citta": 2, "negozio": 3, "max": 5, "negozi": "tutti" },
   "ricarica_aperta": true,
+  "prima_ricarica": { "bonus": 100, "max": 1100 },
   "limite_mese_euro": 150,
   "email_giorno_max": 3000,
   "pacchi": [
@@ -16,7 +17,7 @@
   ],
   "interni": {
     "prezzo": 990,
-    "regalo": ["divano", "tavolo", "sedia", "letto", "pianta"],
+    "regalo": ["divano", "tavolo", "sedia", "letto", "pianta", "wc", "lavandino"],
     "pavimenti": [["legno", "Wood", "#C8955C"], ["noce", "Walnut", "#7B5233"], ["piastrelle", "Tiles", "#E8E2D6"], ["marmo", "Marble", "#F3F1EC"], ["cotto", "Terracotta", "#C9714A"], ["moquette", "Carpet", "#7C8DB5"]],
     "pareti": ["#FFF6E6", "#F5DDAE", "#F2C27B", "#E8836B", "#9ED1F2", "#A7D98B", "#C9A7F2", "#FFFFFF"]
   },
@@ -26,6 +27,10 @@
     { "id": "sedia", "icona": "🪑", "nome": "Chair", "prezzo": 0 },
     { "id": "letto", "icona": "🛏️", "nome": "Bed", "prezzo": 0 },
     { "id": "pianta", "icona": "🪴", "nome": "Plant", "prezzo": 0 },
+    { "id": "wc", "icona": "🚽", "nome": "Toilet", "prezzo": 0 },
+    { "id": "lavandino", "icona": "🚰", "nome": "Sink", "prezzo": 0 },
+    { "id": "mensola", "icona": "📚", "nome": "Wall shelf", "prezzo": 20 },
+    { "id": "specchio", "icona": "🪞", "nome": "Wall mirror", "prezzo": 25 },
     { "id": "tappeto", "icona": "🟥", "nome": "Rug", "prezzo": 20 },
     { "id": "comodino", "icona": "🗄️", "nome": "Bedside table", "prezzo": 20 },
     { "id": "quadro", "icona": "🖼️", "nome": "Picture", "prezzo": 20 },
@@ -39,6 +44,8 @@
     { "id": "tv", "icona": "📺", "nome": "TV", "prezzo": 60 },
     { "id": "frigo", "icona": "🧊", "nome": "Fridge", "prezzo": 50 },
     { "id": "chitarra", "icona": "🎸", "nome": "Guitar", "prezzo": 50 },
+    { "id": "doccia", "icona": "🚿", "nome": "Shower", "prezzo": 50 },
+    { "id": "vasca", "icona": "🛁", "nome": "Bath", "prezzo": 60 },
     { "id": "cucina", "icona": "🍳", "nome": "Cooker", "prezzo": 90 },
     { "id": "camino", "icona": "🔥", "nome": "Fireplace", "prezzo": 90 },
     { "id": "acquario", "icona": "🐠", "nome": "Fish tank", "prezzo": 120 },
@@ -60,10 +67,11 @@
     { "id": "cucina", "icona": "🍳", "nome": "Kitchen Pack", "mobili": ["frigo", "cucina", "lampada"], "prezzo": 129 },
     { "id": "camera", "icona": "🛏️", "nome": "Bedroom Pack", "mobili": ["armadio", "comodino", "tappeto", "lampada", "quadro"], "prezzo": 99 },
     { "id": "studio", "icona": "🖥️", "nome": "Study Pack", "mobili": ["scrivania", "libreria", "chitarra", "lampada"], "prezzo": 135 },
-    { "id": "lusso", "icona": "💎", "nome": "Luxury Pack", "mobili": ["camino", "acquario", "pianoforte", "orologio"], "prezzo": 299 }
+    { "id": "lusso", "icona": "💎", "nome": "Luxury Pack", "mobili": ["camino", "acquario", "pianoforte", "orologio"], "prezzo": 299 },
+    { "id": "bagno", "icona": "🛁", "nome": "Bathroom Pack", "mobili": ["vasca", "doccia", "specchio", "mensola"], "prezzo": 119 }
   ],
   "catalogo": [
-    { "id": "interni", "icona": "🏠", "nome": "Your home", "prezzo": 990, "nota": "decorate it inside and out, forever · 5 pieces of furniture free", "vendita": true },
+    { "id": "interni", "icona": "🏠", "nome": "Your home", "prezzo": 990, "nota": "5 rooms to furnish inside and the front outside, forever · 10 pieces of furniture free", "vendita": true },
     { "id": "villa", "icona": "🏡", "nome": "Villa", "prezzo": 2990, "nota": "your house becomes a villa with a pool, forever", "vendita": true },
     { "id": "castello", "icona": "🏰", "nome": "Castle", "prezzo": 14990, "nota": "only 1 per county: first come, first served, forever", "vendita": true },
     { "id": "bici", "icona": "🚲", "nome": "Bike", "prezzo": 190, "nota": "2× faster · takes the road to nearby towns", "vendita": true, "velocita": 2 },

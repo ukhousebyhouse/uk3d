@@ -68,6 +68,7 @@ function profilo(array $u): array {
         'pg' => $u['pg'] ?? null,
         'oggetti' => array_values((array)($u['oggetti'] ?? [])),
         'ricarica' => (bool)($cfg['ricarica_aperta'] ?? false),
+        'prima_ricarica' => !empty($cfg['ricarica_aperta']) && empty($u['proprietario']) && conti_prima_ricarica(conti_id((string)$u['email'])),
         'proprietario' => !empty($u['proprietario']),
         'deco_prova' => !empty($u['proprietario']) ? (object)($u['deco_prova'] ?? []) : null,
         'tesori' => (($u['tesori']['giorno'] ?? '') === $oggi) ? array_values((array)$u['tesori']['presi']) : [],
@@ -86,6 +87,13 @@ function conferma_attesa(string $id): ?array {
 }
 
 // ---------- sem sessão ----------
+// contador do funil da recarga: apre (abriu a recarga; da = de onde) · pacco (tocou num pacote) · annulla (desistiu no aviso)
+if ($acao === 'traccia') {
+    if (!conti_limite("traccia|$ip", 120, 3600)) resposta(['ok' => true]);
+    $ev = (string)($d['ev'] ?? '');
+    if (in_array($ev, ['apre', 'pacco', 'annulla'], true)) conti_traccia($ev, (string)($d['pacco'] ?? ''), (string)($d['da'] ?? ''), conti_sessione_id() ?? '');
+    resposta(['ok' => true]);
+}
 if ($acao === 'codice') {
     $email = strtolower(trim((string)($d['email'] ?? '')));
     if (!conti_email_ok($email)) erro('Please type a valid email.');
@@ -325,6 +333,10 @@ if ($acao === 'ricarica') {
     ]]);
     $sessao = json_decode((string)@file_get_contents('https://api.stripe.com/v1/checkout/sessions', false, $ctx), true) ?: [];
     if (empty($sessao['url'])) { error_log('ricarica stripe: ' . ($sessao['error']['message'] ?? 'sem resposta')); erro('We couldn’t open the payment page. Please try again in a minute.', 502); }
+    conti_traccia('checkout', (string)$p['id'], (string)($d['da'] ?? ''), $id);   // foi para a Stripe
+    // consentimento para o agradecimento no reel (só com o quadradinho marcado; nunca marcado por padrão)
+    $gr = !empty($d['grazie']);
+    conti_modifica($id, function (array &$u) use ($gr, $p) { if ($gr) $u['grazie'] = ['em' => gmdate('c'), 'pacco' => (string)$p['id']]; else unset($u['grazie']); return $u; });
     resposta(['url' => $sessao['url']]);
 }
 

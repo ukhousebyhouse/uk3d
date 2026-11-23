@@ -191,12 +191,45 @@ function conti_locale(): bool {
     return PHP_SAPI === 'cli' || (in_array((string)($_SERVER['REMOTE_ADDR'] ?? ''), ['127.0.0.1', '::1'], true) && preg_match('/^localhost(:\d+)?$/', (string)($_SERVER['HTTP_HOST'] ?? '')));
 }
 // registro de envios (diagnóstico, api/diag.php): hora, ok/erro, domínio do destino (sem o endereço)
+// nos picos o Hostinger devolve "451 Ratelimit hostinger_out_ratelimit". Reserva: Brevo (API HTTP, grátis 300/dia,
+// chave BREVO_API_KEY no privato/config.php). Hostinger bloqueou → 10 min direto no Brevo (não perde tempo tentando).
 function conti_smtp(string $para, string $assunto, string $corpo): array {
-    $r = conti_smtp_invia($para, $assunto, $corpo);
+    $pausa = conti_dir() . '/smtp-pausa';
+    $brevo = defined('BREVO_API_KEY') && BREVO_API_KEY !== '';
+    $via = 'ok';
+    if ($brevo && (int)@file_get_contents($pausa) > time()) { $r = [false, 'hostinger em pausa']; }
+    else {
+        $r = conti_smtp_invia($para, $assunto, $corpo);
+        if (!$r[0] && stripos((string)$r[1], 'ratelimit') !== false) @file_put_contents($pausa, (string)(time() + 600), LOCK_EX);
+    }
+    if (!$r[0] && $brevo && !conti_locale()) {
+        $erroH = $r[1];
+        $r = conti_brevo_invia($para, $assunto, $corpo);
+        $via = 'ok-brevo';
+        if (!$r[0]) $r[1] = "brevo: {$r[1]} | hostinger: $erroH";
+    }
     $dom = strtolower(substr(strrchr($para, '@') ?: '@?', 1));
     $tipo = str_starts_with($assunto, 'Your code') ? 'codice' : (str_starts_with($assunto, 'New sign-in') ? 'accesso' : 'altro');
-    @file_put_contents(conti_dir() . '/email.log', gmdate('c') . " $tipo " . ($r[0] ? 'ok' : 'ERRO') . " $dom" . ($r[0] ? '' : ' ' . substr(str_replace(["\r", "\n"], ' ', (string)$r[1]), 0, 200)) . "\n", FILE_APPEND | LOCK_EX);
+    @file_put_contents(conti_dir() . '/email.log', gmdate('c') . " $tipo " . ($r[0] ? $via : 'ERRO') . " $dom" . ($r[0] ? '' : ' ' . substr(str_replace(["\r", "\n"], ' ', (string)$r[1]), 0, 200)) . "\n", FILE_APPEND | LOCK_EX);
     return $r;
+}
+function conti_brevo_invia(string $para, string $assunto, string $corpo): array {
+    $json = json_encode([
+        'sender' => ['name' => 'UK House by House', 'email' => 'privacy@ukhousebyhouse.com'],
+        'to' => [['email' => $para]], 'subject' => $assunto, 'textContent' => $corpo,
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $cab = ['Content-Type: application/json', 'Accept: application/json', 'api-key: ' . BREVO_API_KEY];
+    if (function_exists('curl_init')) {
+        $ch = curl_init('https://api.brevo.com/v3/smtp/email');
+        curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $json, CURLOPT_HTTPHEADER => $cab, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20]);
+        $resp = (string)curl_exec($ch); $st = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE); $ce = curl_error($ch); curl_close($ch);
+        if ($st === 0) return [false, "conexão: $ce"];
+    } else {
+        $resp = (string)@file_get_contents('https://api.brevo.com/v3/smtp/email', false, stream_context_create(['http' => ['method' => 'POST', 'header' => implode("\r\n", $cab), 'content' => $json, 'timeout' => 20, 'ignore_errors' => true]]));
+        $st = preg_match('#^HTTP/\S+ (\d+)#', (string)($http_response_header[0] ?? ''), $m) ? (int)$m[1] : 0;
+        if ($st === 0) return [false, 'conexão falhou'];
+    }
+    return $st >= 200 && $st < 300 ? [true, $resp] : [false, "$st " . substr($resp, 0, 150)];
 }
 function conti_smtp_invia(string $para, string $assunto, string $corpo): array {
     if (conti_locale()) { file_put_contents(conti_dir() . '/email-dev.log', "=== " . gmdate('c') . " para $para | $assunto\n$corpo\n\n", FILE_APPEND | LOCK_EX); return [true, 'dev']; }
@@ -407,11 +440,20 @@ function conti_ricarica(string $email, string $idConta, string $pacco, string $t
     $t = $T[$trans] ?? null;
     $esito = 'nulla'; $ricevuta = null;
     if ($stato === 'pagato' && !$t && $id !== '') {
-        $u = conti_modifica($id, function (array &$u) use ($p, $trans) { conti_movimento($u, (int)$p['crediti'], 'ricarica', $trans); return $u; }, conti_email_ok($email) ? $email : null);
+        // primeira recarga da conta = créditos em dobro (crediti.json prima_ricarica: bonus %, teto em 💰)
+        $pr = (array)(conti_cfg()['prima_ricarica'] ?? []);
+        $base = (int)$p['crediti'];
+        $prima = !empty($pr['bonus']) && !array_filter($T, fn($x) => ($x['id'] ?? '') === $id);
+        $bonus = $prima ? min((int)($pr['max'] ?? PHP_INT_MAX), (int)round($base * (int)$pr['bonus'] / 100)) : 0;
+        $u = conti_modifica($id, function (array &$u) use ($base, $bonus, $trans) {
+            conti_movimento($u, $base, 'ricarica', $trans);
+            if ($bonus > 0) conti_movimento($u, $bonus, 'bonus_ricarica', $trans);
+            return $u;
+        }, conti_email_ok($email) ? $email : null);
         if ($u) {
-            $T[$trans] = ['id' => $id, 'crediti' => (int)$p['crediti'], 'euro' => $valore, 'stato' => 'accreditato', 'em' => gmdate('c')];
-            $esito = 'accreditato';
-            $ricevuta = [$u, (int)$p['crediti'], 'Top-up received, thank you! 🎉', $trans];
+            $T[$trans] = ['id' => $id, 'crediti' => $base + $bonus, 'bonus' => $bonus, 'euro' => $valore, 'stato' => 'accreditato', 'em' => gmdate('c')];
+            $esito = 'accreditato' . ($bonus ? " +$bonus bonus" : '');
+            $ricevuta = [$u, $base + $bonus, 'Top-up received, thank you! 🎉' . ($bonus ? "\n🎁 First top-up: +" . conti_num($bonus) . ' free credits (double credits).' : ''), $trans];
         } else $esito = 'conta inesistente';
     } elseif ($stato === 'rimborsato' && $t && $t['stato'] === 'accreditato') {
         $u = conti_modifica($t['id'], function (array &$u) use ($t, $trans) { conti_movimento($u, -(int)$t['crediti'], 'rimborso', $trans); return $u; });
@@ -436,6 +478,18 @@ function conti_ricevuta(array $u, int $delta, string $titolo, string $rif = '', 
         . "\nAll your transactions are in your account: https://ukhousebyhouse.com/#conto\n"
         . "Questions about this? Just reply to this email.\n\nUK House by House\nhttps://ukhousebyhouse.com";
     return conti_smtp((string)$u['email'], $assunto ?? (($delta >= 0 ? 'Receipt: ' : 'Refund: ') . $fmt($delta) . ' credits'), $corpo);
+}
+// a conta ainda não recarregou nunca? (bônus da primeira recarga)
+function conti_prima_ricarica(string $id): bool {
+    if (empty(conti_cfg()['prima_ricarica']['bonus'])) return false;
+    $T = json_decode((string)@file_get_contents(conti_dir() . '/transazioni.json'), true) ?: [];
+    foreach ($T as $t) if (($t['id'] ?? '') === $id) return false;
+    return true;
+}
+// contador do funil da recarga (sem e-mail): conti/ricarica.log = hora evento pacote origem conta-curta
+function conti_traccia(string $ev, string $pacco, string $da, string $id): void {
+    $limpa = fn(string $s, int $n) => substr(preg_replace('/[^a-z0-9_]/', '', strtolower($s)), 0, $n) ?: '-';
+    @file_put_contents(conti_dir() . '/ricarica.log', gmdate('c') . ' ' . $limpa($ev, 12) . ' ' . $limpa($pacco, 6) . ' ' . $limpa($da, 14) . ' ' . ($id !== '' ? substr($id, 0, 8) : '-') . "\n", FILE_APPEND | LOCK_EX);
 }
 // libras já recarregadas nos últimos 30 dias (limite mensal, crediti.json limite_mese_euro)
 function conti_euro_mese(string $id): float {

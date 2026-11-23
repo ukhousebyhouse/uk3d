@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<base href="../">
+<title>Record reel "Nobody owns a castle yet" · UK House by House</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=block" rel="stylesheet">
+<link rel="stylesheet" href="video/reel.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }</script>
+<style>
+  #titolo { left: 30px; right: 30px; top: 250px; text-align: center; font-size: 110px; line-height: 1.04; -webkit-text-stroke-width: 21px; }
+  #tags .tg { position: absolute; transform: translate(-50%, -100%); background: #fff; border: 5px solid var(--ink); border-radius: 99px; padding: 8px 26px 11px; font-size: 44px; font-weight: 900; color: var(--ink); white-space: nowrap; box-shadow: 0 6px 0 rgba(0,0,0,.25); text-align: center; }
+  #tags .tg.oro { background: linear-gradient(90deg, #FFE08A, #FFC93C, #FFE08A); }
+  #tags .tg small { display: block; font-size: 26px; color: #7A2E00; }
+  .pan { position: absolute; left: 60px; right: 60px; background: #fff; border: 8px solid var(--ink); border-radius: 40px; padding: 26px 30px 30px; box-shadow: 0 16px 0 rgba(0,0,0,.3); opacity: 0; color: var(--ink); }
+  .pan h3 { margin: 0 0 10px; font-size: 56px; font-weight: 900; text-align: center; }
+  .pan .sub { font-size: 32px; font-weight: 800; color: #5B6475; text-align: center; margin: -4px 0 16px; }
+  #gratis { top: 240px; }
+  #gratis .giorni { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+  #gratis .giorni div { aspect-ratio: 1; border: 6px solid var(--ink); border-radius: 22px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 26px; font-weight: 900; background: #F1F3F6; }
+  #gratis .giorni div b { font-size: 34px; }
+  #gratis .giorni div.on { background: #D9F7E5; }
+  #gratis .giorni div.fuoco { background: var(--giallo); }
+  #gratis .saldo { margin-top: 20px; text-align: center; font-size: 96px; font-weight: 900; background: linear-gradient(135deg, #FFF1C9, #FFE08A); border: 6px solid var(--ink); border-radius: 30px; padding: 6px; }
+  #gratis .bonus { display: flex; gap: 16px; margin-top: 18px; }
+  #gratis .bonus div { flex: 1; border: 6px solid var(--ink); border-radius: 26px; padding: 12px; text-align: center; font-size: 40px; font-weight: 900; background: #FFE9D6; opacity: 0.25; }
+  #gratis .bonus div.on { opacity: 1; background: var(--giallo); }
+  #pacchi { top: 230px; }
+  #pacchi .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; margin-top: 10px; }
+  #pacchi .pk { position: relative; border: 7px solid var(--ink); border-radius: 30px; background: #fff; padding: 22px 10px 16px; text-align: center; opacity: 0; }
+  #pacchi .pk b { display: block; font-size: 60px; font-weight: 900; }
+  #pacchi .pk span { display: block; font-size: 40px; font-weight: 800; color: #5B6475; }
+  #pacchi .pk small { display: inline-block; margin-top: 8px; background: var(--verde); color: #fff; font-size: 34px; font-weight: 900; border-radius: 99px; padding: 2px 18px; border: 4px solid var(--ink); }
+  #pacchi .pk i { position: absolute; top: -26px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-style: normal; background: var(--rosso); color: #fff; font-size: 26px; font-weight: 900; border-radius: 99px; padding: 2px 16px; border: 4px solid var(--ink); }
+  #pacchi .pk.luce { background: #FFF6CC; box-shadow: 0 0 0 8px var(--giallo), 0 0 40px 14px rgba(255,201,60,.9); }
+  #pacchi .nota { margin-top: 18px; text-align: center; font-size: 30px; font-weight: 800; color: #5B6475; }
+  #pins i { position: absolute; left: 0; top: 0; font-size: 34px; font-style: normal; transform: translate(-50%, -50%); opacity: 0; }
+  #pins i.preso::after { content: '🔒'; position: absolute; left: 60%; top: -40%; font-size: 26px; }
+  #conta { left: 0; right: 0; top: 250px; text-align: center; }
+  #conta b { display: block; font-size: 190px; line-height: .95; -webkit-text-stroke-width: 30px; }
+  #conta > span { display: block; font-size: 64px; -webkit-text-stroke-width: 15px; }
+  #conta > span .g { display: inline-block; }
+  #monete i { position: absolute; left: 0; top: 0; font-size: 90px; font-style: normal; opacity: 0; }
+  #telefono { top: 220px; left: 140px; right: 140px; padding: 30px 34px 40px; border-radius: 60px; }
+  #telefono .passo { display: none; }
+  #telefono .passo.on { display: block; }
+  #telefono .n { display: inline-block; background: var(--giallo); border: 5px solid var(--ink); border-radius: 99px; padding: 2px 22px 6px; font-size: 34px; font-weight: 900; margin-bottom: 14px; }
+  #telefono .riga { border: 6px solid var(--ink); border-radius: 26px; padding: 16px 22px; font-size: 40px; font-weight: 900; margin-top: 16px; background: #fff; }
+  #telefono .riga.giallo { background: var(--giallo); text-align: center; }
+  #telefono .riga.verde { background: #D9F7E5; }
+  #telefono .riga.rosa { background: #C13584; color: #fff; text-align: center; }
+  #telefono .cod { letter-spacing: 18px; text-align: center; font-size: 70px; }
+  #telefono .bio { display: flex; align-items: center; gap: 22px; }
+  #telefono .bio i { width: 120px; height: 120px; border-radius: 50%; border: 6px solid var(--ink); background: radial-gradient(circle at 50% 40%, #FFE08A, #F2B33D); flex: none; font-style: normal; font-size: 64px; display: flex; align-items: center; justify-content: center; }
+  #telefono .link { color: #1E5AA8; text-decoration: underline; }
+  #tocco { position: absolute; left: 0; top: 0; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; background: rgba(255,255,255,.65); border: 8px solid var(--ink); opacity: 0; pointer-events: none; }
+  #pins i.oro { filter: drop-shadow(0 0 10px #FFC93C); }
+  #pins i.grigio { filter: grayscale(1); opacity: .6; }
+  #prezzo { left: 0; right: 0; top: 250px; text-align: center; }
+  #prezzo b { display: block; font-size: 170px; line-height: .95; -webkit-text-stroke-width: 28px; }
+  #prezzo span { display: block; font-size: 60px; -webkit-text-stroke-width: 14px; }
+  #velo { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="mappa"></canvas>
+<div id="vinheta"></div>
+<div id="scuro"></div>
+<div id="pins"></div>
+<div id="tags"></div>
+<div id="etichette"></div>
+<div id="titolo" class="pop forte">Yours<br><span class="g">forever</span> ♾️</div>
+<div id="gratis" class="pan"><h3>🎁 Free credits</h3><div class="sub">every day you sign in</div>
+  <div class="giorni"></div>
+  <div class="saldo">💰 <span class="n">0</span></div>
+  <div class="bonus"><div class="b7">🔥 Day 7 <br>+20</div><div class="b30">🔥 Day 30<br>+100</div></div></div>
+<div id="pacchi" class="pan"><h3>💳 Top up credits</h3><div class="sub">bigger pack, bigger bonus</div><div class="grid"></div><div class="nota">Secure checkout by Stripe · VAT included</div></div>
+<div id="conta" class="pop forte"><b class="g">152</b><span>castles · 1 per county</span></div>
+<div id="telefono" class="pan">
+  <div class="passo" data-p="1"><span class="n">1</span><div class="bio"><i>🏠</i><div><b style="font-size:44px">ukhousebyhouse</b><div style="font-size:30px;font-weight:800">Find your house on the map 🇬🇧</div><div class="link" style="font-size:34px;font-weight:900">🔗 ukhousebyhouse.com</div></div></div></div>
+  <div class="passo" data-p="2"><span class="n">2</span><div class="riga giallo" id="btn-signin">👤 Sign in</div></div>
+  <div class="passo" data-p="3"><span class="n">3</span><h3 style="text-align:left">💳 Top up credits</h3><div class="riga giallo" id="btn-top" style="font-size:44px">1,100 💰 · £9.99</div><div class="riga verde">🎁 +10% extra free</div><div class="riga" style="font-size:32px">Secure checkout by Stripe</div></div>
+</div>
+<div id="prezzo" class="pop forte"><b class="g">£9.90</b><span>once · forever</span></div>
+<div id="tocco"></div><div id="monete"></div>
+<div id="timbri"></div>
+<div id="sott" class="forte"></div>
+<div id="velo"></div>
+<div id="flash"></div>
+<script type="module" src="video/castelli.js"></script>
+</body>
+</html>

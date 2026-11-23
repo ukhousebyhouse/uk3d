@@ -13,14 +13,14 @@ const [roteiroArq, saida] = args;
 const audio = opt('--audio'), fps = +opt('--fps', 30), ate = opt('--ate') ? +opt('--ate') : null;
 const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const FFMPEG = path.join(RAIZ, '.tools', 'ffmpeg', 'bin', 'ffmpeg.exe');
-const PORTA = 9434, W = 1080, H = 1920;   // a Itália usa 9334: os dois podem gravar ao mesmo tempo
+const PORTA = +(process.env.CATTURA_PORTA ?? 9434), W = 1080, H = 1920;   // CATTURA_PORTA: outra captura em paralelo   // a Itália usa 9334: os dois podem gravar ao mesmo tempo
 const espera = ms => new Promise(ok => setTimeout(ok, ms));
 
 const perfil = fs.mkdtempSync(path.join(os.tmpdir(), 'cattura-'));
 const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'quadri-'));
 let chrome;
 const lancar = () => { chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${PORTA}`, `--user-data-dir=${perfil}`, `--window-size=${W},${H}`,
-  '--hide-scrollbars', '--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--force-device-scale-factor=1', 'about:blank'], { stdio: 'ignore' }); };
+  '--hide-scrollbars', ...(process.env.CATTURA_CPU ? ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'] : ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist', '--enable-gpu-rasterization']), '--force-device-scale-factor=1', 'about:blank'], { stdio: 'ignore' }); };   // padrão: placa de vídeo (8,5× mais rápida, 21/11); CATTURA_CPU=1 volta ao processador
 lancar();
 
 let ws, id = 0;
@@ -86,12 +86,27 @@ try {
   const durata = ate ?? info.durata, total = Math.ceil(durata * fps);
   console.log(`${durata.toFixed(1)} s · ${total} quadros a ${fps} fps`);
   const t0 = Date.now();
+  // 23/11 (igual à Itália): os quadros vão direto para o ffmpeg (sem gravar milhares de JPG no disco); com a placa de vídeo
+  // o ffmpeg codifica com Intel QuickSync (h264_qsv); CATTURA_CPU=1 volta ao libx264
+  const CPU = !!process.env.CATTURA_CPU;
+  const ff = ['-y', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'mjpeg', '-i', 'pipe:0'];
+  if (audio) ff.push('-i', audio);
+  // JPG vem em faixa "de foto" (full range): converte para o padrão de vídeo, senão o Instagram desbota as cores
+  ff.push('-vf', `scale=out_range=tv,format=${CPU ? 'yuv420p' : 'nv12'}`, '-color_range', 'tv', '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709');
+  if (CPU) ff.push('-c:v', 'libx264', '-profile:v', 'high', '-crf', '18', '-preset', 'medium', '-movflags', '+faststart');
+  else ff.push('-c:v', 'h264_qsv', '-profile:v', 'high', '-global_quality', '18', '-preset', 'slow', '-movflags', '+faststart');
+  // áudio completado com silêncio até o fim do vídeo
+  if (audio) ff.push('-af', 'apad', '-c:a', 'aac', '-b:a', '192k');
+  ff.push('-t', durata.toFixed(3), saida);
+  const enc = spawn(FFMPEG, ff, { stdio: ['pipe', 'ignore', 'pipe'] });
+  let errFF = ''; enc.stderr.on('data', d => { errFF = (errFF + d).slice(-2000); });
+  const fimFF = new Promise(ok => enc.on('close', ok));
   let reinicios = 0;
   for (let f = 0; f < total; f++) {
     try {
       await avaliar(`window.quadro(${(f / fps).toFixed(4)})`);
-      const r = await cdp('Page.captureScreenshot', { format: 'jpeg', quality: 92, clip: { x: 0, y: 0, width: W, height: H, scale: 1 } });
-      fs.writeFileSync(path.join(pasta, `q${String(f).padStart(5, '0')}.jpg`), Buffer.from(r.result.data, 'base64'));
+      const r = await cdp('Page.captureScreenshot', { format: 'jpeg', quality: 88, optimizeForSpeed: true, clip: { x: 0, y: 0, width: W, height: H, scale: 1 } });
+      if (!enc.stdin.write(Buffer.from(r.result.data, 'base64'))) await new Promise(ok => enc.stdin.once('drain', ok));
     } catch (e) {
       if (!e.travou || ++reinicios > 5) throw e;
       console.log(`  quadro ${f}: ${e.message}; reiniciando o Chrome (${reinicios}/5)`);
@@ -101,16 +116,9 @@ try {
     }
     if (f % 60 === 0) console.log(`  quadro ${f}/${total} · ${((Date.now() - t0) / 1000).toFixed(0)} s`);
   }
-  const ff = ['-y', '-framerate', String(fps), '-i', path.join(pasta, 'q%05d.jpg')];
-  if (audio) ff.push('-i', audio);
-  // JPG vem em faixa "de foto" (full range): converte para o padrão de vídeo, senão o Instagram desbota as cores
-  ff.push('-vf', 'scale=out_range=tv,format=yuv420p', '-color_range', 'tv', '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709');
-  ff.push('-c:v', 'libx264', '-profile:v', 'high', '-crf', '18', '-preset', 'medium', '-movflags', '+faststart');
-  // áudio completado com silêncio até o fim do vídeo
-  if (audio) ff.push('-af', 'apad', '-c:a', 'aac', '-b:a', '192k');
-  ff.push('-t', durata.toFixed(3), saida);
-  const r = spawnSync(FFMPEG, ff, { encoding: 'utf8' });
-  if (r.status !== 0) throw new Error(`ffmpeg: ${r.stderr.slice(-500)}`);
+  enc.stdin.end();
+  const status = await fimFF;
+  if (status !== 0) throw new Error(`ffmpeg: ${errFF.slice(-500)}`);
   console.log(`vídeo: ${saida} (${(fs.statSync(saida).size / 1e6).toFixed(1)} MB) em ${((Date.now() - t0) / 1000).toFixed(0)} s`);
 } catch (e) {
   if (!e.fim) { console.error('falhou:', e.message); process.exitCode = 1; }

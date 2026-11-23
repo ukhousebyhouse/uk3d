@@ -359,7 +359,7 @@ export class UI {
       const prezzo = num(cfg?.interni?.prezzo ?? 990);
       const corpo = !p ? `<small>Decorate it inside and out · ${prezzo} 💰 · forever</small><div class="casa-duo"><button data-ct="accedi">👤 Sign in</button></div>`
         : haCasa ? `<small>It's yours forever: change it whenever you like.</small><div class="casa-duo"><button data-dp="fuori" data-v="${k}">🎨 Outside</button><button data-interni="entra:${k}">🛋️ Inside</button></div>`
-        : `<small>Decorate it inside and out, forever · 5 pieces of furniture free</small><div class="casa-duo"><button data-dp="fuori" data-v="${k}">🎨 Try outside</button><button data-interni="compra:${k}">🔑 ${prezzo} 💰</button></div>`;
+        : `<small>5 rooms to furnish + the front, forever · 10 pieces of furniture free</small><div class="casa-duo"><button data-dp="fuori" data-v="${k}">🎨 Try outside</button><button data-interni="compra:${k}">🔑 ${prezzo} 💰</button></div>`;
       let extra = '';
       if (p && cfg) {
         const own = new Set(p.oggetti ?? []), cat = id => cfg.catalogo?.find(x => x.id === id && x.vendita), cm = ct.castelloMio(), chip = [];

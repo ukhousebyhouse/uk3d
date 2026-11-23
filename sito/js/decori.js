@@ -780,7 +780,7 @@ export class Decori {
     setTimeout(brilha, 2500);
     setInterval(() => { if (!vista() || Math.random() < 0.35) brilha(); }, 18000);
     b.addEventListener('animationend', e => { if (e.animationName === 'decora-brilha') b.classList.remove('brilha'); });
-    b.onclick = () => { gravar('decora_vista', NOVITA_VER); if (selo) selo.hidden = true; this.ui.conto?.apriRicarica(); };
+    b.onclick = () => { gravar('decora_vista', NOVITA_VER); if (selo) selo.hidden = true; this.ui.conto?.apriRicarica('', 'pillola'); };
   }
 
   // ---------- telas ----------
@@ -837,7 +837,7 @@ export class Decori {
       if (!(await conto.compra('interni', 'your home (inside and out)', prezzo, 'Decorate it inside and out whenever you like, forever. 5 pieces of furniture free.'))) return;
     } else if (!mia) {
       const pr = this.prezzoRegalo(), manca = pr - (conto.p.saldo ?? 0);
-      if (manca > 0) { if (confirm(`The gift costs ${num(pr)} 💰: you need ${num(manca)} 💰 more.\n\nWould you like to top up your credits?`)) conto.apriRicarica(); return; }
+      if (manca > 0) { if (confirm(`The gift costs ${num(pr)} 💰: you need ${num(manca)} 💰 more.\n\nWould you like to top up your credits?`)) conto.apriRicarica('', 'regalo', { nome: 'the gift', manca }); return; }
       if (!confirm(`Give this decoration to @${ed.casa.conta} for ${num(pr)} 💰?\nIt stays on their house forever${conto.p.conta ? `, with “🎁 from @${conto.p.conta}”` : ''}.`)) return;
     }
     botao.disabled = true;

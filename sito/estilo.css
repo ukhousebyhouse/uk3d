@@ -450,6 +450,17 @@ button.ms-altro small { color: var(--grigio); font-weight: 700; }
 .ct-pacchi button u { display: block; text-decoration: none; font-size: 10.5px; font-weight: 900; color: var(--inchiostro); line-height: 1.2; margin-top: 4px; }
 .ct-pacchi button.giusto { box-shadow: 0 0 0 4px var(--verde); background: #EAF7EE; }
 .ct-serve { text-align: center; font-weight: 800; font-size: 14px; margin: -4px 0 10px; }
+/* 24/11: resumo do pacote escolhido + quadradinho de entrega imediata + botão de pagar (no lugar do confirm do navegador) */
+.ct-pacchi button.scelto { box-shadow: 0 0 0 4px var(--giallo, #FFC93C); background: #FFF6CC; }
+.ct-paga { margin-top: 12px; border: 3px solid var(--inchiostro); border-radius: 16px; background: #FFFBEA; padding: 10px 12px 12px; text-align: center; }
+.ct-paga-tit { font-size: 17px; font-weight: 800; }
+.ct-paga-tit b { font-weight: 900; }
+.ct-paga-tit em.dono { font-style: normal; font-size: 13px; font-weight: 900; color: #fff; background: var(--rosso); border-radius: 99px; padding: 1px 7px; }
+.ct-subito { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0; text-align: left; font-size: 12.5px; font-weight: 700; line-height: 1.35; }
+.ct-subito input { flex: none; width: 22px; height: 22px; margin: 0; accent-color: var(--verde); }
+.ct-paga-btn { width: 100%; border: 3px solid var(--inchiostro); border-radius: 14px; background: var(--verde); color: #fff; font: inherit; font-size: 17px; font-weight: 900; padding: 11px 8px; box-shadow: 0 3px 0 rgba(21,32,51,.25); }
+.ct-paga.avviso .ct-subito { animation: ct-scuoti .45s; color: var(--rosso); }
+@keyframes ct-scuoti { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
 .ct-fiducia { margin-top: 10px; text-align: center; font-size: 12px; font-weight: 800; color: var(--inchiostro); background: #F1F6FB; border: 2px dashed #9AA9BC; border-radius: 12px; padding: 6px 8px; line-height: 1.45; }
 .ct-grazie { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; font-weight: 800; font-size: 13px; }
 .ct-grazie input { width: 20px; height: 20px; accent-color: var(--verde); }

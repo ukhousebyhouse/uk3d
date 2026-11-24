@@ -91,7 +91,7 @@ function conferma_attesa(string $id): ?array {
 if ($acao === 'traccia') {
     if (!conti_limite("traccia|$ip", 120, 3600)) resposta(['ok' => true]);
     $ev = (string)($d['ev'] ?? '');
-    if (in_array($ev, ['apre', 'pacco', 'annulla'], true)) conti_traccia($ev, (string)($d['pacco'] ?? ''), (string)($d['da'] ?? ''), conti_sessione_id() ?? '');
+    if (in_array($ev, ['apre', 'pacco', 'annulla', 'senza'], true)) conti_traccia($ev, (string)($d['pacco'] ?? ''), (string)($d['da'] ?? ''), conti_sessione_id() ?? '');
     resposta(['ok' => true]);
 }
 if ($acao === 'codice') {
@@ -311,7 +311,8 @@ if ($acao === 'ricarica') {
     $rif = 'c' . date('ymd') . '-' . bin2hex(random_bytes(4));
     $nome = number_format((int)$p['crediti'], 0, '.', ',') . ' credits · UK House by House';
     $base = (conti_https() ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'ukhousebyhouse.com');
-    $meta = ['tipo' => 'crediti', 'conto' => $id, 'pacco' => (string)$p['id'], 'rif' => $rif];
+    // prova do consentimento à entrega imediata: "checkbox" (quadradinho, desde 24/11) ou "confirm" (página antiga ainda em cache)
+    $meta = ['tipo' => 'crediti', 'conto' => $id, 'pacco' => (string)$p['id'], 'rif' => $rif, 'consenso' => (!empty($d['subito']) ? 'checkbox ' : 'confirm ') . gmdate('c')];
     $dados = [
         'mode' => 'payment',
         'locale' => 'en-GB',

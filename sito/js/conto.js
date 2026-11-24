@@ -169,7 +169,11 @@ export class Conto {
     const fiducia = `<div class="ct-fiducia">🔒 Secure checkout by Stripe · 💳 Card, Apple Pay, Google Pay<br>⚡ Credits arrive straight away · 🧾 Receipt by email · VAT included</div>
       ${p.conta ? `<label class="ct-grazie"><input type="checkbox" id="ct-grazie"${this._grazie ? ' checked' : ''}> 🙏 Thank me in your reel with my @${esc(p.conta)}</label>` : ''}
       <p class="ct-mini">Under 18? Ask a parent or carer first. Credits can't buy points, votes or roles.</p>`;
-    const pacchi = p.ricarica && !p.proprietario ? `<h3 class="ct-h" id="ct-ricarica">💳 Top up credits</h3>${banner}${giusto ? `<div class="ct-serve">You need <b>${n(serve.manca)} 💰</b> for ${esc(serve.nome)}</div>` : ''}<div class="ct-pacchi">${pacchiOk.map(tastoPacco).join('')}</div>${fiducia}` : '';
+    // 24/11: o consentimento da entrega imediata virou um quadradinho aqui dentro (antes era um confirm() do navegador: 7 de 7 cancelaram)
+    const paga = `<div class="ct-paga" id="ct-paga" hidden><div class="ct-paga-tit"></div>
+      <label class="ct-subito"><input type="checkbox" id="ct-subito"> ⚡ Send my credits now. I understand that once they arrive I lose my 14-day right to cancel (if the payment is refunded, the credits are taken back).</label>
+      <button data-ct="paga" class="ct-paga-btn"></button></div>`;
+    const pacchi = p.ricarica && !p.proprietario ? `<h3 class="ct-h" id="ct-ricarica">💳 Top up credits</h3>${banner}${giusto ? `<div class="ct-serve">You need <b>${n(serve.manca)} 💰</b> for ${esc(serve.nome)}</div>` : ''}<div class="ct-pacchi">${pacchiOk.map(tastoPacco).join('')}</div>${paga}${fiducia}` : '';
     const mov = (p.ultimi ?? []).map(m => `<li><span>${TIPI[m.tipo] ?? (TIPI[String(m.tipo).replace('prova_', '')] ? `🛠️ ${TIPI[m.tipo.replace('prova_', '')]}` : esc(m.tipo))}</span><small>${new Date(m.em).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' })}</small><b class="${m.delta < 0 ? 'neg' : ''}">${m.delta > 0 ? '+' : ''}${n(m.delta)}</b></li>`).join('');
     return `<h2>💰 Your account</h2><div class="sub">${esc(p.email)}</div>
       <div class="ct-saldo"><b>${n(p.saldo)}</b><span>💰 credits</span></div>
@@ -288,13 +292,33 @@ export class Conto {
         }
       }
       else if (a === 'ricarica') {
-        // consentimento para entrega imediata (Consumer Contracts Regulations): sem ele não abre o pagamento
-        const pacco = t.dataset.pacco, da = this._da ?? 'conto';
+        // 1º passo: escolhe o pacote → aparece o resumo com o quadradinho de consentimento e o botão de pagar (sem pop-up)
+        const pacco = t.dataset.pacco, da = this._da ?? 'conto', x = (this.cfg?.pacchi ?? []).find(q => q.id === pacco);
+        if (!x) return;
+        this._pacco = pacco;
         this.traccia('pacco', pacco, da);
-        if (!confirm('Your credits arrive in your account straight away.\n\nBy carrying on you ask for them to be delivered now and you understand that once you get them you lose your 14-day right to cancel. If the payment is refunded, the credits are taken back.\n\nUnder 18? Ask a parent or carer first.\n\nGo to payment?')) { this.traccia('annulla', pacco, da); return; }
+        document.querySelectorAll('.ct-pacchi button').forEach(b => b.classList.toggle('scelto', b === t));
+        const pr = this.p?.prima_ricarica ? this.cfg?.prima_ricarica : null, dono = pr ? Math.min(pr.max ?? Infinity, Math.round(x.crediti * pr.bonus / 100)) : 0;
+        const box = $('#ct-paga'); if (!box) return;
+        box.querySelector('.ct-paga-tit').innerHTML = `<b>${n(x.crediti)} 💰</b>${dono ? ` <em class="dono">+${n(dono)} 🎁</em>` : ''} · <b>${libra(x.prezzo)}</b>`;
+        box.querySelector('.ct-paga-btn').textContent = `🔒 Pay ${libra(x.prezzo)} with Stripe`;
+        box.classList.remove('avviso');
+        box.hidden = false;
+        setTimeout(() => box.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+      }
+      else if (a === 'paga') {
+        // consentimento para entrega imediata (Consumer Contracts Regulations): sem o quadradinho não abre o pagamento
+        const pacco = this._pacco, da = this._da ?? 'conto';
+        if (!pacco) return;
+        const box = $('#ct-paga');
+        if (!$('#ct-subito')?.checked) {
+          this.traccia('senza', pacco, da);
+          box?.classList.remove('avviso'); void box?.offsetWidth; box?.classList.add('avviso');
+          return this.ui.aviso('☝️ Tick the box to get your credits straight away.');
+        }
         const grazie = !!$('#ct-grazie')?.checked; this._grazie = grazie;
         t.disabled = true;
-        try { const j = await this.api('ricarica', { pacco, da, grazie }); location.href = j.url; } finally { t.disabled = false; }
+        try { const j = await this.api('ricarica', { pacco, da, grazie, subito: true }); location.href = j.url; } finally { t.disabled = false; }
       }
       else if (a === 'esci_tutti') {
         if (!confirm('Sign out of your account on every phone and computer? To get back in you\'ll need a new code by email.')) return;

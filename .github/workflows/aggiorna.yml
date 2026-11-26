@@ -40,7 +40,7 @@ jobs:
   aggiorna:
     if: github.event.schedule != '0 6 1 * *'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 40   # posts com 1.000+ comentários levam ~10 min para rebaixar; com 15 a rodada era cancelada e o mapa parava
     steps:
       - uses: actions/checkout@v4
 

@@ -1,5 +1,5 @@
 // Interface: busca, abas, painéis (casa, cidade, nação, Number 10, league table, scoreboard, up for grabs, how it works).
-import { REGOLE, NOMI_CARICHE, NOMI_CARICHE_CY, DESCR_CARICHE, FONTI, COME_GUADAGNARE, num, punti, dataBreve, dataLunga, ora, prossimoTraguardo, sogliaDi, nomePub } from './regole.js';
+import { REGOLE, NOMI_CARICHE, NOMI_CARICHE_CY, DESCR_CARICHE, FONTI, COME_GUADAGNARE, num, punti, dataBreve, dataLunga, ora, prossimoTraguardo, sogliaDi, nomePub, nataleAttivo } from './regole.js';
 import { iconaLivello } from './icone.js';
 import { Fotografo } from './foto.js';
 import { immagineCasa, immagineFondazione, immagineCitta, PERFIL } from './storie.js';
@@ -163,6 +163,12 @@ export class UI {
       this.mappa.verPais();
     });
     if (this.festa?.bonfireOggi) this.faixaBonfire();
+    // patrocínios de Natal (data/natale.json): o dia do Advent calendar e o sponsor oficial (dia pela hora de Londres)
+    const nat = D.natale ?? {}, oggiUK = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/London' });
+    const avv = D.commerci.find(cm => cm.id === nat.avvento?.[oggiUK]);
+    if (avv && nataleAttivo()) add('chip-avvento', `🎁 <b>Advent ${Number(oggiUK.slice(8))} Dec</b>: today's brought to you by <b>${esc(avv.nome)}</b> · ${esc(avv.luogo.nome)} · treasure ×${nat.bonus ?? 2}`, () => this.commercio(avv));
+    const spo = D.commerci.find(cm => cm.id === nat.sponsor?.id);
+    if (spo && nataleAttivo()) add('chip-sponsor', `🎄 Christmas on the map is brought to you by <b>${esc(spo.nome)}</b>`, () => this.commercio(spo));
     this.doppio = (D.snap.doppi ?? []).find(d => agora >= Date.parse(d.da) && agora < Date.parse(d.a)) ?? null;
     if (this.doppio) add('chip-doppi', `⚡ <b>Double points</b> ${this.doppio.tipi.includes('storia') ? 'on stories ' : ''}until ${ora(Date.parse(this.doppio.a))}`, () => this.comeFunziona());
     if (this.emFiamme.length) add('chip-fiamme', `🔥 <b>${num(this.emFiamme.length)}</b> ${this.emFiamme.length === 1 ? 'house on fire' : 'houses on fire'} now`, () => this.fiamme());
@@ -204,6 +210,16 @@ export class UI {
     $('#zoom-piu').onclick = () => this.mappa.zoom(0.45);
     $('#zoom-meno').onclick = () => this.mappa.zoom(2.2);
     $('#vedi-paese').onclick = () => { this.mappa.verPais(); };
+    // girar a câmera no PC (no celular: dois dedos): botões ⟲ ⟳, teclas Q/E; botão direito ou Shift + arrastar também gira
+    const ruota = s => { const m = this.mappa; m.voar({ x: m.alvo.x, z: m.alvo.z, dist: m.dist, az: m.az + s * Math.PI / 6 }, 450); };
+    $('#ruota-sx').onclick = () => ruota(-1);
+    $('#ruota-dx').onclick = () => ruota(1);
+    addEventListener('keydown', e => {
+      if (this.mappa.passeggio || /input|textarea|select/i.test(e.target.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (k === 'q') ruota(-1);
+      else if (k === 'e') ruota(1);
+    });
     // 🏠: volta à casa selecionada (qualquer uma); sem seleção, à minha casa
     $('#vai-casa').onclick = () => {
       if (this.selez) { const p = this.citta.posCasa(this.selez); this.focar(p.x, p.z, 0.6, 0.62); }
@@ -518,6 +534,10 @@ export class UI {
     if (filtro === 'vicino' && base) lista.sort((a, b) => Math.hypot(a.luogo.x - base.x, a.luogo.z - base.z) - Math.hypot(b.luogo.x - base.x, b.luogo.z - base.z));
     const n = norm(busca);
     if (n) lista = lista.filter(cm => norm(`${cm.nome} ${cm.luogo.nome} ${tipoDi(cm.tipo)[2]}`).includes(n));
+    // Christmas: "Christmas Market" no topo (lojas com patrocínio de Natal; a do Advent de hoje primeiro)
+    const oggiUK = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/London' }), avvId = D.natale?.avvento?.[oggiUK];
+    const mercatino = filtro === 'tutti' && !n && nataleAttivo() ? lista.filter(cm => cm.natale && cm.prodotto !== 'cartellone').sort((a, b) => (b.id === avvId) - (a.id === avvId)) : [];
+    const resto = lista.filter(cm => !mercatino.includes(cm));
     // distância em milhas, como nas placas britânicas
     const riga = (cm, i) => {
       const [, e, t] = tipoDi(cm.tipo);
@@ -530,7 +550,8 @@ export class UI {
       <div class="filtri"><button data-filtro="tutti" class="${filtro === 'tutti' ? 'on' : ''}">all</button><button data-filtro="vicino" class="${filtro === 'vicino' ? 'on' : ''}">near me</button></div>
       ${filtro === 'vicino' && !base ? '<p class="nota">To see shops near you, find your house and tap "this is my house".</p>' : ''}
       <input class="cerca-negozi" type="search" placeholder="search shop, town or type" value="${esc(busca)}">
-      ${lista.length ? `<ol class="ranking negozi">${lista.map(riga).join('')}</ol>` : `<p class="nota">${D.commerci.length ? 'No shop with that name.' : 'No shops yet: the first one stands out most!'}</p>`}
+      ${mercatino.length ? `<h3 class="tit-evidenza">🎄 Christmas Market</h3><ol class="ranking negozi natale">${mercatino.map((cm, i) => riga(cm, i).replace('<span class="visita">', cm.id === avvId ? '<span class="avv">🎁 today</span><span class="visita">' : '<span class="visita">')).join('')}</ol>` : ''}
+      ${resto.length ? `${mercatino.length ? '<h3 class="tit-evidenza">🏪 Shops</h3>' : ''}<ol class="ranking negozi">${resto.map(riga).join('')}</ol>` : mercatino.length ? '' : `<p class="nota">${D.commerci.length ? 'No shop with that name.' : 'No shops yet: the first one stands out most!'}</p>`}
       <a class="botao tratteggiato" href="negozio.html">＋ put your shop on the map</a>
       <p class="nota">Advertising. Shops on the map are symbolic: they don't show each business's real address.</p>`, 'negozi');
     this.conteudo.querySelectorAll('[data-filtro]').forEach(b => { b.onclick = () => this.negozi(b.dataset.filtro, this.conteudo.querySelector('.cerca-negozi').value); });

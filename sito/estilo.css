@@ -76,6 +76,8 @@ a { color: inherit; }
 
 /* ---------- controles ---------- */
 #controlli { position: fixed; right: 14px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 15; }
+#controlli .solo-pc { display: none; }
+@media (hover: hover) and (pointer: fine) { #controlli .solo-pc { display: block; } }
 #controlli button { width: 46px; height: 46px; border-radius: 50%; border: 3px solid var(--inchiostro); background: #fff; font-size: 24px; font-weight: 900; line-height: 1; box-shadow: 0 3px 0 rgba(21,32,51,.25); }
 
 /* ---------- pílulas, abas, rodapé ---------- */
@@ -328,9 +330,64 @@ button.decora-btn small { display: block; font-size: 12px; font-weight: 700; opa
 #avviso.on { opacity: 1; transform: translate(-50%, 0); }
 
 /* carregamento */
-#caricamento { position: fixed; inset: 0; background: var(--mare); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; z-index: 100; transition: opacity .5s; }
-#caricamento.fora { opacity: 0; pointer-events: none; }
-#caricamento p { color: #fff; font-weight: 900; font-size: 22px; text-shadow: var(--contorno); margin: 0; }
+/* abertura (index.html + js/intro.js): céu de fim de tarde, casinhas que sobem, botão Entra */
+#caricamento { position: fixed; inset: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 100; padding: 16px;
+  background: linear-gradient(180deg, #7DB8D4 0%, #B9DEEB 48%, #FFE6B3 82%, #FFD08A 100%); transition: opacity .7s, transform .7s; }
+#caricamento.fora { opacity: 0; transform: scale(1.12); pointer-events: none; }
+#caricamento p { color: #fff; font-weight: 900; font-size: 20px; text-shadow: var(--contorno); margin: 0; text-align: center; min-height: 1.3em; }
+#caricamento p small { font-size: 14px; }
+.ap-sole { position: absolute; width: 150px; height: 150px; right: 9%; top: 9%; border-radius: 50%; background: radial-gradient(circle, #FFF3B0 0 38%, #FFD25C 39% 50%, rgba(255, 210, 92, .25) 51% 64%, transparent 65%); animation: ap-sole 4s ease-in-out infinite alternate; }
+@keyframes ap-sole { to { transform: scale(1.08); } }
+.ap-nuvola { position: absolute; width: 130px; height: 38px; border-radius: 40px; background: #fff; opacity: .85; animation: ap-nuvola 46s linear infinite; }
+.ap-nuvola::before { content: ''; position: absolute; width: 62px; height: 52px; border-radius: 50%; background: #fff; left: 26px; top: -26px; }
+.ap-nuvola.n1 { top: 14%; left: -160px; }
+.ap-nuvola.n2 { top: 30%; left: -160px; transform: scale(.7); animation-duration: 64s; animation-delay: -30s; }
+@keyframes ap-nuvola { to { left: 110%; } }
+.ap-logo { position: relative; display: flex; flex-direction: column; align-items: center; line-height: 1; animation: ap-entra .8s cubic-bezier(.3, 1.5, .5, 1) both; }
+.ap-it { font-size: 70px; font-weight: 900; color: #fff; letter-spacing: 1px; text-shadow: 0 4px 0 var(--inchiostro), 3px 0 0 var(--inchiostro), -3px 0 0 var(--inchiostro), 0 -3px 0 var(--inchiostro), 2.5px 2.5px 0 var(--inchiostro), -2.5px 2.5px 0 var(--inchiostro), 2.5px -2.5px 0 var(--inchiostro), -2.5px -2.5px 0 var(--inchiostro), 0 9px 0 rgba(21, 32, 51, .25); }
+.ap-cpc { font-size: 30px; font-weight: 900; color: var(--giallo); text-shadow: var(--contorno); margin-top: 4px; }
+/* UK: mini Union Jack desenhada em CSS (as 3 listras da Itália, em azul/branco/vermelho, pareciam a bandeira da França) */
+.ap-tri { display: block; width: 66px; height: 34px; margin-top: 12px; border: 3px solid var(--inchiostro); border-radius: 4px; overflow: hidden; transform-origin: left center; animation: ap-bandiera 2.4s ease-in-out infinite alternate;
+  background: linear-gradient(90deg, transparent 43%, #C8102E 43% 57%, transparent 57%), linear-gradient(0deg, transparent 38%, #C8102E 38% 62%, transparent 62%),
+    linear-gradient(90deg, transparent 37%, #fff 37% 63%, transparent 63%), linear-gradient(0deg, transparent 29%, #fff 29% 71%, transparent 71%),
+    linear-gradient(to top right, transparent 47%, #C8102E 47% 51%, transparent 51%), linear-gradient(to bottom right, transparent 49%, #C8102E 49% 53%, transparent 53%),
+    linear-gradient(to top right, transparent 43%, #fff 43% 57%, transparent 57%), linear-gradient(to bottom right, transparent 43%, #fff 43% 57%, transparent 57%), #012169; }
+.ap-tri i { display: none; }
+@keyframes ap-bandiera { to { transform: skewY(-2.5deg) scaleX(.96); } }
+@keyframes ap-entra { from { opacity: 0; transform: translateY(24px) scale(.8); } }
+.ap-case { display: flex; align-items: flex-end; gap: 5px; height: 92px; margin-top: 10px; padding: 0 10px; border-bottom: 6px solid var(--inchiostro); }
+.ap-case i { position: relative; width: 30px; height: 50px; background: #B5523B; border: 3px solid var(--inchiostro); border-bottom: 0; border-radius: 3px 3px 0 0; transform: scaleY(0); transform-origin: bottom; transition: transform .5s cubic-bezier(.3, 1.7, .5, 1); }
+.ap-case i.su { transform: scaleY(1); }
+.ap-case i::before { content: ''; position: absolute; left: -6px; right: -6px; top: -10px; height: 7px; background: #5B6475; border: 3px solid var(--inchiostro); border-radius: 3px; }
+.ap-case i::after { content: ''; position: absolute; left: 50%; top: 12px; width: 8px; height: 11px; margin-left: -6px; background: #FFE9A8; border: 2px solid var(--inchiostro); box-shadow: 0 0 0 2px #FFFFFF; }   /* UK: janela de moldura branca (sem persianas) */
+.ap-case i:nth-child(2) { height: 66px; background: #E8DCC8; }
+.ap-case i:nth-child(3) { height: 44px; background: #C9714A; }
+.ap-case i:nth-child(4) { height: 78px; background: #8E3B2E; width: 34px; }
+.ap-case i:nth-child(5) { height: 58px; background: #9CC5A1; }
+.ap-case i:nth-child(6) { height: 70px; background: #F5E6C8; }
+.ap-case i:nth-child(7) { height: 48px; background: #8FB8DE; }
+.ap-case i:nth-child(8) { height: 62px; background: #F3A6A0; }
+.ap-case i:nth-child(9) { height: 52px; background: #E8836B; }
+.ap-barra { width: min(300px, 80vw); height: 12px; border: 3px solid var(--inchiostro); border-radius: 10px; background: rgba(255, 255, 255, .6); overflow: hidden; }
+.ap-barra b { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--rosso), var(--giallo)); background-size: 300px 100%; }
+#caricamento.pronto .ap-barra { display: none; }
+#intro-dati { font-weight: 800; font-size: 15px; color: var(--inchiostro); background: rgba(255, 255, 255, .75); border: 2px solid var(--inchiostro); border-radius: 20px; padding: 6px 14px; text-align: center; animation: ap-entra .5s both; }
+#intro-entra { font-size: 26px; font-weight: 900; padding: 14px 44px; border-radius: 40px; background: var(--giallo); border: 4px solid var(--inchiostro); box-shadow: 0 6px 0 var(--inchiostro); animation: ap-entra .5s .1s both, ap-pulsa 1.4s 1s ease-in-out infinite; }
+#intro-entra:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--inchiostro); }
+@keyframes ap-pulsa { 50% { transform: scale(1.06); } }
+#intro-audio { font-size: 14px; font-weight: 800; background: none; border: 0; padding: 6px 10px; opacity: .8; }
+@media (max-width: 600px) {
+  .ap-it { font-size: 54px; }
+  .ap-cpc { font-size: 24px; }
+  .ap-sole { width: 110px; height: 110px; right: 4%; top: 5%; }
+  .ap-case i { width: 24px; }
+  .ap-case i:nth-child(4) { width: 28px; }
+  #intro-dati { font-size: 13px; padding: 6px 10px; white-space: nowrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #caricamento *, #caricamento { animation: none !important; transition: none !important; }
+  .ap-case i { transform: none; }
+}
 .palla { width: 34px; height: 34px; border-radius: 50%; background: var(--giallo); border: 4px solid var(--inchiostro); animation: salta .6s infinite alternate cubic-bezier(.5, 0, .5, 1); }
 @keyframes salta { to { transform: translateY(-30px); } }
 
@@ -450,16 +507,18 @@ button.ms-altro small { color: var(--grigio); font-weight: 700; }
 .ct-pacchi button u { display: block; text-decoration: none; font-size: 10.5px; font-weight: 900; color: var(--inchiostro); line-height: 1.2; margin-top: 4px; }
 .ct-pacchi button.giusto { box-shadow: 0 0 0 4px var(--verde); background: #EAF7EE; }
 .ct-serve { text-align: center; font-weight: 800; font-size: 14px; margin: -4px 0 10px; }
-/* 24/11: resumo do pacote escolhido + quadradinho de entrega imediata + botão de pagar (no lugar do confirm do navegador) */
-.ct-pacchi button.scelto { box-shadow: 0 0 0 4px var(--giallo, #FFC93C); background: #FFF6CC; }
+/* 24/11: resumo do pacote escolhido + quadradinho do consenso (art. 59 Codice del Consumo) + botão de pagar, no lugar do confirm() do navegador */
+.ct-pacchi button.scelto { box-shadow: 0 0 0 4px var(--giallo); background: #FFF6CC; }
 .ct-paga { margin-top: 12px; border: 3px solid var(--inchiostro); border-radius: 16px; background: #FFFBEA; padding: 10px 12px 12px; text-align: center; }
+.ct-paga[hidden] { display: none; }
 .ct-paga-tit { font-size: 17px; font-weight: 800; }
 .ct-paga-tit b { font-weight: 900; }
 .ct-paga-tit em.dono { font-style: normal; font-size: 13px; font-weight: 900; color: #fff; background: var(--rosso); border-radius: 99px; padding: 1px 7px; }
 .ct-subito { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0; text-align: left; font-size: 12.5px; font-weight: 700; line-height: 1.35; }
 .ct-subito input { flex: none; width: 22px; height: 22px; margin: 0; accent-color: var(--verde); }
-.ct-paga-btn { width: 100%; border: 3px solid var(--inchiostro); border-radius: 14px; background: var(--verde); color: #fff; font: inherit; font-size: 17px; font-weight: 900; padding: 11px 8px; box-shadow: 0 3px 0 rgba(21,32,51,.25); }
+.ct-paga .ct-paga-btn { width: 100%; margin: 0; border: 3px solid var(--inchiostro); border-radius: 14px; background: var(--verde); color: #fff; font: inherit; font-size: 17px; font-weight: 900; padding: 11px 8px; box-shadow: 0 3px 0 rgba(21,32,51,.25); }
 .ct-paga.avviso .ct-subito { animation: ct-scuoti .45s; color: var(--rosso); }
+.ct-paga.avviso .ct-subito:has(input:checked) { color: inherit; }
 @keyframes ct-scuoti { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
 .ct-fiducia { margin-top: 10px; text-align: center; font-size: 12px; font-weight: 800; color: var(--inchiostro); background: #F1F6FB; border: 2px dashed #9AA9BC; border-radius: 12px; padding: 6px 8px; line-height: 1.45; }
 .ct-grazie { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; font-weight: 800; font-size: 13px; }
@@ -502,7 +561,14 @@ body.passeggio #testa, body.passeggio #controlli, body.passeggio #pillole, body.
 .ps-bussola { position: absolute; left: 50%; top: calc(var(--sat) + 58px); transform: translateX(-50%); display: flex; align-items: center; gap: 6px; max-width: calc(100% - 24px); background: rgba(255,255,255,.95); border: 2.5px solid var(--inchiostro); border-radius: 99px; padding: 4px 12px 4px 6px; font: 800 13px 'Nunito', sans-serif; color: var(--inchiostro); white-space: nowrap; box-shadow: 0 3px 0 rgba(21,32,51,.2); }
 .ps-bussola i { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--giallo); font-style: normal; font-size: 13px; transition: transform .2s; }
 .ps-bussola span { overflow: hidden; text-overflow: ellipsis; }
-#passeggio.viaggio .ps-bussola,
+.ps-meta { top: calc(var(--sat) + 94px); background: #FFF6D6; }
+.ps-meta[hidden] { display: none; }
+.ps-meta .ps-meta-x { pointer-events: auto; border: 0; background: none; font: 900 14px 'Nunito', sans-serif; padding: 0 0 0 4px; color: var(--grigio); }
+.ps-cerca { width: 100%; box-sizing: border-box; margin: 2px 0 4px; border: 2.5px solid var(--inchiostro); border-radius: 12px; padding: 8px 10px; font: 800 15px 'Nunito', sans-serif; pointer-events: auto; }
+.ps-menu input { pointer-events: auto; }
+.ps-flash { position: absolute; inset: 0; background: #fff; opacity: 0; transition: opacity .25s; }
+.ps-flash.on { opacity: .85; transition: none; }
+#passeggio.viaggio .ps-bussola, #passeggio.viaggio .ps-meta,
 #passeggio.viaggio .ps-azioni, #passeggio.viaggio .ps-joy, #passeggio.viaggio .ps-et { display: none; }
 .ps-menu.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
 .ps-menu.basso { top: auto; bottom: calc(var(--sab) + 24px); width: min(300px, calc(100% - 24px)); }
@@ -520,6 +586,32 @@ body.passeggio #testa, body.passeggio #controlli, body.passeggio #pillole, body.
 .ps-tag.mia { background: var(--giallo); }
 .ps-tag.neg { background: #FFE3D6; }
 .ps-card { background: linear-gradient(135deg, #DCEBFF, #FFF6E6); }
+/* minimapa (js/minimappa.js): círculo no canto, gira com a câmera; toque abre o mapa grande */
+.ps-mini { position: absolute; left: 14px; bottom: calc(var(--sab) + 22px); width: 150px; height: 150px; padding: 0; border-radius: 50%; border: 4px solid var(--inchiostro); background: #A9D18E; overflow: hidden; box-shadow: 0 4px 0 rgba(21,32,51,.3); cursor: pointer; }
+.ps-mini canvas { display: block; width: 100%; height: 100%; }
+.ps-mini-n { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; border-radius: 50%; background: var(--rosso); color: #fff; font: 900 11px/18px 'Nunito', sans-serif; text-align: center; border: 2px solid var(--inchiostro); box-sizing: content-box; margin: -11px 0 0 -11px; }
+.ps-mappa { position: absolute; inset: 0; background: #A9D18E; pointer-events: auto; z-index: 5; touch-action: none; }
+.ps-mappa[hidden] { display: none; }
+.ps-mappa canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+.ps-mappa-topo { position: absolute; top: calc(var(--sat) + 10px); left: 10px; right: 10px; display: flex; align-items: center; gap: 10px; background: #fff; border: 3px solid var(--inchiostro); border-radius: 18px; padding: 8px 8px 8px 14px; box-shadow: 0 3px 0 rgba(21,32,51,.25); }
+.ps-mappa-topo b { font-size: 17px; font-weight: 900; white-space: nowrap; }
+.ps-mappa-topo span { flex: 1; font-size: 13px; font-weight: 800; color: var(--grigio); line-height: 1.2; }
+.ps-mappa-topo button, .ps-mappa-zoom button { width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--inchiostro); background: var(--giallo); font: 900 18px 'Nunito', sans-serif; flex: none; }
+.ps-mappa-zoom { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; }
+.ps-mappa-zoom button { background: #fff; font-size: 22px; box-shadow: 0 3px 0 rgba(21,32,51,.25); }
+.ps-mappa-meta { position: absolute; left: 50%; bottom: calc(var(--sab) + 18px); transform: translateX(-50%); width: min(420px, calc(100% - 24px)); box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: #fff; border: 3px solid var(--inchiostro); border-radius: 18px; padding: 10px 12px; box-shadow: 0 4px 0 rgba(21,32,51,.25); }
+.ps-mappa-meta[hidden] { display: none; }
+.ps-mappa-meta div { flex: 1 1 calc(100% - 50px); min-width: 0; display: flex; flex-direction: column; }
+.ps-mappa-meta b { font-size: 15px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ps-mappa-meta small { font-size: 12.5px; font-weight: 800; color: var(--grigio); }
+.ps-mappa-meta [data-a="via"] { width: 34px; height: 34px; border-radius: 50%; border: 2.5px solid var(--inchiostro); background: #fff; font: 900 14px 'Nunito', sans-serif; }
+.ps-mappa-meta .ps-cta { width: auto; flex: 1 1 140px; margin: 0; }
+#passeggio.viaggio .ps-mini { display: block; }
+@media (max-width: 600px) {
+  .ps-mini { width: 112px; height: 112px; left: 10px; }
+  #passeggio.viaggio .ps-mini { display: none; }
+  .ps-mappa-topo span { font-size: 12px; }
+}
 .ps-new { display: inline-block; vertical-align: 2px; background: var(--rosso); color: #fff; font-size: 10px; font-weight: 900; border-radius: 99px; padding: 1px 6px; margin-left: 4px; }
 
 /* ---------- editor do personagem (js/personaggio.js) ---------- */
@@ -534,6 +626,38 @@ body.passeggio #testa, body.passeggio #controlli, body.passeggio #pillole, body.
 .pg-sw button { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--inchiostro); padding: 0; }
 .pg-sw button.on { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--inchiostro); }
 .pg-lock { opacity: .75; }
+/* editor do personagem v2 (25/11): abas, rostos, loja com provador */
+.pg-anteprima canvas { width: 210px; height: 240px; cursor: grab; }
+.pg-tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 8px 0 4px; }
+.pg-tabs::-webkit-scrollbar { display: none; }
+.pg-tabs button { flex: none; position: relative; border: 2.5px solid var(--inchiostro); border-radius: 99px; background: #fff; padding: 6px 12px; font: 900 13.5px 'Nunito', sans-serif; color: var(--inchiostro); }
+.pg-tabs button.on { background: var(--inchiostro); color: #fff; }
+.pg-facce { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin: 4px 0 6px; }
+.pg-facce button { border: 3px solid var(--inchiostro); border-radius: 14px; background: #fff; padding: 3px; }
+.pg-facce button.on { background: var(--giallo); box-shadow: 0 3px 0 rgba(21,32,51,.25); }
+.pg-facce img { width: 100%; display: block; }
+.pg-cats { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 8px; }
+.pg-cats::-webkit-scrollbar { display: none; }
+.pg-cats button { flex: none; border: 2px solid var(--inchiostro); border-radius: 99px; background: #fff; padding: 4px 10px; font: 900 12.5px 'Nunito', sans-serif; color: var(--inchiostro); }
+.pg-cats button.on { background: var(--giallo); }
+.pg-griglia { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.pg-card { display: flex; flex-direction: column; align-items: center; gap: 2px; border: 2.5px solid var(--inchiostro); border-radius: 14px; background: #fff; padding: 8px 4px 6px; font-family: 'Nunito', sans-serif; color: var(--inchiostro); text-align: center; box-shadow: 0 2px 0 rgba(21,32,51,.18); }
+.pg-card span { font-size: 28px; line-height: 1.1; }
+.pg-card b { font-size: 11.5px; font-weight: 900; line-height: 1.15; min-height: 2.3em; display: flex; align-items: center; }
+.pg-card i { font-style: normal; font-size: 12px; letter-spacing: -1px; }
+.pg-card em { font-style: normal; font-size: 11px; font-weight: 900; color: #B7791F; }
+.pg-card em u { text-decoration: none; background: var(--rosso); color: #fff; border-radius: 99px; padding: 0 5px; font-size: 9px; }
+.pg-card em s { color: var(--grigio); font-weight: 700; }
+.pg-card.mio em { color: var(--verde); }
+.pg-card.on { background: #E8F6EC; border-color: var(--verde); }
+.pg-card.prova { background: #FFF6CC; box-shadow: 0 0 0 3px var(--giallo); }
+.pg-outfit { grid-column: span 3; flex-direction: row; justify-content: flex-start; gap: 8px; padding: 8px 10px; text-align: left; }
+.pg-outfit b { flex: 1; min-height: 0; font-size: 13.5px; }
+.pg-outfit i { font-size: 14px; }
+.pg-prova { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 6px; background: #FFF6CC; border: 2.5px solid var(--inchiostro); border-radius: 14px; padding: 6px 8px; margin: 2px 0 6px; font-weight: 800; font-size: 13px; }
+.pg-prova span { flex: 1; min-width: 0; }
+.pg-prova button { border: 2.5px solid var(--inchiostro); border-radius: 99px; background: var(--giallo); padding: 5px 12px; font: 900 13px 'Nunito', sans-serif; }
+.pg-prova button.sec { background: #fff; padding: 5px 9px; }
 
 /* ---------- casa con interni (js/interni.js) ---------- */
 #interni { position: fixed; inset: 0; z-index: 40; background: #DCEBFF; font-family: 'Nunito', sans-serif; }
@@ -573,6 +697,48 @@ body.interni-on #pannello { z-index: 45; }
 .in-sw.on { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--inchiostro); }
 .in-visita { font-weight: 800; font-size: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: center; text-align: center; }
 .in-visita button { background: var(--giallo); border: 3px solid var(--inchiostro); border-radius: 99px; padding: 7px 14px; font: 900 13.5px 'Nunito', sans-serif; }
+/* catálogo de móveis (25/11): busca, categorias, miniaturas 3D; no PC vira barra lateral */
+.in-corpo { max-height: 36vh; overflow-y: auto; overscroll-behavior: contain; }
+.in-barra.ridotta .in-corpo { display: none; }
+.in-barra.ridotta .in-tabs { margin-bottom: 0; }
+.in-riduci { margin-left: 4px; width: 34px; height: 30px; border: 2.5px solid var(--inchiostro); border-radius: 99px; background: #fff; font: 900 14px 'Nunito', sans-serif; padding: 0; }
+.in-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.in-tabs button { flex: none; }
+.in-cerca-riga { margin: 0 0 6px; }
+.in-cerca { width: 100%; box-sizing: border-box; border: 2.5px solid var(--inchiostro); border-radius: 12px; padding: 8px 12px; font: 800 14px 'Nunito', sans-serif; background: #F6F7FA; }
+.in-cats { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 0 0 6px; }
+.in-cats::-webkit-scrollbar { display: none; }
+.in-cats button { flex: none; border: 2px solid var(--inchiostro); border-radius: 99px; background: #fff; padding: 4px 10px; font: 900 12.5px 'Nunito', sans-serif; }
+.in-cats button.on { background: var(--inchiostro); color: #fff; }
+.in-griglia { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; padding-bottom: 4px; }
+.in-art { position: relative; display: flex; flex-direction: column; align-items: center; border: 2.5px solid var(--inchiostro); border-radius: 14px; background: #fff; padding: 4px 4px 6px; font-family: 'Nunito', sans-serif; color: var(--inchiostro); text-align: center; box-shadow: 0 2px 0 rgba(21,32,51,.18); }
+.in-art:active { transform: translateY(1px); box-shadow: none; }
+.in-art img { width: 100%; aspect-ratio: 1; border-radius: 10px; background: radial-gradient(circle at 50% 40%, #FFFFFF, #ECE6DA); display: block; object-fit: contain; }
+.in-art b { font-size: 11.5px; font-weight: 900; line-height: 1.15; margin-top: 4px; min-height: 2.3em; display: flex; align-items: center; }
+.in-art em { font-style: normal; font-size: 11px; font-weight: 900; color: var(--verde); }
+.in-art.lock em { color: #B7791F; }
+.in-art.lock img { filter: saturate(.9) brightness(.97); }
+.in-nuovo { position: absolute; top: 6px; left: 6px; background: var(--rosso); color: #fff; font-style: normal; font-size: 9.5px; font-weight: 900; border-radius: 99px; padding: 1px 6px; }
+.in-art small { position: absolute; top: 6px; right: 6px; background: rgba(255,255,255,.9); border-radius: 99px; padding: 0 5px; font-size: 10px; font-weight: 900; }
+.in-vuoto { grid-column: 1 / -1; text-align: center; font-weight: 800; color: var(--grigio); }
+.in-sel { flex-wrap: wrap; justify-content: center; max-width: calc(100% - 20px); top: calc(var(--sat) + 100px); bottom: auto; }
+.in-sel-nome { flex-basis: 100%; text-align: center; font-weight: 900; font-size: 13px; background: rgba(255,255,255,.92); border-radius: 99px; padding: 3px 10px; justify-self: center; }
+.in-sel button[hidden] { display: none; }
+#interni.con-sel .in-dica { display: none; }
+.in-ctrl button:disabled { opacity: .35; }
+@media (min-width: 900px) and (min-height: 560px) {
+  .in-barra { left: 10px; right: auto; width: 370px; top: calc(var(--sat) + 104px); bottom: calc(var(--sab) + 10px); display: flex; flex-direction: column; }
+  .in-barra.ridotta { bottom: auto; }
+  .in-barra.visita { top: auto; left: 50%; transform: translateX(-50%); width: auto; display: block; }
+  .in-corpo { max-height: none; flex: 1; }
+  .in-griglia { grid-template-columns: repeat(3, 1fr); }
+  .in-sel { left: calc(50% + 190px); }
+  .in-dica { left: calc(50% + 190px); }
+}
 .in-card { background: linear-gradient(135deg, #FFF1C9, #FFF6E6); }
+/* Vetrina: Mercatino di Natale (patrocínio de Natal, data/natale.json) */
+.tit-evidenza { margin: 14px 0 6px; font-size: 16px; font-weight: 900; }
+.ranking.natale li { background: linear-gradient(90deg, #FFF1F1, #F1FFF4); }
+.ranking.natale .avv { background: var(--rosso); color: #fff; font-size: 11px; font-weight: 900; border-radius: 99px; padding: 2px 8px; margin-right: 6px; white-space: nowrap; }
 .in-card.nuova { box-shadow: 0 0 0 3px var(--giallo), 0 3px 0 rgba(21,32,51,.2); }
 .ct-item.ora { opacity: 1; background: #FFF6CC; box-shadow: 0 0 0 2px var(--giallo); }

@@ -62,6 +62,30 @@ if ($ehCrediti) {
     fim(200);
 }
 
+// ---------- Christmas on the map (api/natale.php): registra o pagamento e avisa; ativação manual com strumenti/natale.mjs ----------
+// reembolso/contestação chegam pela cobrança (sem metadata): acha a compra pelo payment_intent no log
+$logNat = CARTELLA . '/natale-pagamenti.jsonl';
+$natPi = (string)($obj['payment_intent'] ?? '');
+$mNat = (array)($obj['metadata'] ?? []);
+if (($mNat['tipo'] ?? '') !== 'natale' && in_array($tipo, ['charge.refunded', 'charge.dispute.created'], true) && $natPi !== '' && is_file($logNat)) {
+    foreach (file($logNat, FILE_IGNORE_NEW_LINES) ?: [] as $l) { $x = json_decode($l, true) ?: []; if (($x['pi'] ?? '') === $natPi && ($x['esito'] ?? '') === 'pagato') $mNat = ['tipo' => 'natale'] + $x; }
+}
+if (($mNat['tipo'] ?? '') === 'natale') {
+    $esito = null;
+    if (in_array($tipo, ['checkout.session.completed', 'checkout.session.async_payment_succeeded'], true) && ($obj['payment_status'] ?? '') === 'paid') $esito = 'pagato';
+    elseif (in_array($tipo, ['charge.refunded', 'charge.dispute.created'], true)) $esito = 'rimborsato';
+    if ($esito) {
+        $neg = (string)($mNat['negozio'] ?? ''); $off = (string)($mNat['offerta'] ?? ''); $dia = (string)($mNat['giorno'] ?? '');
+        file_put_contents($logNat, json_encode(['em' => gmdate('c'), 'esito' => $esito, 'offerta' => $off, 'negozio' => $neg, 'nome' => (string)($mNat['nome'] ?? ''), 'giorno' => $dia, 'pi' => $natPi, 'valore' => $valor, 'email' => (string)($obj['customer_details']['email'] ?? ''), 'test' => $teste], JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND | LOCK_EX);
+        if (defined('EMAIL_AVVISI') && EMAIL_AVVISI) {
+            $cmd = $esito === 'rimborsato' ? "node strumenti/natale.mjs togli $neg"
+                : ($off === 'avvento' ? "node strumenti/natale.mjs avvento $dia $neg" : ($off === 'sponsor' ? "node strumenti/natale.mjs sponsor $neg" : "node strumenti/natale.mjs negozio $neg"));
+            @mail(EMAIL_AVVISI, ($esito === 'pagato' ? 'PAGO Natal' : 'REEMBOLSO Natal') . ": " . ($mNat['nome'] ?? $neg) . " ($off" . ($dia ? " $dia" : '') . ")" . ($teste ? ' [teste]' : ''), "Natal UK: $off · loja $neg · £$valor\nRode: $cmd", 'From: ' . EMAIL_AVVISI);
+        }
+    }
+    fim(200);
+}
+
 // ---------- lojas e outdoors (negozio.php): só marca o pagamento; entra no mapa com "amministra approva" ----------
 $pastaNeg = CARTELLA . '/negozi';
 $idNeg = ($obj['metadata']['tipo'] ?? '') === 'negozio' ? (string)($obj['client_reference_id'] ?? $obj['metadata']['pedido'] ?? '') : '';

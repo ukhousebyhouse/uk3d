@@ -203,17 +203,24 @@ if ($acao === 'collega') {
 if ($acao === 'personaggio') {
     $p = is_array($d['pg'] ?? null) ? $d['pg'] : [];
     $c = (string)($p['c'] ?? '');
-    $CAP = ['uomo' => ['corti', 'ciuffo', 'ricci', 'rasati', 'calvo'], 'donna' => ['lunghi', 'coda', 'caschetto', 'ricci', 'chignon']];
-    if (!isset($CAP[$c])) erro('Pick Man or Woman.');
+    // 25/11: cabelos para os dois (13), rosto (6), sapatos (6), mais cores
+    $CAP = ['corti', 'ciuffo', 'spettinati', 'ricci', 'afro', 'rasati', 'calvo', 'lunghi', 'coda', 'codini', 'trecce', 'caschetto', 'chignon'];
+    if (!in_array($c, ['uomo', 'donna'], true)) erro('Pick Man or Woman.');
     $n = fn($k, $max) => (is_int($p[$k] ?? null) && $p[$k] >= 0 && $p[$k] < $max) ? $p[$k] : 0;
-    $pg = ['c' => $c, 'pelle' => $n('pelle', 5), 'capelli' => in_array($p['capelli'] ?? '', $CAP[$c], true) ? $p['capelli'] : $CAP[$c][0],
-        'colCap' => $n('colCap', 6), 'maglia' => $n('maglia', 8), 'pant' => $n('pant', 8), 'gonna' => $c === 'donna' && !empty($p['gonna'])];
-    // itens pagos vestidos: só os que a conta comprou (pg_<id>); 1 chapéu e 1 roupa especial de cada vez
+    $pg = ['c' => $c, 'pelle' => $n('pelle', 5), 'capelli' => in_array($p['capelli'] ?? '', $CAP, true) ? $p['capelli'] : ($c === 'uomo' ? 'corti' : 'lunghi'),
+        'colCap' => $n('colCap', 10), 'maglia' => $n('maglia', 12), 'pant' => $n('pant', 10), 'gonna' => $c === 'donna' && !empty($p['gonna']),
+        'faccia' => $n('faccia', 6), 'scarpe' => $n('scarpe', 6)];
+    // itens pagos vestidos: só os que a conta comprou (pg_<id>); 1 por espaço ("slot" em crediti.json);
+    // "completo" ocupa também sopra e sotto; o vestito di Natale ainda a testa
     $own = (array)($u['oggetti'] ?? []);
     $acc = array_values(array_filter(array_unique(array_map('strval', (array)($p['acc'] ?? []))), fn($a) => in_array("pg_$a", $own, true)));
-    $GRUPPI = [['cappello', 'borsalino', 'natale'], ['tifoso', 'elegante', 'carnevale', 'natale']];
-    foreach ($GRUPPI as $gr) { $dentro = array_values(array_intersect($acc, $gr)); if (count($dentro) > 1) $acc = array_values(array_diff($acc, array_slice($dentro, 1))); }
-    if ($acc) $pg['acc'] = array_slice($acc, 0, 6);
+    $slotDi = [];
+    foreach ((array)(conti_cfg()['personaggio'] ?? []) as $x) $slotDi[(string)$x['id']] = (string)($x['slot'] ?? $x['id']);
+    $ocupa = fn($a) => $a === 'natale' ? ['completo', 'sopra', 'sotto', 'testa'] : (($slotDi[$a] ?? $a) === 'completo' ? ['completo', 'sopra', 'sotto'] : [$slotDi[$a] ?? $a]);
+    $usati = []; $ok = [];
+    foreach (array_reverse($acc) as $a) { if (array_intersect($ocupa($a), $usati)) continue; $usati = array_merge($usati, $ocupa($a)); $ok[] = $a; }   // o último vestido ganha
+    $acc = array_reverse($ok);
+    if ($acc) $pg['acc'] = array_slice($acc, 0, 12);
     if (in_array('tifoso', $acc, true)) $pg['squadra'] = $n('squadra', 9);
     $u = conti_modifica($id, function (array &$u) use ($pg) { $u['pg'] = $pg; return $u; });
     resposta(['profilo' => profilo($u)]);
@@ -283,6 +290,12 @@ if ($acao === 'tesoro') {
     elseif ($tipo === 'negozio' && preg_match('/^[a-z0-9-]{4,40}$/i', $rif)) $k = "n$rif";
     else erro('Invalid treasure.');
     $val = (int)($T[$tipo] ?? 2); $max = (int)($T['max'] ?? 5); $oggi = conti_oggi();
+    // Avvento (patrocínio de Natal, data/natale.json): o baú da loja do dia vale "bonus" vezes mais
+    $avv = false;
+    if ($tipo === 'negozio') {
+        $nat = json_decode((string)@file_get_contents(__DIR__ . '/../data/natale.json'), true) ?: [];
+        if (($nat['avvento'][$oggi] ?? '') === $rif) { $avv = true; $val *= max(1, min(5, (int)($nat['bonus'] ?? 2))); }
+    }
     $r = conti_modifica($id, function (array &$u) use ($k, $val, $max, $oggi) {
         $t = $u['tesori'] ?? [];
         if (($t['giorno'] ?? '') !== $oggi) $t = ['giorno' => $oggi, 'presi' => []];
@@ -292,7 +305,7 @@ if ($acao === 'tesoro') {
         conti_movimento($u, $val, 'tesoro', "$k $oggi");
         return ['crediti' => $val, 'n' => count($t['presi'])];
     });
-    resposta(['tesoro' => $r + ['max' => $max], 'profilo' => profilo(conti_leggi($id))]);
+    resposta(['tesoro' => $r + ['max' => $max, 'avvento' => $avv], 'profilo' => profilo(conti_leggi($id))]);
 }
 
 // recarga: cria a Checkout Session da Stripe (preço do crediti.json, nunca do navegador); o webhook (stripe.php) credita
@@ -337,7 +350,14 @@ if ($acao === 'ricarica') {
     conti_traccia('checkout', (string)$p['id'], (string)($d['da'] ?? ''), $id);   // foi para a Stripe
     // consentimento para o agradecimento no reel (só com o quadradinho marcado; nunca marcado por padrão)
     $gr = !empty($d['grazie']);
-    conti_modifica($id, function (array &$u) use ($gr, $p) { if ($gr) $u['grazie'] = ['em' => gmdate('c'), 'pacco' => (string)$p['id']]; else unset($u['grazie']); return $u; });
+    // prova do consentimento também no log (só acrescenta) e na conta, além da metadata da Stripe
+    $consenso = $meta['consenso'];
+    @file_put_contents(conti_dir() . '/consensi.log', $consenso . ' ' . (string)$p['id'] . ' ' . $id . "\n", FILE_APPEND | LOCK_EX);
+    conti_modifica($id, function (array &$u) use ($gr, $p, $consenso) {
+        if ($gr) $u['grazie'] = ['em' => gmdate('c'), 'pacco' => (string)$p['id']]; else unset($u['grazie']);
+        $u['consenso'] = $consenso . ' ' . (string)$p['id'];
+        return $u;
+    });
     resposta(['url' => $sessao['url']]);
 }
 

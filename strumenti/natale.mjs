@@ -1,5 +1,5 @@
 // Christmas on the map (sito/data/natale.json): liga as compras e publica o arquivo no site.
-// No UK a loja paga pela Stripe com o link de api/natale.php; o webhook manda um e-mail com o comando certo daqui.
+// No UK a loja paga pela Stripe com o link de api/natale.php e o webhook JÁ ATIVA sozinho (e manda e-mail); aqui é para ver e ajustar à mão.
 // Uso:
 //   node strumenti/natale.mjs lista                       quem comprou o quê + dias do Advent livres + links de pagamento
 //   node strumenti/natale.mjs negozio <id>                 "Christmas shop" (loja decorada + Christmas Market na High Street)
@@ -15,7 +15,18 @@ import { fileURLToPath } from 'node:url';
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ARQ = path.join(RAIZ, 'sito', 'data', 'natale.json');
 const SITE = 'https://ukhousebyhouse.com';
-const nat = JSON.parse(fs.readFileSync(ARQ, 'utf8'));
+// o webhook da Stripe ativa as compras direto no site: sempre parte da versão do site (a cópia do PC pode estar velha)
+let nat;
+try {
+  const r = await fetch(`${SITE}/data/natale.json?t=${Date.now()}`, { cache: 'no-store' });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  nat = await r.json();
+  fs.writeFileSync(ARQ, JSON.stringify(nat) + '\n');
+} catch (e) {
+  console.error(`ERRO: não baixei data/natale.json do site (${e.message}). Sem ele eu poderia apagar compras ativadas pelo webhook.`);
+  process.exit(1);
+}
+nat.negozi ??= []; nat.avvento ??= {};
 const commerci = JSON.parse(fs.readFileSync(path.join(RAIZ, 'config', 'commerci.json'), 'utf8'));
 const nome = id => commerci.find(c => c.id === id)?.nome ?? `(id ${id} não está em commerci.json)`;
 const [cmd, a, b] = process.argv.slice(2);

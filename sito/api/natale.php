@@ -3,7 +3,7 @@
 // Link que mandamos para a loja (e-mail / DM):  https://ukhousebyhouse.com/api/natale.php?shop=<id da loja>&offer=<oferta>[&day=AAAA-MM-DD]
 //   offer: negozio (Christmas shop) · rinnovo (Christmas shop, preço de quem renova a loja) · avvento (1 dia do Advent, 1–24 dez) · sponsor (1 só no país)
 // Abre o checkout da Stripe; o webhook (api/stripe.php, metadata tipo=natale) registra o pagamento e avisa por e-mail.
-// A ativação é manual, igual à Itália: node strumenti/natale.mjs negozio|avvento|sponsor ... (publica data/natale.json).
+// A ativação é AUTOMÁTICA (o webhook grava data/natale.json na hora do pagamento); strumenti/natale.mjs serve para ajustes à mão.
 declare(strict_types=1);
 require is_file(__DIR__ . '/../../privato/config.php') ? __DIR__ . '/../../privato/config.php' : __DIR__ . '/../privato/config.php';
 $arqStripe = is_file(__DIR__ . '/../../privato/stripe.php') ? __DIR__ . '/../../privato/stripe.php' : __DIR__ . '/../privato/stripe.php';

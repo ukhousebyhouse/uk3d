@@ -62,7 +62,40 @@ if ($ehCrediti) {
     fim(200);
 }
 
-// ---------- Christmas on the map (api/natale.php): registra o pagamento e avisa; ativação manual com strumenti/natale.mjs ----------
+// ---------- Christmas on the map (api/natale.php): registra o pagamento, ATIVA SOZINHO em data/natale.json e avisa por e-mail ----------
+// (pagamento de teste só registra; reembolso/contestação desativa só o que aquela compra ligou)
+// natale.json passa a ser "do servidor": pubblica --tutto não sobrescreve e strumenti/natale.mjs baixa a versão do site antes de mexer
+function natale_aplica(string $off, string $neg, string $dia, bool $liga): string {
+    $arq = __DIR__ . '/../data/natale.json';
+    $fh = @fopen($arq, 'c+'); if (!$fh) return 'ERRO: não abriu data/natale.json';
+    flock($fh, LOCK_EX);
+    $nat = json_decode((string)stream_get_contents($fh), true) ?: [];
+    $nat += ['sponsor' => null, 'negozi' => [], 'avvento' => [], 'bonus' => 2];
+    $nat['avvento'] = (array)$nat['avvento'];
+    $r = '';
+    if ($liga) {
+        if ($off === 'avvento') {
+            $dono = (string)($nat['avvento'][$dia] ?? '');
+            if (!preg_match('/^2026-12-(0[1-9]|1\d|2[0-4])$/', $dia)) $r = "NÃO ATIVOU: dia inválido ($dia)";
+            elseif ($dono !== '' && $dono !== $neg) { $r = "NÃO ATIVOU o Advent: $dia já é de outra loja ($dono). Ganhou a loja de Natal; combine outro dia ou reembolse a diferença"; if (!in_array($neg, $nat['negozi'], true)) $nat['negozi'][] = $neg; }
+            else { $nat['avvento'][$dia] = $neg; ksort($nat['avvento']); $r = "ATIVADO: Advent $dia"; }
+        } elseif ($off === 'sponsor') {
+            $sp = (string)($nat['sponsor']['id'] ?? '');
+            if ($sp !== '' && $sp !== $neg) { $r = "NÃO ATIVOU o sponsor: já é de outra loja ($sp). Ganhou a loja de Natal; reembolse a diferença"; if (!in_array($neg, $nat['negozi'], true)) $nat['negozi'][] = $neg; }
+            else { $nat['sponsor'] = ['id' => $neg]; $r = 'ATIVADO: sponsor oficial'; }
+        } else { if (!in_array($neg, $nat['negozi'], true)) $nat['negozi'][] = $neg; $r = 'ATIVADO: loja de Natal'; }
+    } else {
+        if ($off === 'avvento') { if (($nat['avvento'][$dia] ?? '') === $neg) unset($nat['avvento'][$dia]); }
+        elseif ($off === 'sponsor') { if (($nat['sponsor']['id'] ?? '') === $neg) $nat['sponsor'] = null; }
+        else $nat['negozi'] = array_values(array_filter($nat['negozi'], fn($x) => $x !== $neg));
+        $r = 'DESATIVADO (reembolso/contestação)';
+    }
+    if ($nat['avvento'] === []) $nat['avvento'] = new stdClass();   // continua {} no JSON
+    ftruncate($fh, 0); rewind($fh);
+    fwrite($fh, json_encode($nat, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n");
+    fflush($fh); flock($fh, LOCK_UN); fclose($fh);
+    return $r;
+}
 // reembolso/contestação chegam pela cobrança (sem metadata): acha a compra pelo payment_intent no log
 $logNat = CARTELLA . '/natale-pagamenti.jsonl';
 $natPi = (string)($obj['payment_intent'] ?? '');
@@ -76,11 +109,12 @@ if (($mNat['tipo'] ?? '') === 'natale') {
     elseif (in_array($tipo, ['charge.refunded', 'charge.dispute.created'], true)) $esito = 'rimborsato';
     if ($esito) {
         $neg = (string)($mNat['negozio'] ?? ''); $off = (string)($mNat['offerta'] ?? ''); $dia = (string)($mNat['giorno'] ?? '');
-        file_put_contents($logNat, json_encode(['em' => gmdate('c'), 'esito' => $esito, 'offerta' => $off, 'negozio' => $neg, 'nome' => (string)($mNat['nome'] ?? ''), 'giorno' => $dia, 'pi' => $natPi, 'valore' => $valor, 'email' => (string)($obj['customer_details']['email'] ?? ''), 'test' => $teste], JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND | LOCK_EX);
+        $ativ = $teste ? 'teste: não mexe no mapa' : (preg_match('/^\d{6}-[0-9a-f]{8}$/', $neg) ? natale_aplica($off, $neg, $dia, $esito === 'pagato') : 'ERRO: loja sem id');
+        file_put_contents($logNat, json_encode(['em' => gmdate('c'), 'esito' => $esito, 'offerta' => $off, 'negozio' => $neg, 'nome' => (string)($mNat['nome'] ?? ''), 'giorno' => $dia, 'pi' => $natPi, 'valore' => $valor, 'email' => (string)($obj['customer_details']['email'] ?? ''), 'test' => $teste, 'mapa' => $ativ], JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND | LOCK_EX);
         if (defined('EMAIL_AVVISI') && EMAIL_AVVISI) {
-            $cmd = $esito === 'rimborsato' ? "node strumenti/natale.mjs togli $neg"
-                : ($off === 'avvento' ? "node strumenti/natale.mjs avvento $dia $neg" : ($off === 'sponsor' ? "node strumenti/natale.mjs sponsor $neg" : "node strumenti/natale.mjs negozio $neg"));
-            @mail(EMAIL_AVVISI, ($esito === 'pagato' ? 'PAGO Natal' : 'REEMBOLSO Natal') . ": " . ($mNat['nome'] ?? $neg) . " ($off" . ($dia ? " $dia" : '') . ")" . ($teste ? ' [teste]' : ''), "Natal UK: $off · loja $neg · £$valor\nRode: $cmd", 'From: ' . EMAIL_AVVISI);
+            $falhou = !str_starts_with($ativ, 'ATIVADO') && !str_starts_with($ativ, 'DESATIVADO') && !$teste;
+            @mail(EMAIL_AVVISI, ($falhou ? '⚠️ ' : '') . ($esito === 'pagato' ? 'PAGO Natal' : 'REEMBOLSO Natal') . ": " . ($mNat['nome'] ?? $neg) . " ($off" . ($dia ? " $dia" : '') . ")" . ($teste ? ' [teste]' : ''),
+                "Natal UK: $off · loja $neg · £$valor\nMapa: $ativ\n(ver tudo: node strumenti/natale.mjs lista)", 'From: ' . EMAIL_AVVISI);
         }
     }
     fim(200);

@@ -118,7 +118,8 @@ export function pubblicare({ tutto = false, privato = false, config = false, log
     // data/decori.json é escrito no servidor pelo webhook da Hotmart: nunca sobrescrever com a cópia do PC;
     // snapshot.json e versao.txt vêm do robô: a cópia do PC costuma estar velha (o mapa voltaria no tempo)
     // data/proprieta.json (villa, castelo e decorações compradas com créditos) é escrito pelo api/conto.php: idem
-    const DO_SERVIDOR = ['data/decori.json', 'data/proprieta.json', 'data/snapshot.json', 'data/versao.txt'];
+    // data/natale.json (patrocínios de Natal) é escrito pelo webhook da Stripe ao pagar: idem (ajustes à mão: strumenti/natale.mjs)
+    const DO_SERVIDOR = ['data/decori.json', 'data/proprieta.json', 'data/snapshot.json', 'data/versao.txt', 'data/natale.json'];
     const todos = listarPasta(path.join(RAIZ, 'sito'), '', rel => rel.startsWith('video') || rel.startsWith('data/demo') || DO_SERVIDOR.includes(rel)).map(a => ({ local: path.join(RAIZ, 'sito', a.nome), remoto: ftp.web + a.nome }));
     arquivos = [...todos.filter(a => !a.remoto.includes('data/')), ...todos.filter(a => a.remoto.includes('data/') && !a.remoto.endsWith('versao.txt')), ...todos.filter(a => a.remoto.endsWith('versao.txt'))];
   } else {

@@ -1,6 +1,7 @@
 // Interface: busca, abas, painéis (casa, cidade, nação, Number 10, league table, scoreboard, up for grabs, how it works).
 import { REGOLE, NOMI_CARICHE, NOMI_CARICHE_CY, DESCR_CARICHE, FONTI, COME_GUADAGNARE, num, punti, dataBreve, dataLunga, ora, prossimoTraguardo, sogliaDi, nomePub, nataleAttivo } from './regole.js';
 import { iconaLivello } from './icone.js';
+import { contaNegozio } from './statnegozi.js';
 import { Fotografo } from './foto.js';
 import { immagineCasa, immagineFondazione, immagineCitta, PERFIL } from './storie.js';
 import { tipoDi, linkWhatsapp } from './commerci.js';
@@ -520,11 +521,13 @@ export class UI {
       ${cm.logo ? `<img class="logo-commercio" src="${esc(cm.logo)}" alt="">` : ''}
       ${cm.descrizione ? `<p class="intro">${esc(cm.descrizione)}</p>` : ''}
       <div class="bottoni">
-        ${wa ? `<a class="botao" href="${esc(wa)}" target="_blank" rel="noopener">💬 Message on WhatsApp</a>` : ''}
-        ${ig ? `<a class="botao sec" href="${esc(ig)}" target="_blank" rel="noopener">📸 @${esc(cm.instagram)}</a>` : ''}
+        ${wa ? `<a class="botao" data-traccia="wa" href="${esc(wa)}" target="_blank" rel="noopener">💬 Message on WhatsApp</a>` : ''}
+        ${ig ? `<a class="botao sec" data-traccia="ig" href="${esc(ig)}" target="_blank" rel="noopener">📸 @${esc(cm.instagram)}</a>` : ''}
       </div>
       ${cm.giocatore && this.D.porConta.get(cm.giocatore) ? `<div class="carta fond" data-casa="${esc(cm.giocatore)}">🏅 <b>Patron: @${esc(cm.giocatore)}</b><small>the house of whoever put this business on the map</small></div>` : ''}
       <p class="nota">A business on the ${esc(l.nome)} map. <a href="negozio.html?citta=${l.comune.istat}">Want yours too?</a></p>`);
+    contaNegozio(cm.id, 'apri');
+    document.querySelectorAll('[data-traccia]').forEach(a => a.addEventListener('click', () => contaNegozio(cm.id, a.dataset.traccia), { once: true }));
   }
 
   // aba High Street: todos os comércios do mapa, com busca e "near me" (pela casa marcada como minha)

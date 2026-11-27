@@ -12,6 +12,7 @@ import { Conto } from './conto.js';
 import { Passeggio } from './passeggio.js';
 import { Interni } from './interni.js';
 import { intro } from './intro.js';
+import { osservaNegozi } from './statnegozi.js';
 
 const VERSAO = document.querySelector('meta[name="versione"]')?.content ?? 'dev';
 const DEMO = new URLSearchParams(location.search).has('demo');   // ?demo=1: mapa de demonstração
@@ -32,6 +33,7 @@ async function iniciar() {
   const mappa = new Mappa(document.getElementById('mappa'), D.geo, D.rilievo, D.imagem);
   window.__fase = 'mappa';
   const citta = new Citta(mappa, D);
+  if (!DEMO) osservaNegozi(mappa, D);   // contagem anônima por loja (retorno para o lojista)
   criarPuntiCase(mappa, D);
   mappa.punti = criarPunti(mappa, D);
   let ui = null;

@@ -3,8 +3,11 @@ import * as THREE from 'three';
 import { costruisciNegozio } from './modelli.js';
 import { texturaFaccia, carregarImagem, fontePronta } from './insegne.js';
 import { nataleAttivo } from './regole.js';
+import { conNeve } from './neve.js';
 
-const matLoja = new THREE.MeshLambertMaterial({ vertexColors: true });
+// no Natal a loja também ganha neve em cima, menos na prévia do editor (negozio.html), para o lojista ver as cores reais
+const _matLoja = new THREE.MeshLambertMaterial({ vertexColors: true });
+const matLoja = nataleAttivo() && typeof location !== 'undefined' && !/negozio\.html/.test(location.pathname) ? conNeve(_matLoja) : _matLoja;
 
 // van de comida (unidades de lote): comprimento no eixo x, a janela de atendimento virada para +z (rua / câmera)
 function furgone(cor, st = {}) {

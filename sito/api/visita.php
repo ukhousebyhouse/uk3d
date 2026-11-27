@@ -9,8 +9,33 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
 $ua = (string)($_SERVER['HTTP_USER_AGENT'] ?? '');
 if ($ua === '' || preg_match('/bot|crawl|spider|slurp|preview|headless|lighthouse|facebookexternalhit/i', $ua)) exit;
 
-$d = json_decode((string)file_get_contents('php://input', false, null, 0, 2000), true);
+$d = json_decode((string)file_get_contents('php://input', false, null, 0, 4000), true);
 if (!is_array($d)) exit;
+
+// contagem por loja/outdoor (js/statnegozi.js): CARTELLA/visite/negozi/AAAA-MM.json
+// { id: { vista, apri, wa, ig, giorni: { DD: { vista, apri, wa, ig } } } } — só números, nada de quem viu
+if (($d['t'] ?? '') === 'n') {
+    $ev = is_array($d['ev'] ?? null) ? array_slice($d['ev'], 0, 60) : [];
+    if (!$ev) exit;
+    date_default_timezone_set('Europe/London');
+    $pasta = CARTELLA . '/visite/negozi';
+    if (!is_dir($pasta)) mkdir($pasta, 0750, true);
+    $f = fopen("$pasta/" . date('Y-m') . '.json', 'c+');
+    if (!$f || !flock($f, LOCK_EX)) exit;
+    $s = json_decode((string)stream_get_contents($f), true) ?: [];
+    $g = date('d');
+    foreach ($ev as $e) {
+        if (!is_array($e) || count($e) !== 2) continue;
+        [$id, $tp] = $e;
+        if (!is_string($id) || !preg_match('/^\d{6}-[0-9a-f]{8}$/', $id) || !in_array($tp, ['vista', 'apri', 'wa', 'ig'], true)) continue;
+        $s[$id][$tp] = ($s[$id][$tp] ?? 0) + 1;
+        $s[$id]['giorni'][$g][$tp] = ($s[$id]['giorni'][$g][$tp] ?? 0) + 1;
+    }
+    ftruncate($f, 0); rewind($f);
+    fwrite($f, json_encode($s, JSON_UNESCAPED_SLASHES));
+    flock($f, LOCK_UN); fclose($f);
+    exit;
+}
 $tipo = ($d['t'] ?? '') === 'ok' ? 'ok' : 'v';
 // etiquetas ?da= aceitas: bio/storia/reel/post/dm = links que nós colocamos; gioco/invito/citta/tabellone = botões de compartilhar do site
 const CANALI = ['bio', 'storia', 'reel', 'post', 'dm', 'gioco', 'invito', 'citta', 'tabellone'];

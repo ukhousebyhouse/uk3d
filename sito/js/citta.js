@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { geometriaCasa, geometriaEspecial, ALTURA_NIVEL, Construtor, PLACCA, CARTELLONE, INSEGNA_PUB, geometriaFaccia, geometriaLuminaria, stileRegione, geometriaFinestre, geometriaLampione, geometriaLuceLampione, geometriaZucca, geometriaZuccaLuce, geometriaFioriere, geometriaOrnamento, ORNAMENTI, aspetto, hashConta } from './modelli.js';
 import { REGOLE, nataleAttivo, halloweenAttivo, sogliaDi, nomePub } from './regole.js';
+import { conNeve, Nevicata } from './neve.js';
 import { texturaVendita, texturaLavori, texturaPubblicita, texturaCartellone, texturaPub, carregarImagem, fontePronta } from './insegne.js';
 import { creaNegozio3D } from './negozio3d.js';
 
@@ -140,15 +141,19 @@ export class Citta {
     this.speciali = new Set();   // casas trocadas por um modelo raro (decori.js): sem janelas, floreiras e jardim da casa normal
     this.perto = [];
     this.ultimo = null;
-    const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
+    const matChao = new THREE.MeshLambertMaterial({ vertexColors: true });
+    // Natal: casas, prédios e árvores com neve em cima (neve.js); o chão das quadras fica como está (ruas visíveis)
+    this.natale = nataleAttivo();
+    const mat = this.natale ? conNeve(matChao) : matChao;
+    if (this.natale) this.nevicata = new Nevicata(mappa);
     const brilho = new THREE.MeshBasicMaterial({ vertexColors: true });
     this.mat = mat;
     this.matScarpata = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
     const add = (nome, geo, m = mat) => new Camada(this.grupo, geo, m, nome);
     this.camadas = {
-      cela: add('cela', geometriaCela(false)),
-      celaP: add('celaP', geometriaCela(true)),
-      borda: add('borda', geometriaBorda()),
+      cela: add('cela', geometriaCela(false), matChao),
+      celaP: add('celaP', geometriaCela(true), matChao),
+      borda: add('borda', geometriaBorda(), matChao),
       fiamma: add('fiamma', geometriaEspecial('fiamma'), brilho),
     };
     for (const t of ['piazza', 'bandiera', 'chiesa', 'palazzina', 'ospedale', 'stadio', 'parco', 'liberoV', 'liberoL', 'cartellone',
@@ -190,7 +195,6 @@ export class Citta {
       mappa.sujo = true;
     });
     // Natal: árvore no village green e luzes nas ruas do centro
-    this.natale = nataleAttivo();
     if (this.natale) {
       const lum = geometriaLuminaria(RUA / LOTE + 0.12);
       Object.assign(this.camadas, {

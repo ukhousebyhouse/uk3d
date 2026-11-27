@@ -3,7 +3,7 @@
     "id": "261105-de5bd6e3",
     "istat": "2655237",
     "approvato": "2026-11-05T22:57:42.983Z",
-    "fino": "2026-12-05T22:57:42.983Z",
+    "fino": "2026-12-13T23:59:00.000Z",
     "prodotto": "negozio",
     "nome": "Cufi.tness GYM",
     "tipo": "palestra",
@@ -13,13 +13,14 @@
     "descrizione": "GYM",
     "testo": "",
     "logo": "data/loghi/261105-de5bd6e3.png",
-    "giocatore": "cufi.tness"
+    "giocatore": "cufi.tness",
+    "prorroga": "natale 27/11"
   },
   {
     "id": "261110-06d153ba",
     "istat": "2648205",
     "approvato": "2026-11-10T16:21:18.391Z",
-    "fino": "2026-12-10T16:21:18.391Z",
+    "fino": "2026-12-13T23:59:00.000Z",
     "prodotto": "negozio",
     "nome": "Claymore",
     "tipo": "pub",
@@ -29,13 +30,14 @@
     "descrizione": "",
     "testo": "",
     "logo": "",
-    "giocatore": "bob.ligertwood"
+    "giocatore": "bob.ligertwood",
+    "prorroga": "natale 27/11"
   },
   {
     "id": "261111-adde92bd",
     "istat": "2648205",
     "approvato": "2026-11-11T19:37:30.276Z",
-    "fino": "2026-12-11T19:37:30.276Z",
+    "fino": "2026-12-13T23:59:00.000Z",
     "prodotto": "negozio",
     "nome": "Royal fish bar",
     "tipo": "chippy",
@@ -62,13 +64,14 @@
       "ornamenti": [
         "vasi"
       ]
-    }
+    },
+    "prorroga": "natale 27/11"
   },
   {
     "id": "261112-42bd960d",
     "istat": "2649069",
     "approvato": "2026-11-12T01:46:41.463Z",
-    "fino": "2026-12-12T01:46:41.463Z",
+    "fino": "2026-12-13T23:59:00.000Z",
     "prodotto": "negozio",
     "nome": "On the rocks",
     "tipo": "ristorante",
@@ -78,7 +81,8 @@
     "descrizione": "I kp open from 12-11 serves lovely stakes and seafood",
     "testo": "",
     "logo": "",
-    "giocatore": "finley_lb"
+    "giocatore": "finley_lb",
+    "prorroga": "natale 27/11"
   },
   {
     "id": "261113-655a83cd",
